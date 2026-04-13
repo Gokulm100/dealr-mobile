@@ -1,0 +1,386 @@
+// src/screens/PostAdScreen.js
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, ScrollView,
+  StyleSheet, Alert, ActivityIndicator, Image,
+} from 'react-native';
+import Icon from '../components/Icon';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { COLORS, RADIUS, SHADOW } from '../utils/theme';
+import { apiFetch, API_BASE_URL } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AiTextArea from '../components/AiTextArea';
+
+export default function PostAdScreen({ navigation }) {
+  const { user } = useAuth();
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const [subCategories, setSubCategories] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    title: '',
+    price: '',
+    description: '',
+  });
+
+  useEffect(() => {
+    // Fetch categories
+    apiFetch('/api/ads/listCategories').then(data => {
+      if (Array.isArray(data)) {
+        setCategories(data.map(cat => ({
+          id: cat._id,
+          name: cat.name,
+          subCategories: cat.subCategory || [],
+        })));
+      }
+    }).catch(() => {});
+
+    // Fetch Kerala cities
+    fetch('https://api.countrystatecity.in/v1/countries/IN/states/KL/cities', {
+      headers: { 'X-CSCAPI-KEY': 'NTJPRVA2dFdZTWl6ZUhCSXRzVmdWem5BRk1tdE1VbE5KUlBubGVPQg==' },
+    }).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setLocations(data.map(c => ({ id: c.id, name: c.name })));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const cat = categories.find(c => c.id === selectedCategory);
+    setSubCategories(cat?.subCategories || []);
+    setSelectedSubCategory('');
+  }, [selectedCategory, categories]);
+
+  const filteredLocations = locations.filter(l =>
+    l.name.toLowerCase().includes(locationSearch.toLowerCase())
+  ).slice(0, 20);
+
+  const pickImages = () => {
+    launchImageLibrary({ mediaType: 'photo', selectionLimit: 5, includeBase64: false }, res => {
+      if (res.assets) {
+        setImages(res.assets);
+      }
+    });
+  };
+
+  const handlePost = async () => {
+    if (!user) {
+      Alert.alert('Login required', 'Please login to post an ad.');
+      return;
+    }
+    if (!form.title || !form.price || !selectedLocation || !form.description || !selectedCategory) {
+      Alert.alert('Missing fields', 'Please fill in all required fields.');
+      return;
+    }
+    if (form.description.length < 150) {
+      Alert.alert('Description too short', 'Description must be at least 150 characters.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('price', form.price);
+      formData.append('location', selectedLocation.name);
+      formData.append('category', selectedCategory);
+      if (selectedSubCategory) formData.append('subCategory', selectedSubCategory);
+      formData.append('description', form.description);
+
+      images.forEach((img, idx) => {
+        formData.append('images', {
+          uri: img.uri,
+          type: img.type || 'image/jpeg',
+          name: img.fileName || `image_${idx}.jpg`,
+        });
+      });
+
+      const res = await fetch(`${API_BASE_URL}/api/ads/postAdd`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (res.ok) {
+        Alert.alert('Success', 'Your ad has been posted!', [
+          { text: 'OK', onPress: () => navigation.navigate('Home') },
+        ]);
+        setForm({ title: '', price: '', description: '' });
+        setImages([]);
+        setSelectedCategory('');
+        setSelectedLocation(null);
+        setLocationSearch('');
+      } else {
+        throw new Error('Failed to post');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to post ad. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const charCount = form.description.length;
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Post Ad</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        {!user && (
+          <View style={styles.loginWarning}>
+            <Icon name="alert-circle" size={16} color={COLORS.error} />
+            <Text style={styles.loginWarningText}>You must be logged in to post an ad.</Text>
+          </View>
+        )}
+
+        {/* Title */}
+        <Text style={styles.label}>Title *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. iPhone 13 Pro Max"
+          value={form.title}
+          onChangeText={v => setForm(p => ({ ...p, title: v }))}
+        />
+
+        {/* Category */}
+        <Text style={styles.label}>Category *</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
+          {categories.map(cat => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[styles.pill, selectedCategory === cat.id && styles.pillActive]}
+              onPress={() => setSelectedCategory(cat.id)}
+            >
+              <Text style={[styles.pillText, selectedCategory === cat.id && styles.pillTextActive]}>
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Subcategory */}
+        {subCategories.length > 0 && (
+          <>
+            <Text style={styles.label}>Subcategory</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
+              {subCategories.map((sub, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.pill, styles.pillSub, selectedSubCategory === sub && styles.pillSubActive]}
+                  onPress={() => setSelectedSubCategory(sub)}
+                >
+                  <Text style={[styles.pillText, selectedSubCategory === sub && styles.pillTextActive]}>
+                    {sub}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
+
+        {/* Price */}
+        <Text style={styles.label}>Price (₹) *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. 15000"
+          keyboardType="numeric"
+          value={form.price}
+          onChangeText={v => setForm(p => ({ ...p, price: v }))}
+        />
+
+        {/* Location */}
+        <Text style={styles.label}>Location *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Search city..."
+          value={locationSearch}
+          onChangeText={v => {
+            setLocationSearch(v);
+            setSelectedLocation(null);
+            setShowLocationDropdown(true);
+          }}
+          onFocus={() => setShowLocationDropdown(true)}
+        />
+        {showLocationDropdown && locationSearch.length > 0 && (
+          <View style={styles.dropdown}>
+            {filteredLocations.map(loc => (
+              <TouchableOpacity
+                key={loc.id}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setSelectedLocation(loc);
+                  setLocationSearch(loc.name);
+                  setShowLocationDropdown(false);
+                }}
+              >
+                <Icon name="map-pin" size={13} color={COLORS.textMuted} />
+                <Text style={styles.dropdownText}>{loc.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Description */}
+        <Text style={styles.label}>
+          Description * <Text style={{ color: charCount < 150 ? COLORS.error : COLORS.success }}>({charCount}/150 min)</Text>
+        </Text>
+        <AiTextArea
+          value={form.description}
+          onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+          category={categories.find(c => c.id === selectedCategory)?.name}
+          subcategory={selectedSubCategory}
+        />
+
+        {/* Images */}
+        <Text style={styles.label}>Images (optional)</Text>
+        <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages}>
+          <Icon name="camera" size={18} color={COLORS.primary} />
+          <Text style={styles.imagePickerText}>
+            {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
+          </Text>
+        </TouchableOpacity>
+        {images.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
+            {images.map((img, idx) => (
+              <View key={idx} style={styles.imagePreviewWrap}>
+                <Image source={{ uri: img.uri }} style={styles.imagePreview} />
+                <TouchableOpacity
+                  style={styles.removeImg}
+                  onPress={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                >
+                  <Icon name="x" size={12} color={COLORS.white} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Submit */}
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && { opacity: 0.7 }]}
+          onPress={handlePost}
+          disabled={loading}
+        >
+          {loading
+            ? <ActivityIndicator color={COLORS.white} />
+            : <Text style={styles.submitText}>Post Ad</Text>
+          }
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    backgroundColor: COLORS.primary,
+    paddingTop: 48,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
+  },
+  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: '800' },
+  scroll: { padding: 16 },
+  loginWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fff0f0',
+    borderRadius: RADIUS.md,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  loginWarningText: { color: COLORS.error, fontSize: 13 },
+  label: { fontSize: 13, fontWeight: '700', color: COLORS.text, marginTop: 14, marginBottom: 6 },
+  input: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  textArea: { minHeight: 110, lineHeight: 22 },
+  pillRow: { marginBottom: 4 },
+  pill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: 8,
+  },
+  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  pillSub: { backgroundColor: '#f0f4ff', borderColor: '#c7d4f0' },
+  pillSubActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  pillText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
+  pillTextActive: { color: COLORS.white },
+  dropdown: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    maxHeight: 180,
+    marginTop: -1,
+    ...SHADOW.small,
+    zIndex: 10,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  dropdownText: { fontSize: 14, color: COLORS.text },
+  imagePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderStyle: 'dashed',
+  },
+  imagePickerText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+  imagePreviewRow: { marginTop: 10, marginBottom: 4 },
+  imagePreviewWrap: { marginRight: 8, position: 'relative' },
+  imagePreview: { width: 80, height: 80, borderRadius: RADIUS.md },
+  removeImg: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: COLORS.error,
+    borderRadius: RADIUS.full,
+    padding: 3,
+  },
+  submitBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  submitText: { color: COLORS.white, fontWeight: '800', fontSize: 16 },
+});
