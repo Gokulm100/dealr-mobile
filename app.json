@@ -1,7 +1,10 @@
 {
   "expo": {
-    "name": "e4you-fresh",
-    "slug": "e4you-fresh",
-    "version": "1.0.0"
+    "name": "e4you",
+    "slug": "e4you",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.anonymous.e4youfresh"
+    }
   }
 }
