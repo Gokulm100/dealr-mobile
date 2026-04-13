@@ -1,4 +1,4 @@
-package com.e4youfresh
+package com.anonymous.e4youfresh
 
 import android.app.Application
 import android.content.res.Configuration
