@@ -17,13 +17,13 @@ export default function ChatScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const listRef = useRef(null);
-
   const fetchMessages = async () => {
     setLoading(true);
     try {
       const data = await apiFetch(
         `/api/ads/chat?adId=${chat.adId || chat._id}&sellerId=${chat.sellerId}&buyerId=${chat.buyerId}`
       );
+      console.log("data"+data)
       const msgs = Array.isArray(data.chats) ? data.chats : [];
       setMessages(msgs);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100);

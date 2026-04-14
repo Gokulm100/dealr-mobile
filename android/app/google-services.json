@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "782257434604",
+    "project_id": "e4you-dad72",
+    "storage_bucket": "e4you-dad72.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:782257434604:android:eccd1bffcd8440537a5ac9",
+        "android_client_info": {
+          "package_name": "com.anonymous.e4youfresh"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpJEun5rMCnpmk7TQDey-OCU92pMgwWBc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

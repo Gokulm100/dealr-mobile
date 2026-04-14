@@ -8,7 +8,6 @@ import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import AiAnalytics from '../components/AiAnalytics';
 
 export default function MyAdsScreen({ navigation }) {
   const { user } = useAuth();
@@ -20,13 +19,14 @@ export default function MyAdsScreen({ navigation }) {
     if (!user?._id) return;
     setLoading(true);
     try {
-      const data = await apiFetch('/api/ads/myads', {
+      const data = await apiFetch('/api/ads/listUserAds', {
         method: 'POST',
-        body: JSON.stringify({ userId: user._id }),
+        body: JSON.stringify({ id: user._id }),
       });
       const list = Array.isArray(data) ? data : (data?.ads || []);
       setAds(list.map(mapListing));
-    } catch {
+    } catch(error) {
+    console.log(error)
       Alert.alert('Error', 'Could not load your ads.');
     } finally {
       setLoading(false);
@@ -83,13 +83,13 @@ export default function MyAdsScreen({ navigation }) {
             <Text style={styles.metaText}>{item.views}</Text>
           </View>
           <Text style={styles.posted}>{item.posted}</Text>
+          <Text style={styles.posted}>{item.category}</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
         <Icon name="trash-2" size={16} color={COLORS.error} />
       </TouchableOpacity>
     </View>
-    <AiAnalytics ad={item} />
   </View>
 );
 
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardInner: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  thumbnail: { width: 90, height: 90, backgroundColor: COLORS.border },
+  thumbnail: { width: 60, height: 60, backgroundColor: COLORS.border,marginLeft:20 },
   info: { flex: 1, padding: 12 },
   title: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 3 },
   price: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 4 },

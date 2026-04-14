@@ -20,17 +20,19 @@ export default function AiAnalytics({ ad }) {
     setGenerated(true);
     setError(null);
     try {
+    console.log(ad)
       const data = await apiFetch('/api/ai/provideAiAnalytics', {
         method: 'POST',
         body: JSON.stringify({
-          adId: ad.id || ad._id || '',
+          adId: ad.id || ad.id || '',
           category: ad.categoryId || '',
           subCategory: ad.subCategory || '',
         }),
       });
       setInsights(Array.isArray(data.data?.analysis) ? data.data.analysis : []);
       setSuggestions(Array.isArray(data.data?.recommendations) ? data.data.recommendations : []);
-    } catch {
+    } catch(error) {
+    console.log(error)
       setError('Could not load AI analytics.');
     } finally {
       setLoading(false);

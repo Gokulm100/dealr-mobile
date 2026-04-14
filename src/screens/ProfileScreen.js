@@ -14,7 +14,7 @@ import { API_BASE_URL } from '../utils/api';
 GoogleSignin.configure({
   // This is the WEB client ID from your Google Cloud Console
   // (same one used in your web app)
-  webClientId: '556452370430-fd5caae668lq9468hbseas0kr3o1a01g.apps.googleusercontent.com',
+  webClientId: '782257434604-jff84f89n9kht0heamethsr01rrrabgg.apps.googleusercontent.com',
   offlineAccess: true,
 });
 
@@ -34,6 +34,7 @@ export default function ProfileScreen({ navigation }) {
 
       await loginWithGoogle(idToken);
     } catch (error) {
+    console.log(error);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled — do nothing
       } else if (error.code === statusCodes.IN_PROGRESS) {
@@ -92,7 +93,7 @@ export default function ProfileScreen({ navigation }) {
               <>
                 <Image
                   source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
-                  style={styles.googleIcon}
+
                 />
                 <Text style={styles.googleBtnText}>Continue with Google</Text>
               </>

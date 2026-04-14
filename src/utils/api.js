@@ -78,6 +78,8 @@ export function mapListing(listing) {
     views: listing.views || 0,
     subCategory: listing?.subCategory?.name || 'General',
     posted: formatPostedTime(listing.createdAt),
+    categoryId: listing?.category?._id || null,
+    subCategoryId: listing?.subCategory?._id || null,
     images:
       Array.isArray(listing.images) && listing.images.length > 0
         ? listing.images.map(img => `${API_BASE_URL}/${img}`)

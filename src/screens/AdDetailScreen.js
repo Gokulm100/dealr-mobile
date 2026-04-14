@@ -9,6 +9,7 @@ import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, API_BASE_URL } from '../utils/api';
 import AiSummary from '../components/AiSummary';
 import { useAuth } from '../context/AuthContext';
+import AiAnalytics from '../components/AiAnalytics';
 
 const { width } = Dimensions.get('window');
 
@@ -158,7 +159,7 @@ export default function AdDetailScreen({ route, navigation }) {
             subCategory={listing.subCategory}
             description={listing.description}
           />
-
+           <AiAnalytics ad={listing} />
           {/* Seller */}
           <View style={styles.sellerCard}>
             {listing.sellerPic ? (

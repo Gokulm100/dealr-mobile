@@ -19,20 +19,6 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite }) 
         resizeMode="cover"
       />
 
-      {/* Favorite button */}
-      <TouchableOpacity
-        style={styles.favBtn}
-        onPress={() => onToggleFavorite(item.id)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Icon
-          name="heart"
-          size={18}
-          color={isFavorite ? COLORS.error : COLORS.white}
-          style={isFavorite ? styles.favIconActive : styles.favIcon}
-        />
-      </TouchableOpacity>
-
       {/* Category tag */}
       <View style={styles.tag}>
         <Text style={styles.tagText} numberOfLines={1}>

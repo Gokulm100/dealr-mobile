@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "e4youfresh.app"
-               BlueprintName = "e4youfresh"
-               ReferencedContainer = "container:e4youfresh.xcodeproj">
+               BuildableName = "e4you.app"
+               BlueprintName = "e4you"
+               ReferencedContainer = "container:e4you.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "e4youfreshTests.xctest"
-               BlueprintName = "e4youfreshTests"
-               ReferencedContainer = "container:e4youfresh.xcodeproj">
+               BuildableName = "e4youTests.xctest"
+               BlueprintName = "e4youTests"
+               ReferencedContainer = "container:e4you.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "e4youfresh.app"
-            BlueprintName = "e4youfresh"
-            ReferencedContainer = "container:e4youfresh.xcodeproj">
+            BuildableName = "e4you.app"
+            BlueprintName = "e4you"
+            ReferencedContainer = "container:e4you.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "e4youfresh.app"
-            BlueprintName = "e4youfresh"
-            ReferencedContainer = "container:e4youfresh.xcodeproj">
+            BuildableName = "e4you.app"
+            BlueprintName = "e4you"
+            ReferencedContainer = "container:e4you.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
