@@ -117,7 +117,7 @@ function isFieldPresent(text, field) {
   return FIELD_CHECKERS[field.key]?.(lower) ?? false;
 }
 
-export default function AiTextArea({ value, onChange, category, subcategory }) {
+export default function AiTextArea({ value, onChange, category, subcategory, onFocus }) {
   const [touched, setTouched] = useState(false);
 
   const requiredFields =
@@ -130,10 +130,6 @@ export default function AiTextArea({ value, onChange, category, subcategory }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        Ad Description <Text style={styles.required}>*</Text>
-      </Text>
-
       <TextInput
         style={[
           styles.input,
@@ -144,6 +140,7 @@ export default function AiTextArea({ value, onChange, category, subcategory }) {
           setTouched(true);
           onChange?.({ target: { value: v } });
         }}
+        onFocus={onFocus}
         multiline
         numberOfLines={6}
         textAlignVertical="top"

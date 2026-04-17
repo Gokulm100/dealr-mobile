@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  StyleSheet, Dimensions, Alert, TextInput,
+  StyleSheet, Dimensions, Alert, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
@@ -46,11 +46,10 @@ export default function AdDetailScreen({ route, navigation }) {
         method: 'POST',
         body: JSON.stringify({
           adId: listing.id,
-          sellerId: listing.sellerId,
-          buyerId: user._id,
-          message: chatInput.trim(),
-          senderType: user._id === listing.sellerId ? 'seller' : 'buyer',
-        }),
+          to: listing.sellerId,
+          from: user._id,
+          message: chatInput.trim()
+                  }),
       });
       setChatInput('');
       fetchChat();
@@ -74,11 +73,19 @@ export default function AdDetailScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="arrow-left" size={22} color={COLORS.white} />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-left" size={20} color={COLORS.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{listing.title}</Text>
       </View>
@@ -159,7 +166,37 @@ export default function AdDetailScreen({ route, navigation }) {
             subCategory={listing.subCategory}
             description={listing.description}
           />
-           <AiAnalytics ad={listing} />
+
+          {user?._id === listing.sellerId && (
+            <>
+              <View style={styles.offersRow}>
+                <View style={styles.offerCard}>
+                  <View style={styles.offerBadge}>
+                    <Icon name="trending-up" size={12} color={COLORS.success} />
+                    <Text style={styles.offerBadgeText}>Highest Offer</Text>
+                  </View>
+                  <Text style={styles.offerPrice}>₹1,25,000</Text>
+                  <Text style={styles.offerDesc} numberOfLines={2}>
+                    Ready to pay full amount in cash tomorrow.
+                  </Text>
+                </View>
+
+                <View style={styles.offerCard}>
+                  <View style={[styles.offerBadge, { backgroundColor: '#fff7ed' }]}>
+                    <Icon name="award" size={12} color="#f97316" />
+                    <Text style={[styles.offerBadgeText, { color: '#f97316' }]}>Best Offer</Text>
+                  </View>
+                  <Text style={styles.offerPrice}>₹1,20,000</Text>
+                  <Text style={styles.offerDesc} numberOfLines={2}>
+                    Reliable buyer, willing to come to your location.
+                  </Text>
+                </View>
+              </View>
+
+              <AiAnalytics ad={listing} />
+            </>
+          )}
+
           {/* Seller */}
           <View style={styles.sellerCard}>
             {listing.sellerPic ? (
@@ -184,9 +221,7 @@ export default function AdDetailScreen({ route, navigation }) {
                   <Text style={styles.chatEmpty}>No messages yet. Say hello!</Text>
                 )}
                 {chatMessages.map((msg, idx) => {
-                  const isMe = msg.senderType === 'buyer'
-                    ? msg.buyerId === user?._id
-                    : msg.sellerId === user?._id;
+                  const isMe = msg.from === user?._id || msg.from?._id === user?._id;
                   return (
                     <View
                       key={idx}
@@ -226,7 +261,7 @@ export default function AdDetailScreen({ route, navigation }) {
           )}
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -239,9 +274,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
-  backBtn: { padding: 4 },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { flex: 1, color: COLORS.white, fontSize: 16, fontWeight: '700' },
   image: { height: 260, backgroundColor: COLORS.border },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 8 },
@@ -295,6 +337,35 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   chatBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 16 },
+  offersRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  offerCard: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: 12,
+    ...SHADOW.small,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  offerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  offerBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.success,
+    textTransform: 'uppercase',
+  },
+  offerPrice: { fontSize: 18, fontWeight: '900', color: COLORS.text, marginBottom: 4 },
+  offerDesc: { fontSize: 11, color: COLORS.textMuted, lineHeight: 15 },
   chatBox: {
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,

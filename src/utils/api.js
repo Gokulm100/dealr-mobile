@@ -65,24 +65,29 @@ export function formatPostedTime(createdAt) {
 
 // Map raw API listing to app format
 export function mapListing(listing) {
+  // Handle case where category/subCategory might be just a string name or an object
+  const catName = typeof listing.category === 'object' ? listing.category?.name : (typeof listing.category === 'string' ? listing.category : null);
+  const subCatName = typeof listing.subCategory === 'object' ? listing.subCategory?.name : (typeof listing.subCategory === 'string' ? listing.subCategory : null);
+
   return {
     id: listing._id,
     title: listing.title,
     price: listing.price,
     location: listing.location,
-    category: listing?.category?.name || 'Uncategorized',
+    category: catName || 'Uncategorized',
+    categoryId: listing?.category?._id || null,
     description: listing.description,
     seller: listing.seller ? listing.seller.name : 'Unknown',
     sellerId: listing.seller ? listing.seller._id : null,
     sellerPic: listing.seller?.profilePic || null,
     views: listing.views || 0,
-    subCategory: listing?.subCategory?.name || 'General',
+    subCategory: subCatName || 'General',
     posted: formatPostedTime(listing.createdAt),
-    categoryId: listing?.category?._id || null,
-    subCategoryId: listing?.subCategory?._id || null,
+    disabled: listing.disabled || false,
+    status: listing.status || 'active',
     images:
       Array.isArray(listing.images) && listing.images.length > 0
-        ? listing.images.map(img => `${API_BASE_URL}/${img}`)
-        : ['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=300&fit=crop'],
+        ? ['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=300&fit=crop','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg']
+        : ['https://images.pexels.com/photos/10703759/pexels-photo-10703759.jpeg','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg'],
   };
 }

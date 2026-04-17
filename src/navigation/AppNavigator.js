@@ -67,7 +67,7 @@ function TabNavigator() {
           fontSize: 11,
           fontWeight: '600',
         },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size, focused }) => {
           const icons = {
             Home: 'home',
             Chat: 'message-circle',
@@ -75,7 +75,8 @@ function TabNavigator() {
             MyAds: 'speaker',
             Profile: 'user',
           };
-          return <Icon name={icons[route.name]} size={size} color={color} />;
+          const iconColor = route.name === 'Post' ? (focused ? '#ff6666' : COLORS.textMuted) : color;
+          return <Icon name={icons[route.name]} size={size} color={iconColor} />;
         },
       })}
     >

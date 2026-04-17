@@ -1,8 +1,8 @@
 // src/screens/PostAdScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Alert, ActivityIndicator, Image,
+  StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import Icon from '../components/Icon';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -14,6 +14,7 @@ import AiTextArea from '../components/AiTextArea';
 
 export default function PostAdScreen({ navigation }) {
   const { user } = useAuth();
+  const scrollRef = useRef(null);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
@@ -135,150 +136,165 @@ export default function PostAdScreen({ navigation }) {
         <Text style={styles.headerTitle}>Post Ad</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {!user && (
-          <View style={styles.loginWarning}>
-            <Icon name="alert-circle" size={16} color={COLORS.error} />
-            <Text style={styles.loginWarningText}>You must be logged in to post an ad.</Text>
-          </View>
-        )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          {!user && (
+            <View style={styles.loginWarning}>
+              <Icon name="alert-circle" size={16} color={COLORS.error} />
+              <Text style={styles.loginWarningText}>You must be logged in to post an ad.</Text>
+            </View>
+          )}
 
-        {/* Title */}
-        <Text style={styles.label}>Title *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. iPhone 13 Pro Max"
-          value={form.title}
-          onChangeText={v => setForm(p => ({ ...p, title: v }))}
-        />
+          {/* Title */}
+          <Text style={styles.label}>Title *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. iPhone 13 Pro Max"
+            value={form.title}
+            onChangeText={v => setForm(p => ({ ...p, title: v }))}
+          />
 
-        {/* Category */}
-        <Text style={styles.label}>Category *</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
-          {categories.map(cat => (
-            <TouchableOpacity
-              key={cat.id}
-              style={[styles.pill, selectedCategory === cat.id && styles.pillActive]}
-              onPress={() => setSelectedCategory(cat.id)}
-            >
-              <Text style={[styles.pillText, selectedCategory === cat.id && styles.pillTextActive]}>
-                {cat.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Subcategory */}
-        {subCategories.length > 0 && (
-          <>
-            <Text style={styles.label}>Subcategory</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
-              {subCategories.map((sub, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[styles.pill, styles.pillSub, selectedSubCategory === sub && styles.pillSubActive]}
-                  onPress={() => setSelectedSubCategory(sub)}
-                >
-                  <Text style={[styles.pillText, selectedSubCategory === sub && styles.pillTextActive]}>
-                    {sub}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
-        )}
-
-        {/* Price */}
-        <Text style={styles.label}>Price (₹) *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. 15000"
-          keyboardType="numeric"
-          value={form.price}
-          onChangeText={v => setForm(p => ({ ...p, price: v }))}
-        />
-
-        {/* Location */}
-        <Text style={styles.label}>Location *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Search city..."
-          value={locationSearch}
-          onChangeText={v => {
-            setLocationSearch(v);
-            setSelectedLocation(null);
-            setShowLocationDropdown(true);
-          }}
-          onFocus={() => setShowLocationDropdown(true)}
-        />
-        {showLocationDropdown && locationSearch.length > 0 && (
-          <View style={styles.dropdown}>
-            {filteredLocations.map(loc => (
+          {/* Category */}
+          <Text style={styles.label}>Category *</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
+            {categories.map(cat => (
               <TouchableOpacity
-                key={loc.id}
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setSelectedLocation(loc);
-                  setLocationSearch(loc.name);
-                  setShowLocationDropdown(false);
-                }}
+                key={cat.id}
+                style={[styles.pill, selectedCategory === cat.id && styles.pillActive]}
+                onPress={() => setSelectedCategory(cat.id)}
               >
-                <Icon name="map-pin" size={13} color={COLORS.textMuted} />
-                <Text style={styles.dropdownText}>{loc.name}</Text>
+                <Text style={[styles.pillText, selectedCategory === cat.id && styles.pillTextActive]}>
+                  {cat.name}
+                </Text>
               </TouchableOpacity>
             ))}
-          </View>
-        )}
-
-        {/* Description */}
-        <Text style={styles.label}>
-          Description * <Text style={{ color: charCount < 150 ? COLORS.error : COLORS.success }}>({charCount}/150 min)</Text>
-        </Text>
-        <AiTextArea
-          value={form.description}
-          onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-          category={categories.find(c => c.id === selectedCategory)?.name}
-          subcategory={selectedSubCategory}
-        />
-
-        {/* Images */}
-        <Text style={styles.label}>Images (optional)</Text>
-        <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages}>
-          <Icon name="camera" size={18} color={COLORS.primary} />
-          <Text style={styles.imagePickerText}>
-            {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
-          </Text>
-        </TouchableOpacity>
-        {images.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
-            {images.map((img, idx) => (
-              <View key={idx} style={styles.imagePreviewWrap}>
-                <Image source={{ uri: img.uri }} style={styles.imagePreview} />
-                <TouchableOpacity
-                  style={styles.removeImg}
-                  onPress={() => setImages(prev => prev.filter((_, i) => i !== idx))}
-                >
-                  <Icon name="x" size={12} color={COLORS.white} />
-                </TouchableOpacity>
-              </View>
-            ))}
           </ScrollView>
-        )}
 
-        {/* Submit */}
-        <TouchableOpacity
-          style={[styles.submitBtn, loading && { opacity: 0.7 }]}
-          onPress={handlePost}
-          disabled={loading}
-        >
-          {loading
-            ? <ActivityIndicator color={COLORS.white} />
-            : <Text style={styles.submitText}>Post Ad</Text>
-          }
-        </TouchableOpacity>
+          {/* Subcategory */}
+          {subCategories.length > 0 && (
+            <>
+              <Text style={styles.label}>Subcategory</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillRow}>
+                {subCategories.map((sub, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.pill, styles.pillSub, selectedSubCategory === sub && styles.pillSubActive]}
+                    onPress={() => setSelectedSubCategory(sub)}
+                  >
+                    <Text style={[styles.pillText, selectedSubCategory === sub && styles.pillTextActive]}>
+                      {sub}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          {/* Price */}
+          <Text style={styles.label}>Price (₹) *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 15000"
+            keyboardType="numeric"
+            value={form.price}
+            onChangeText={v => setForm(p => ({ ...p, price: v }))}
+          />
+          {/* Location */}
+          <Text style={styles.label}>Location *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Search city..."
+            value={locationSearch}
+            onChangeText={v => {
+              setLocationSearch(v);
+              setSelectedLocation(null);
+              setShowLocationDropdown(true);
+            }}
+            onFocus={() => {
+              setShowLocationDropdown(true);
+              setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+            }}
+          />
+          {showLocationDropdown && locationSearch.length > 0 && (
+            <View style={styles.dropdown}>
+              {filteredLocations.map(loc => (
+                <TouchableOpacity
+                  key={loc.id}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedLocation(loc);
+                    setLocationSearch(loc.name);
+                    setShowLocationDropdown(false);
+                  }}
+                >
+                  <Icon name="map-pin" size={13} color={COLORS.textMuted} />
+                  <Text style={styles.dropdownText}>{loc.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {/* Description */}
+          <Text style={styles.label}>
+            Description * <Text style={{ color: charCount < 150 ? COLORS.error : COLORS.success }}>({charCount}/150 min)</Text>
+          </Text>
+          <AiTextArea
+            value={form.description}
+            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+            category={categories.find(c => c.id === selectedCategory)?.name}
+            subcategory={selectedSubCategory}
+            onFocus={() => {
+              setTimeout(() => {
+                scrollRef.current?.scrollTo({ y: 1000, animated: true });
+              }, 300);
+            }}
+          />
+          <View style={{ height: 10 }} />
+          {/* Images */}
+          <Text style={styles.label}>Images (optional)</Text>
+          <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages}>
+            <Icon name="camera" size={18} color={COLORS.primary} />
+            <Text style={styles.imagePickerText}>
+              {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
+            </Text>
+          </TouchableOpacity>
+          <View style={{ height: 30 }} />
+          {images.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
+              {images.map((img, idx) => (
+                <View key={idx} style={styles.imagePreviewWrap}>
+                  <Image source={{ uri: img.uri }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    style={styles.removeImg}
+                    onPress={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Icon name="x" size={12} color={COLORS.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+          <View style={{ height: 50 }} />
+          {/* Submit */}
+          <TouchableOpacity
+            style={[styles.submitBtn, loading && { opacity: 0.7 }]}
+            onPress={handlePost}
+            disabled={loading}
+          >
+            {loading
+              ? <ActivityIndicator color={COLORS.white} />
+              : <Text style={styles.submitText}>Post Ad</Text>
+            }
+          </TouchableOpacity>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

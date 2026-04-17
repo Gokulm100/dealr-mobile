@@ -12,11 +12,20 @@ export function MessagesProvider({ children }) {
   const refresh = useCallback(async () => {
     if (!user?._id || !token) return;
     try {
-      const data = await apiFetch('/api/ads/getUserMessages', {
-        method: 'POST',
-        body: JSON.stringify({ userId: user._id }),
-      });
-      setMessageCount(Array.isArray(data) ? data.length : data.count || 0);
+      const [buyingData, sellingData] = await Promise.all([
+        apiFetch('/api/ads/getBuyingMessages', {
+          method: 'POST',
+          body: JSON.stringify({ buyerId: user._id }),
+        }).catch(() => []),
+        apiFetch('/api/ads/getSellingMessages', {
+          method: 'POST',
+          body: JSON.stringify({ sellerId: user._id }),
+        }).catch(() => []),
+      ]);
+
+      const buyingCount = Array.isArray(buyingData) ? buyingData.length : 0;
+      const sellingCount = Array.isArray(sellingData) ? sellingData.length : 0;
+      setMessageCount(buyingCount + sellingCount);
     } catch {
       setMessageCount(0);
     }

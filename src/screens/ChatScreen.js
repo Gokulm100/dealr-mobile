@@ -13,22 +13,38 @@ export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
+  const [fraudCheck, setFraudCheck] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const listRef = useRef(null);
+
+  // Resolve adId, buyerId, sellerId from whatever shape the chat object has
+  const adId = chat.adId || chat.ad?._id || chat._id;
+  const buyerId = chat.buyerId || chat.buyer?._id || (!isSeller ? user?._id : null);
+  const sellerId = chat.sellerId || chat.seller?._id || (isSeller ? user?._id : null);
+
   const fetchMessages = async () => {
+    if (!adId || !buyerId || !sellerId) return;
     setLoading(true);
     try {
       const data = await apiFetch(
-        `/api/ads/chat?adId=${chat.adId || chat._id}&sellerId=${chat.sellerId}&buyerId=${chat.buyerId}`
+        `/api/ads/chat?adId=${adId}&buyerId=${buyerId}&sellerId=${sellerId}`
       );
-      console.log("data"+data)
-      const msgs = Array.isArray(data.chats) ? data.chats : [];
+      // Handle fraudCheck from response
+      if (data.fraudCheck) {
+        setFraudCheck(data.fraudCheck);
+      }
+
+      // API returns { chats: [...] } or just an array
+      const msgs = Array.isArray(data) ? data : (Array.isArray(data.chats) ? data.chats : []);
       setMessages(msgs);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 100);
-    } catch {}
-    finally { setLoading(false); }
+    } catch (e) {
+      console.warn('fetchMessages error:', e?.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchMessages(); }, []);
@@ -42,22 +58,23 @@ export default function ChatScreen({ route, navigation }) {
       await apiFetch('/api/ads/chat', {
         method: 'POST',
         body: JSON.stringify({
-          adId: chat.adId || chat._id,
-          sellerId: chat.sellerId,
-          buyerId: chat.buyerId,
-          message: text,
-          senderType: isSeller ? 'seller' : 'buyer',
-        }),
+          adId,
+          from:isSeller? sellerId: buyerId,
+          to:isSeller? buyerId:sellerId,
+          message: text
+           }),
       });
       fetchMessages();
-    } catch {}
-    finally { setSending(false); }
+    } catch (e) {
+    console.log('hii')
+      console.warn('sendMessage error:', e?.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   const renderMessage = ({ item }) => {
-    const isMe = isSeller
-      ? item.senderType === 'seller'
-      : item.senderType === 'buyer';
+    const isMe = item.from._id === user._id ? true : false;
 
     return (
       <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
@@ -73,68 +90,117 @@ export default function ChatScreen({ route, navigation }) {
     );
   };
 
+  const renderFraudWarning = () => {
+    if (!fraudCheck || !fraudCheck.fraudIndicators || fraudCheck.fraudIndicators.length === 0) return null;
+
+    return (
+      <View style={styles.fraudWrapper}>
+        <View style={styles.fraudCard}>
+          <View style={styles.fraudHeader}>
+            <View style={styles.fraudTitleRow}>
+              <View style={styles.warningIconCircle}>
+                <Icon name="alert-circle" size={14} color="#b45309" />
+              </View>
+              <Text style={styles.fraudTitle}>Safety Insight</Text>
+            </View>
+            <TouchableOpacity onPress={() => setFraudCheck(null)} style={styles.fraudClose}>
+               <Icon name="x" size={14} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.fraudBody}>
+             <View style={styles.indicatorList}>
+               {fraudCheck.fraudIndicators.map((indicator, index) => (
+                 <View key={index} style={styles.indicatorRow}>
+                   <View style={styles.dot} />
+                   <Text style={styles.fraudIndicator}>{indicator}</Text>
+                 </View>
+               ))}
+             </View>
+
+             {fraudCheck.recommendations ? (
+               <View style={styles.recommendationBox}>
+                 <Text style={styles.recommendationLabel}>Recommendation:</Text>
+                 <Text style={styles.fraudRecommendation}>{fraudCheck.recommendations}</Text>
+               </View>
+             ) : null}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="arrow-left" size={22} color={COLORS.white} />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-left" size={20} color={COLORS.white} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>{otherName}</Text>
-          {chat.adTitle && (
+          {chat.adTitle ? (
             <Text style={styles.headerAd} numberOfLines={1}>{chat.adTitle}</Text>
-          )}
+          ) : null}
         </View>
       </View>
 
-      {/* Messages */}
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={COLORS.primary} />
-        </View>
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(item, idx) => item._id || String(idx)}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.msgList}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No messages yet. Say hi! 👋</Text>
-            </View>
-          }
-        />
-      )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        {/* Messages */}
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={COLORS.primary} />
+          </View>
+        ) : (
+          <FlatList
+            ref={listRef}
+            data={messages}
+            keyExtractor={(item, idx) => item._id || String(idx)}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.msgList}
+            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <Text style={styles.emptyText}>No messages yet. Say hi! 👋</Text>
+              </View>
+            }
+          />
+        )}
 
-      {/* Input */}
-      <View style={styles.inputBar}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message..."
-          value={input}
-          onChangeText={setInput}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
-          onPress={sendMessage}
-          disabled={!input.trim() || sending}
-        >
-          {sending
-            ? <ActivityIndicator size="small" color={COLORS.white} />
-            : <Icon name="send" size={18} color={COLORS.white} />
-          }
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+        {/* Fraud Warning */}
+        {renderFraudWarning()}
+
+        {/* Input */}
+        <View style={styles.inputBar}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            value={input}
+            onChangeText={setInput}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity
+            style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
+            onPress={sendMessage}
+            disabled={!input.trim() || sending}
+          >
+            {sending
+              ? <ActivityIndicator size="small" color={COLORS.white} />
+              : <Icon name="send" size={18} color={COLORS.white} />
+            }
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -147,9 +213,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
-  backBtn: { padding: 4 },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerInfo: { flex: 1 },
   headerName: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
   headerAd: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 },
@@ -197,4 +270,97 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { backgroundColor: COLORS.border },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyText: { color: COLORS.textMuted, fontSize: 14 },
+  fraudWrapper: {
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+  },
+  fraudCard: {
+    backgroundColor: '#fffdf0',
+    borderRadius: RADIUS.lg,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#b45309',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  fraudHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  fraudTitleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  warningIconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fraudTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#92400e',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  fraudClose: {
+    padding: 4,
+  },
+  fraudBody: {
+    gap: 10,
+  },
+  indicatorList: {
+    gap: 6,
+  },
+  indicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#d97706',
+    marginTop: 6,
+  },
+  fraudIndicator: {
+    flex: 1,
+    fontSize: 13,
+    color: '#78350f',
+    lineHeight: 18,
+  },
+  recommendationBox: {
+    backgroundColor: 'rgba(217, 119, 6, 0.05)',
+    padding: 10,
+    borderRadius: RADIUS.md,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+  },
+  recommendationLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#b45309',
+    marginBottom: 2,
+  },
+  fraudRecommendation: {
+    fontSize: 12,
+    color: COLORS.text,
+    lineHeight: 17,
+  },
 });

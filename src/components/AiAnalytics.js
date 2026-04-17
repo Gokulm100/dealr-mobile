@@ -126,13 +126,14 @@ export default function AiAnalytics({ ad }) {
 
 const styles = StyleSheet.create({
   promptCard: {
-    backgroundColor: '#f7f9fa',
+    backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
     padding: 20,
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#e0e7ff',
+    ...SHADOW.small,
   },
   promptText: {
     fontSize: 14,
@@ -153,12 +154,13 @@ const styles = StyleSheet.create({
   generateIcon: { fontSize: 14, color: COLORS.white },
   generateText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
   loadingCard: {
-    backgroundColor: '#f3f6fa',
+    backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
     padding: 36,
     alignItems: 'center',
     gap: 12,
     marginBottom: 16,
+    ...SHADOW.small,
   },
   loadingText: { fontSize: 13, color: COLORS.textMuted },
   resultsCard: {

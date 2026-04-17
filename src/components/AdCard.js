@@ -22,7 +22,7 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite }) 
       {/* Category tag */}
       <View style={styles.tag}>
         <Text style={styles.tagText} numberOfLines={1}>
-          {item.subCategory || item.category}
+          {item.category}
         </Text>
       </View>
 
@@ -55,13 +55,15 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
-    marginBottom: 14,
     overflow: 'hidden',
-    ...SHADOW.medium,
+    ...SHADOW.small,
+    flex: 1,
+    margin: 6,
+    marginBottom: 8,
   },
   image: {
     width: '100%',
-    height: 180,
+    height: 130,
     backgroundColor: COLORS.border,
   },
   favBtn: {
@@ -91,23 +93,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   body: {
-    padding: 12,
+    padding: 10,
   },
   title: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 4,
+    height: 38,
   },
   price: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
     color: COLORS.primary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   meta: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   metaItem: {
@@ -116,9 +120,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textMuted,
-    maxWidth: 120,
   },
   posted: {
     fontSize: 11,
