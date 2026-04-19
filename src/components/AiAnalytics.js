@@ -87,7 +87,7 @@ export default function AiAnalytics({ ad }) {
           <Text style={styles.headerText}>AI Insights</Text>
         </View>
         <TouchableOpacity onPress={handleGenerate}>
-          <Icon name="edit" size={16} color={COLORS.textMuted} />
+          <Icon name="refresh" size={16} color={COLORS.textMuted} />
         </TouchableOpacity>
       </View>
 

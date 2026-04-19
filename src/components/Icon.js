@@ -34,6 +34,7 @@ const ICONS = {
   'star':          '★',
   'share':         '↗',
   'edit':          '✎',
+  'refresh':       '↻',
   'image':         '🖼',
   'AI':            '˙✦',
   'trending-up':   '📈',
