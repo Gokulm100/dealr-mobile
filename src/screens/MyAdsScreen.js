@@ -8,7 +8,6 @@ import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import AiAnalytics from '../components/AiAnalytics';
 
 export default function MyAdsScreen({ navigation }) {
   const { user } = useAuth();
@@ -20,13 +19,14 @@ export default function MyAdsScreen({ navigation }) {
     if (!user?._id) return;
     setLoading(true);
     try {
-      const data = await apiFetch('/api/ads/myads', {
+      const data = await apiFetch('/api/ads/listUserAds', {
         method: 'POST',
-        body: JSON.stringify({ userId: user._id }),
+        body: JSON.stringify({ id: user._id }),
       });
       const list = Array.isArray(data) ? data : (data?.ads || []);
       setAds(list.map(mapListing));
-    } catch {
+    } catch(error) {
+    console.log(error)
       Alert.alert('Error', 'Could not load your ads.');
     } finally {
       setLoading(false);
@@ -34,20 +34,62 @@ export default function MyAdsScreen({ navigation }) {
     }
   }, [user]);
 
-  useEffect(() => { fetchMyAds(); }, [fetchMyAds]);
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchMyAds();
+    });
+    return unsubscribe;
+  }, [navigation, fetchMyAds]);
 
-  const handleDelete = (id) => {
-    Alert.alert('Delete Ad', 'Are you sure you want to delete this ad?', [
+  const handleToggleStatus = (item) => {
+    const isDisabling = !item.disabled;
+    const title = isDisabling ? 'Disable Ad' : 'Enable Ad';
+    const message = isDisabling
+      ? 'Are you sure you want to disable this ad? It will no longer be visible to others.'
+      : 'Are you sure you want to enable this ad? It will be visible to everyone again.';
+
+    Alert.alert(title, message, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Delete',
-        style: 'destructive',
+        text: isDisabling ? 'Disable' : 'Enable',
+        style: isDisabling ? 'destructive' : 'default',
         onPress: async () => {
           try {
-            await apiFetch(`/api/ads/${id}`, { method: 'DELETE' });
-            setAds(prev => prev.filter(a => a.id !== id));
-          } catch {
-            Alert.alert('Error', 'Could not delete ad.');
+            const endpoint = isDisabling ? '/api/ads/disableAd' : '/api/ads/enableAd';
+            await apiFetch(endpoint, {
+              method: 'POST',
+              body: JSON.stringify({ adId: item.id })
+            });
+            // Update local state
+            setAds(prev => prev.map(a =>
+              a.id === item.id ? { ...a, disabled: isDisabling } : a
+            ));
+          } catch (error) {
+            Alert.alert('Error', `Could not ${isDisabling ? 'disable' : 'enable'} ad.`);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleMarkAsSold = (item) => {
+    if (item.status === 'sold') return;
+
+    Alert.alert('Mark as Sold', 'Is this item sold? This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Mark as Sold',
+        onPress: async () => {
+          try {
+            await apiFetch('/api/ads/markAsSold', {
+              method: 'POST',
+              body: JSON.stringify({ adId: item.id })
+            });
+            setAds(prev => prev.map(a =>
+              a.id === item.id ? { ...a, status: 'sold' } : a
+            ));
+          } catch (error) {
+            Alert.alert('Error', 'Could not mark ad as sold.');
           }
         },
       },
@@ -83,13 +125,38 @@ export default function MyAdsScreen({ navigation }) {
             <Text style={styles.metaText}>{item.views}</Text>
           </View>
           <Text style={styles.posted}>{item.posted}</Text>
+          <Text style={styles.posted}>{item.category}</Text>
         </View>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
-        <Icon name="trash-2" size={16} color={COLORS.error} />
-      </TouchableOpacity>
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[styles.statusBtn, { backgroundColor: '#f0f4ff' }]}
+          onPress={() => navigation.navigate('Post', { ad: item })}
+        >
+          <Text style={[styles.statusBtnText, { color: COLORS.accent }]}>Edit</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.statusBtn, { backgroundColor: item.disabled ? '#e6fcf5' : '#fff5f5' }]}
+          onPress={() => handleToggleStatus(item)}
+        >
+          <Text style={[styles.statusBtnText, { color: item.disabled ? COLORS.success : COLORS.error }]}>
+            {item.disabled ? 'Enable' : 'Disable'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.statusBtn, { backgroundColor: item.status === 'sold' ? '#f3f4f6' : '#f0f7ff' }]}
+          onPress={() => handleMarkAsSold(item)}
+          disabled={item.status === 'sold'}
+        >
+          <Text style={[styles.statusBtnText, { color: item.status === 'sold' ? COLORS.textMuted : COLORS.primary }]}>
+            {item.status === 'sold' ? 'Sold' : 'Mark Sold'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
-    <AiAnalytics ad={item} />
   </View>
 );
 
@@ -169,14 +236,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardInner: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  thumbnail: { width: 90, height: 90, backgroundColor: COLORS.border },
+  thumbnail: { width: 60, height: 60, backgroundColor: COLORS.border, marginLeft: 20, borderRadius: RADIUS.sm },
   info: { flex: 1, padding: 12 },
   title: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 3 },
   price: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
   metaText: { fontSize: 12, color: COLORS.textMuted, marginLeft: 3 },
   posted: { fontSize: 11, color: COLORS.textMuted },
-  deleteBtn: { padding: 16 },
+  actions: { paddingHorizontal: 10, justifyContent: 'center', gap: 8, paddingVertical: 10 },
+  statusBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 85,
+    borderRadius: RADIUS.md,
+  },
+  statusBtnText: { fontSize: 12, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMuted },
   emptySubText: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center' },

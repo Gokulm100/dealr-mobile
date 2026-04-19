@@ -1,8 +1,8 @@
 // src/utils/theme.js
 export const COLORS = {
-  primary: '#3f4e6f',
+  primary: '#378cf6',
   primaryLight: '#5b6fa0',
-  accent: '#2563eb',
+  accent: 'rgb(98 129 183)',
   accentLight: '#a1c4fd',
   background: '#f5f5f5',
   white: '#ffffff',
@@ -13,7 +13,7 @@ export const COLORS = {
   error: '#ef4444',
   success: '#10b981',
   badge: 'linear-gradient(to right, #9333ea, #2563eb)',
-  badgeBg: '#9333ea',
+  badgeBg: '#ff8a8a',
   tagBg: '#ffd6e0',
   navBg: '#3f4e6f',
 };

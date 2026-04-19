@@ -28,6 +28,7 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const isFirstLoad = useRef(true);
+  const listRef = useRef(null);
 
   // Fetch categories once
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function HomeScreen({ navigation }) {
   }, [selectedCategory, categories]);
 
   const fetchListings = useCallback(async (pageNum = 1, reset = false) => {
-    if (loading) return;
+    if (loading && !reset) return;
     setLoading(true);
     try {
       const result = await apiFetch('/api/ads', {
@@ -81,11 +82,14 @@ export default function HomeScreen({ navigation }) {
 
   // Re-fetch when filters change
   useEffect(() => {
+    setPage(1);
+    setListings([]); // Clear old results immediately for visual feedback
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    fetchListings(1, true);
+
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
     }
-    setPage(1);
-    fetchListings(1, true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, selectedCategory, selectedSubCategory]);
 
@@ -195,7 +199,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderFooter = () => {
-    if (!loading) return null;
+    if (!loading || listings.length === 0) return null;
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="small" color={COLORS.primary} />
@@ -204,7 +208,14 @@ export default function HomeScreen({ navigation }) {
   };
 
   const renderEmpty = () => {
-    if (loading) return null;
+    if (loading) {
+      return (
+        <View style={styles.empty}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={styles.emptySubText}>Loading ads...</Text>
+        </View>
+      );
+    }
     return (
       <View style={styles.empty}>
         <Icon name="inbox" size={48} color={COLORS.border} />
@@ -220,7 +231,10 @@ export default function HomeScreen({ navigation }) {
 
       {/* Top Header */}
       <View style={styles.header}>
-        <Text style={styles.logo}>e4you.com</Text>
+        <View>
+          <Text style={styles.logo}>Dea<Text style={{ color: '#ff6666' }}>l</Text>r</Text>
+          <Text style={styles.subtext}>Deal with the Right App!</Text>
+        </View>
         <View style={styles.headerRight}>
           {user && (
             <Image
@@ -232,20 +246,26 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <FlatList
+        ref={listRef}
         data={listings}
         keyExtractor={item => item.id}
+        numColumns={2}
+        key="two-columns-grid"
         renderItem={({ item }) => (
-          <AdCard
-            item={item}
-            isFavorite={favorites.includes(item.id)}
-            onToggleFavorite={toggleFavorite}
-            onPress={() => navigation.navigate('AdDetail', { listing: item })}
-          />
+          <View style={styles.cardWrapper}>
+            <AdCard
+              item={item}
+              isFavorite={favorites.includes(item.id)}
+              onToggleFavorite={toggleFavorite}
+              onPress={() => navigation.navigate('AdDetail', { listing: item })}
+            />
+          </View>
         )}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmpty}
+        ListHeaderComponent={renderHeader()}
+        ListFooterComponent={renderFooter()}
+        ListEmptyComponent={renderEmpty()}
         contentContainerStyle={styles.listContent}
+        columnWrapperStyle={styles.columnWrapper}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.4}
         refreshControl={
@@ -271,10 +291,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  logo: { color: COLORS.white, fontSize: 22, fontWeight: '800', letterSpacing: 0.5 },
+  logo: { color: 'white', fontSize: 35, fontWeight: '800', letterSpacing: 0.5 },
+  subtext: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
-  listContent: { padding: 14, paddingTop: 0 },
+  listContent: { paddingHorizontal: 4, paddingBottom: 20 },
+  cardWrapper: { flex: 0.5 },
   searchRow: {
     flexDirection: 'row',
     gap: 8,

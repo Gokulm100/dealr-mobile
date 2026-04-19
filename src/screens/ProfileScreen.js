@@ -14,7 +14,7 @@ import { API_BASE_URL } from '../utils/api';
 GoogleSignin.configure({
   // This is the WEB client ID from your Google Cloud Console
   // (same one used in your web app)
-  webClientId: '556452370430-fd5caae668lq9468hbseas0kr3o1a01g.apps.googleusercontent.com',
+  webClientId: '782257434604-jff84f89n9kht0heamethsr01rrrabgg.apps.googleusercontent.com',
   offlineAccess: true,
 });
 
@@ -34,6 +34,7 @@ export default function ProfileScreen({ navigation }) {
 
       await loginWithGoogle(idToken);
     } catch (error) {
+    console.log(error);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled — do nothing
       } else if (error.code === statusCodes.IN_PROGRESS) {
@@ -74,7 +75,7 @@ export default function ProfileScreen({ navigation }) {
             <Icon name="user" size={52} color={COLORS.primary} />
           </View>
 
-          <Text style={styles.welcomeTitle}>Welcome to e4you</Text>
+          <Text style={styles.welcomeTitle}>Welcome to Dea<Text style={{ color: '#ff6666' }}>l</Text>r</Text>
           <Text style={styles.welcomeSubtitle}>
             Sign in to post ads, chat with sellers, and manage your listings.
           </Text>
@@ -90,9 +91,8 @@ export default function ProfileScreen({ navigation }) {
               <ActivityIndicator color={COLORS.text} size="small" />
             ) : (
               <>
-                <Image
-                  source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
-                  style={styles.googleIcon}
+                <Image style={styles.googleIcon}
+                  source={{ uri: 'https://cdn.iconscout.com/icon/free/png-256/free-google-icon-svg-download-png-1507807.png' }}
                 />
                 <Text style={styles.googleBtnText}>Continue with Google</Text>
               </>
@@ -182,6 +182,19 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.actionText}>Post a New Ad</Text>
             <Icon name="chevron-right" size={16} color={COLORS.border} />
           </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('Consent')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#f5f3ff' }]}>
+              <Icon name="lock" size={18} color='#8b5cf6' />
+            </View>
+            <Text style={styles.actionText}>Privacy & Terms</Text>
+            <Icon name="chevron-right" size={16} color={COLORS.border} />
+          </TouchableOpacity>
         </View>
 
         {/* Logout button */}
@@ -190,7 +203,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>e4you v1.0.0</Text>
+        <Text style={styles.version}>Dealr v1.0.0</Text>
       </ScrollView>
 
       {/* Logout Confirmation Modal */}

@@ -46,6 +46,38 @@ export async function clearAuth() {
   await AsyncStorage.removeItem('user');
 }
 
+// FCM Token Update
+export async function updateFcmToken(fcmToken) {
+  try {
+    return await apiFetch('/api/users/save-fcm-token', {
+      method: 'POST',
+      body: JSON.stringify({ fcmToken }),
+    });
+  } catch (error) {
+    console.error('Failed to update FCM token on backend:', error);
+  }
+}
+
+// Consent APIs
+export async function getLatestConsentVersion() {
+  return apiFetch('/api/users/getLatestConsentVersion');
+}
+
+export async function saveUserConsent(version) {
+  return apiFetch('/api/users/acceptConsent', {
+    method: 'POST',
+    body: JSON.stringify({ version, status: 'accepted', timestamp: new Date().toISOString() }),
+  });
+}
+
+export async function revokeUserConsent(version) {
+  return apiFetch('/api/users/revokeConsent', {
+    method: 'POST',
+    body: JSON.stringify({ version, status: 'revoked', timestamp: new Date().toISOString() }),
+  });
+
+}
+
 // Format relative time (same as web app)
 export function formatPostedTime(createdAt) {
   if (!createdAt) return 'Unknown';
@@ -65,22 +97,29 @@ export function formatPostedTime(createdAt) {
 
 // Map raw API listing to app format
 export function mapListing(listing) {
+  // Handle case where category/subCategory might be just a string name or an object
+  const catName = typeof listing.category === 'object' ? listing.category?.name : (typeof listing.category === 'string' ? listing.category : null);
+  const subCatName = typeof listing.subCategory === 'object' ? listing.subCategory?.name : (typeof listing.subCategory === 'string' ? listing.subCategory : null);
+
   return {
     id: listing._id,
     title: listing.title,
     price: listing.price,
     location: listing.location,
-    category: listing?.category?.name || 'Uncategorized',
+    category: catName || 'Uncategorized',
+    categoryId: listing?.category?._id || null,
     description: listing.description,
     seller: listing.seller ? listing.seller.name : 'Unknown',
     sellerId: listing.seller ? listing.seller._id : null,
     sellerPic: listing.seller?.profilePic || null,
     views: listing.views || 0,
-    subCategory: listing?.subCategory?.name || 'General',
+    subCategory: subCatName || 'General',
     posted: formatPostedTime(listing.createdAt),
+    disabled: listing.disabled || false,
+    status: listing.status || 'active',
     images:
       Array.isArray(listing.images) && listing.images.length > 0
-        ? listing.images.map(img => `${API_BASE_URL}/${img}`)
-        : ['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=300&fit=crop'],
+        ? ['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=300&fit=crop','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg']
+        : ['https://images.pexels.com/photos/10703759/pexels-photo-10703759.jpeg','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg'],
   };
 }
