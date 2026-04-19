@@ -2,16 +2,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard,
 } from 'react-native';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS } from '../utils/theme';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useMessages } from '../context/MessagesContext';
 
 export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
   const { user } = useAuth();
+  const { refresh } = useMessages();
   const [messages, setMessages] = useState([]);
   const [fraudCheck, setFraudCheck] = useState(null);
   const [input, setInput] = useState('');
@@ -24,9 +26,28 @@ export default function ChatScreen({ route, navigation }) {
   const buyerId = chat.buyerId || chat.buyer?._id || (!isSeller ? user?._id : null);
   const sellerId = chat.sellerId || chat.seller?._id || (isSeller ? user?._id : null);
 
-  const fetchMessages = async () => {
+  const markAsSeen = async () => {
+    if (!adId || !user?._id) return;
+    try {
+      const senderId = isSeller ? buyerId : sellerId;
+      let stat = await apiFetch('/api/ads/markMessagesAsSeen', {
+        method: 'POST',
+        body: JSON.stringify({
+          adId,
+          reader: user._id,
+          sender: senderId,
+        }),
+      });
+      console.log(stat)
+      refresh(); // Update badge count
+    } catch (e) {
+      console.warn('markAsSeen error:', e?.message);
+    }
+  };
+
+  const fetchMessages = async (silent = false) => {
     if (!adId || !buyerId || !sellerId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const data = await apiFetch(
         `/api/ads/chat?adId=${adId}&buyerId=${buyerId}&sellerId=${sellerId}`
@@ -47,7 +68,20 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
-  useEffect(() => { fetchMessages(); }, []);
+  useEffect(() => {
+    fetchMessages();
+    markAsSeen();
+
+    const keyboardShowSub = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        listRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+
+    return () => {
+      keyboardShowSub.remove();
+    };
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -64,7 +98,7 @@ export default function ChatScreen({ route, navigation }) {
           message: text
            }),
       });
-      fetchMessages();
+      fetchMessages(true);
     } catch (e) {
     console.log('hii')
       console.warn('sendMessage error:', e?.message);
@@ -73,19 +107,49 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
-  const renderMessage = ({ item }) => {
-    const isMe = item.from._id === user._id ? true : false;
+  const formatDateSeparator = (dateStr) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return 'Today';
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    });
+  };
+
+  const renderMessage = ({ item, index }) => {
+    const fromId = item.from?._id || item.from;
+    const isMe = fromId === user._id;
+
+    const showDateSeparator = index === 0 || (() => {
+      const prev = messages[index - 1];
+      if (!prev || !prev.createdAt || !item.createdAt) return false;
+      return new Date(prev.createdAt).toDateString() !== new Date(item.createdAt).toDateString();
+    })();
 
     return (
-      <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
-        <Text style={[styles.bubbleText, isMe && { color: COLORS.white }]}>
-          {item.message}
-        </Text>
-        {item.createdAt && (
-          <Text style={[styles.bubbleTime, isMe && { color: 'rgba(255,255,255,0.7)' }]}>
-            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
+      <View>
+        {showDateSeparator && item.createdAt && (
+          <View style={styles.dateSeparator}>
+            <View style={styles.dateLine} />
+            <Text style={styles.dateText}>{formatDateSeparator(item.createdAt)}</Text>
+            <View style={styles.dateLine} />
+          </View>
         )}
+        <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+          <Text style={[styles.bubbleText, isMe && { color: COLORS.white }]}>
+            {item.message}
+          </Text>
+          {item.createdAt && (
+            <Text style={[styles.bubbleTime, isMe && { color: 'rgba(255,255,255,0.7)' }]}>
+              {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          )}
+        </View>
       </View>
     );
   };
@@ -187,16 +251,18 @@ export default function ChatScreen({ route, navigation }) {
             onChangeText={setInput}
             multiline
             maxLength={500}
+            onFocus={() => {
+              setTimeout(() => {
+                listRef.current?.scrollToEnd({ animated: true });
+              }, 200);
+            }}
           />
           <TouchableOpacity
             style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
             onPress={sendMessage}
             disabled={!input.trim() || sending}
           >
-            {sending
-              ? <ActivityIndicator size="small" color={COLORS.white} />
-              : <Icon name="send" size={18} color={COLORS.white} />
-            }
+            <Icon name="send" size={18} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -227,6 +293,26 @@ const styles = StyleSheet.create({
   headerName: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
   headerAd: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 },
   msgList: { padding: 14, paddingBottom: 8 },
+  dateSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+    paddingHorizontal: 8,
+  },
+  dateLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+    opacity: 0.5,
+  },
+  dateText: {
+    paddingHorizontal: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   bubble: {
     maxWidth: '75%',
     borderRadius: RADIUS.lg,

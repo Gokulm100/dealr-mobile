@@ -1,5 +1,6 @@
 // src/screens/MessagesScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Image, ActivityIndicator, RefreshControl,
@@ -49,6 +50,12 @@ export default function MessagesScreen({ navigation }) {
 
   useEffect(() => { fetchChats(); }, [fetchChats]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchChats();
+    }, [fetchChats])
+  );
+
   if (!user) {
     return (
       <View style={styles.container}>
@@ -72,10 +79,23 @@ export default function MessagesScreen({ navigation }) {
       ? (item.sellerName || item.seller?.name || 'Seller')
       : (item.buyerName || item.buyer?.name || 'Buyer');
 
-    // Correctly identify the other person's pic
     const otherPic = isBuying
       ? (item.sellerPic || item.seller?.profilePic || null)
       : (item.buyerPic || item.buyer?.profilePic || null);
+
+    const truncate = (str, len) => {
+      if (!str) return '';
+      return str.length > len ? str.substring(0, len) + '...' : str;
+    };
+
+    const shortTime = (timeStr) => {
+      if (!timeStr) return '';
+      return timeStr
+        .replace(' minute ago', 'm').replace(' minutes ago', 'm')
+        .replace(' hour ago', 'h').replace(' hours ago', 'h')
+        .replace(' day ago', 'd').replace(' days ago', 'd')
+        .replace('moments ago', 'now');
+    };
 
     const lastMsg = typeof item.lastMessage === 'string'
       ? item.lastMessage
@@ -84,14 +104,14 @@ export default function MessagesScreen({ navigation }) {
         : ''));
 
     const adTitle = item.item || item.adTitle || item.adId?.title || item.ad?.title || item.adName || '';
+    const adImage = item.adId?.images?.[0] || item.ad?.images?.[0] || item.images?.[0] || null;
 
-    // Robust Time detection
-    const lastMsgTime = item.lastMessage?.createdAt
+    const lastMsgTime = item.time
       || item.updatedAt
       || item.createdAt
       || (Array.isArray(item.messages) && item.messages.length > 0 ? item.messages[item.messages.length - 1]?.createdAt : null);
 
-    const formattedTime = lastMsgTime ? formatPostedTime(lastMsgTime) : '';
+    const formattedTime = lastMsgTime ? lastMsgTime: '';
 
     const getInitials = (name) => {
       if (!name || name === 'Seller' || name === 'Buyer') return '??';
@@ -104,17 +124,21 @@ export default function MessagesScreen({ navigation }) {
     const sellerId = item.sellerId || item.seller?._id || (!isBuying ? user._id : null);
     const adId = item.adId || item.ad?._id || item._id;
 
+    const lastMsgFrom = item.lastMessage?.from?._id || item.lastMessage?.from || item.lastMessageFrom;
+    const isMe = lastMsgFrom && user?._id && String(lastMsgFrom) === String(user._id);
+    const isUnread = item.isSeen === false && !isMe;
+
     return (
       <TouchableOpacity
-        style={styles.chatRow}
-        onPress={() => navigation.navigate('Chat', {
+        style={[styles.chatRow, isUnread && styles.chatRowUnread]}
+        onPress={() => navigation.navigate('ChatDetail', {
           chat: { ...item, adId, buyerId, sellerId, adTitle },
           otherName,
           isSeller: !isBuying,
         })}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
-        <View style={styles.avatarWrapper}>
+        <View style={styles.avatarContainer}>
           {otherPic ? (
             <Image source={{ uri: otherPic }} style={styles.avatar} />
           ) : (
@@ -122,68 +146,81 @@ export default function MessagesScreen({ navigation }) {
               <Text style={styles.initialsText}>{getInitials(otherName)}</Text>
             </View>
           )}
+          {isUnread && <View style={styles.unreadDot} />}
         </View>
 
         <View style={styles.chatInfo}>
-          <View style={styles.chatTop}>
-            <Text style={styles.chatName} numberOfLines={1}>{otherName}</Text>
-            {formattedTime ? <Text style={styles.chatTime}>{formattedTime}</Text> : null}
+          <View style={styles.chatHeader}>
+            <Text style={[styles.chatName, isUnread && styles.chatNameUnread]} numberOfLines={1}>
+              {otherName}
+            </Text>
+            <Text style={styles.chatTime}>{formattedTime}</Text>
           </View>
 
-          <View style={styles.chatMid}>
-            {adTitle ? (
-              <Text style={styles.chatAd} numberOfLines={1}>
-                {adTitle}
-              </Text>
-            ) : null}
-            {item.isSeen === false  && (
-              <View style={styles.badge} />
-            )}
-          </View>
+          <Text style={styles.chatAdTitle} numberOfLines={1}>
+            {truncate(adTitle, 30)}
+          </Text>
 
-          <Text style={styles.chatLast} numberOfLines={1}>
-            {lastMsg || 'Tap to open chat'}
+          <Text style={[styles.chatPreview, isUnread && styles.chatPreviewUnread]} numberOfLines={1}>
+            {isMe && <Text style={styles.meLabel}>You: </Text>}
+            {truncate(lastMsg || 'Sent an attachment', 40)}
           </Text>
         </View>
-        <Icon name="chevron-right" size={16} color={COLORS.border} />
+
+        {adImage && (
+          <Image source={{ uri: adImage }} style={styles.adThumbnail} />
+        )}
       </TouchableOpacity>
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Messages</Text>
-      </View>
+    const getUnreadCount = (chats) => {
+      return chats.filter(chat => {
+        const lastMsgFrom = chat.lastMessage?.from?._id || chat.lastMessage?.from || chat.lastMessageFrom;
+        const isMe = lastMsgFrom && user?._id && String(lastMsgFrom) === String(user._id);
+        return chat.isSeen === false && !isMe;
+      }).length;
+    };
 
-      <View style={styles.tabBar}>
-        {TABS.map((tab, idx) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === idx && styles.tabActive]}
-            onPress={() => {setActiveTab(idx)
-            setRefreshing(true);
-            fetchChats();
+    const buyingCount = getUnreadCount(buyingChats);
+    const sellingCount = getUnreadCount(sellingChats);
 
-            }}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.tabText, activeTab === idx && styles.tabTextActive]}>
-              {tab}
-            </Text>
-            {idx === 0 && buyingChats.length > 0 && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{buyingChats.length}</Text>
-              </View>
-            )}
-            {idx === 1 && sellingChats.length > 0 && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{sellingChats.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Messages</Text>
+        </View>
+
+        <View style={styles.tabContainer}>
+          <View style={styles.tabBar}>
+            {TABS.map((tab, idx) => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, activeTab === idx && styles.tabActive]}
+                onPress={() => {
+                  setActiveTab(idx);
+                  setRefreshing(true);
+                  fetchChats();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.tabText, activeTab === idx && styles.tabTextActive]}>
+                  {tab}
+                </Text>
+                {idx === 0 && buyingCount > 0 && (
+                  <View style={styles.tabBadge}>
+                    <Text style={styles.tabBadgeText}>{buyingCount}</Text>
+                  </View>
+                )}
+                {idx === 1 && sellingCount > 0 && (
+                  <View style={styles.tabBadge}>
+                    <Text style={styles.tabBadgeText}>{sellingCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
       {loading && currentChats.length === 0 ? (
         <View style={styles.center}>
@@ -207,18 +244,19 @@ export default function MessagesScreen({ navigation }) {
           }
           ListEmptyComponent={
             <View style={styles.center}>
-              <Icon name="message-circle" size={48} color={COLORS.border} />
+              <View style={styles.emptyIconCircle}>
+                <Icon name="message-circle" size={40} color={COLORS.textMuted} />
+              </View>
               <Text style={styles.emptyTitle}>
-                {activeTab === 0 ? 'No buying messages' : 'No selling messages'}
+                {activeTab === 0 ? 'No conversations yet' : 'No inquiries yet'}
               </Text>
               <Text style={styles.emptySubText}>
                 {activeTab === 0
-                  ? 'Tap "Chat with Seller" on any ad to start a conversation.'
-                  : 'Messages from buyers will appear here.'}
+                  ? 'Your interest in items will appear here.'
+                  : 'Messages from interested buyers will show up here.'}
               </Text>
             </View>
           }
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
     </View>
@@ -226,96 +264,137 @@ export default function MessagesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.white },
   header: {
     backgroundColor: COLORS.primary,
     paddingTop: 48,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
   },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: '800' },
+  headerTitle: { color: COLORS.white, fontSize: 24, fontWeight: '800' },
 
-  tabBar: {
-    flexDirection: 'row',
+  tabContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f2f5',
+    borderRadius: RADIUS.lg,
+    padding: 4,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 10,
     gap: 6,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderRadius: RADIUS.md,
   },
-  tabActive: { borderBottomColor: COLORS.accent },
+  tabActive: {
+    backgroundColor: COLORS.white,
+    ...SHADOW.small,
+  },
   tabText: { fontSize: 14, fontWeight: '600', color: COLORS.textMuted },
-  tabTextActive: { color: COLORS.accent },
+  tabTextActive: { color: COLORS.primary },
   tabBadge: {
-    backgroundColor: COLORS.badgeBg,
+    backgroundColor: COLORS.error,
     borderRadius: 10,
-    width: 20,
-    height: 20,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabBadgeText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
+  tabBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '800' },
 
-  list: { paddingVertical: 8 },
-  listEmpty: { flex: 1 },
+  list: { flexGrow: 1 },
+  listEmpty: { justifyContent: 'center' },
   chatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingVertical: 16,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f1f1',
   },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarWrapper: { width: 48, height: 48 },
+  chatRowUnread: {
+    backgroundColor: '#f0f7ff',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 14,
+  },
+  avatar: { width: 56, height: 56, borderRadius: 28 },
   initialsAvatar: {
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: '#e1e8f0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   initialsText: {
-    color: COLORS.white,
-    fontSize: 16,
+    color: COLORS.primary,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
-  avatarFallback: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
+  unreadDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
-  chatInfo: { flex: 1 },
-  chatTop: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', marginBottom: 2,
-  },
-  chatName: { fontSize: 15, fontWeight: '700', color: COLORS.text, flex: 1 },
-  chatTime: { fontSize: 11, color: COLORS.textMuted, fontWeight: '500' },
-  chatMid: {
+  chatInfo: { flex: 1, justifyContent: 'center' },
+  chatHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 2,
   },
-  badge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 5,
-    width: 10,
-    height: 10,
-    marginLeft: 6,
+  chatName: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  chatNameUnread: { fontWeight: '800' },
+  chatTime: { fontSize: 12, color: COLORS.textMuted },
+  chatAdTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: 2,
   },
-  badgeText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
-  chatAd: { fontSize: 12, fontWeight: '700', color: COLORS.primary, marginBottom: 1, flex: 1 },
-  chatLast: { fontSize: 13, color: COLORS.textMuted },
-  separator: { height: 1, backgroundColor: COLORS.border, marginLeft: 76 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMuted },
-  emptySubText: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center' },
+  chatPreview: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    lineHeight: 18,
+  },
+  chatPreviewUnread: {
+    color: COLORS.text,
+    fontWeight: '600'
+  },
+  meLabel: { color: COLORS.textMuted, fontWeight: '400' },
+  adThumbnail: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.sm,
+    marginLeft: 12,
+    backgroundColor: '#eee',
+  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
+  emptySubText: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
 });

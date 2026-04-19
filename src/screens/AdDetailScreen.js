@@ -1,9 +1,14 @@
 // src/screens/AdDetailScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
   StyleSheet, Dimensions, Alert, TextInput, KeyboardAvoidingView, Platform,
+  ActivityIndicator, LayoutAnimation, UIManager, Keyboard,
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, API_BASE_URL } from '../utils/api';
@@ -21,12 +26,64 @@ export default function AdDetailScreen({ route, navigation }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [sending, setSending] = useState(false);
+  const scrollRef = useRef(null);
+
+  // Price Insights State
+  const [priceInsights, setPriceInsights] = useState([]);
+  const [loadingPrice, setLoadingPrice] = useState(false);
+  const [expandedOffer, setExpandedOffer] = useState(null);
+
+  const toggleExpand = (type) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedOffer(expandedOffer === type ? null : type);
+  };
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      if (chatOpen) {
+        setTimeout(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    });
+
+    return () => {
+      showSubscription.remove();
+    };
+  }, [chatOpen]);
 
   useEffect(() => {
     if (chatOpen && user) {
       fetchChat();
     }
   }, [chatOpen]);
+
+  useEffect(() => {
+    if (user?._id === listing.sellerId || user?._id === listing.seller?._id) {
+      fetchPriceInsights();
+    }
+  }, []);
+
+  const fetchPriceInsights = async () => {
+    setLoadingPrice(true);
+    try {
+      const res = await apiFetch('/api/ai/provideAiPriceInsights', {
+        method: 'POST',
+        body: JSON.stringify({
+          adId: listing.id || listing._id,
+          category: listing.categoryId || listing.category,
+          subCategory: listing.subCategory || 'General',
+        }),
+      });
+      if (res.success && res.data?.summary) {
+        setPriceInsights(res.data.summary);
+      }
+    } catch (err) {
+      console.log('Price insights error:', err);
+    } finally {
+      setLoadingPrice(false);
+    }
+  };
 
   const fetchChat = async () => {
     if (!user) return;
@@ -52,7 +109,10 @@ export default function AdDetailScreen({ route, navigation }) {
                   }),
       });
       setChatInput('');
-      fetchChat();
+      await fetchChat();
+      setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }, 200);
     } catch {
       Alert.alert('Error', 'Could not send message.');
     } finally {
@@ -73,11 +133,7 @@ export default function AdDetailScreen({ route, navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -90,7 +146,16 @@ export default function AdDetailScreen({ route, navigation }) {
         <Text style={styles.headerTitle} numberOfLines={1}>{listing.title}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Image Carousel */}
         <ScrollView
           horizontal
@@ -167,30 +232,70 @@ export default function AdDetailScreen({ route, navigation }) {
             description={listing.description}
           />
 
-          {user?._id === listing.sellerId && (
+          {(user?._id === listing.sellerId || user?._id === listing.seller?._id) && (
             <>
               <View style={styles.offersRow}>
-                <View style={styles.offerCard}>
+                {/* Highest Offer Card */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => toggleExpand('highest')}
+                  style={[styles.offerCard, expandedOffer === 'highest' && styles.expandedCard]}
+                >
                   <View style={styles.offerBadge}>
                     <Icon name="trending-up" size={12} color={COLORS.success} />
                     <Text style={styles.offerBadgeText}>Highest Offer</Text>
                   </View>
-                  <Text style={styles.offerPrice}>₹1,25,000</Text>
-                  <Text style={styles.offerDesc} numberOfLines={2}>
-                    Ready to pay full amount in cash tomorrow.
-                  </Text>
-                </View>
+                  {loadingPrice ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />
+                  ) : (
+                    <>
+                      <Text style={styles.offerPrice}>
+                        {(() => {
+                          const val = priceInsights.find(i => i.title.includes('Highest'))?.value;
+                          const num = Number(val);
+                          return !isNaN(num) && val ? `₹${num.toLocaleString('en-IN')}` : '₹-';
+                        })()}
+                      </Text>
+                      <Text style={styles.offerDesc} numberOfLines={expandedOffer === 'highest' ? undefined : 3}>
+                        {priceInsights.find(i => i.title.includes('Highest'))?.description || 'No offers yet.'}
+                      </Text>
+                      {priceInsights.find(i => i.title.includes('Highest'))?.description?.length > 60 && (
+                        <Text style={styles.readMoreText}>{expandedOffer === 'highest' ? 'Show less' : 'Read more'}</Text>
+                      )}
+                    </>
+                  )}
+                </TouchableOpacity>
 
-                <View style={styles.offerCard}>
+                {/* Best Offer Card */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => toggleExpand('best')}
+                  style={[styles.offerCard, expandedOffer === 'best' && styles.expandedCard]}
+                >
                   <View style={[styles.offerBadge, { backgroundColor: '#fff7ed' }]}>
                     <Icon name="award" size={12} color="#f97316" />
                     <Text style={[styles.offerBadgeText, { color: '#f97316' }]}>Best Offer</Text>
                   </View>
-                  <Text style={styles.offerPrice}>₹1,20,000</Text>
-                  <Text style={styles.offerDesc} numberOfLines={2}>
-                    Reliable buyer, willing to come to your location.
-                  </Text>
-                </View>
+                  {loadingPrice ? (
+                    <ActivityIndicator size="small" color={COLORS.primary} style={{ alignSelf: 'flex-start', marginVertical: 8 }} />
+                  ) : (
+                    <>
+                      <Text style={styles.offerPrice}>
+                        {(() => {
+                          const val = priceInsights.find(i => i.title.includes('Best'))?.value;
+                          const num = Number(val);
+                          return !isNaN(num) && val ? `₹${num.toLocaleString('en-IN')}` : '₹-';
+                        })()}
+                      </Text>
+                      <Text style={styles.offerDesc} numberOfLines={expandedOffer === 'best' ? undefined : 3}>
+                        {priceInsights.find(i => i.title.includes('Best'))?.description || 'Analyzing offers...'}
+                      </Text>
+                      {priceInsights.find(i => i.title.includes('Best'))?.description?.length > 60 && (
+                        <Text style={styles.readMoreText}>{expandedOffer === 'best' ? 'Show less' : 'Read more'}</Text>
+                      )}
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
 
               <AiAnalytics ad={listing} />
@@ -241,6 +346,11 @@ export default function AdDetailScreen({ route, navigation }) {
                   value={chatInput}
                   onChangeText={setChatInput}
                   multiline
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    }, 300);
+                  }}
                 />
                 <TouchableOpacity
                   style={styles.sendBtn}
@@ -252,7 +362,7 @@ export default function AdDetailScreen({ route, navigation }) {
               </View>
             </View>
           ) : (
-            user?._id !== listing.sellerId && (
+            (user?._id !== listing.sellerId && user?._id !== listing.seller?._id) && (
               <TouchableOpacity style={styles.chatBtn} onPress={handleChat}>
                 <Icon name="message-circle" size={18} color={COLORS.white} />
                 <Text style={styles.chatBtnText}>Chat with Seller</Text>
@@ -262,6 +372,7 @@ export default function AdDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -309,6 +420,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
   description: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
+  loadingContainer: { padding: 20, alignItems: 'center' },
   sellerCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -343,6 +455,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
     padding: 12,
+    minHeight: 110,
     ...SHADOW.small,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -366,6 +479,8 @@ const styles = StyleSheet.create({
   },
   offerPrice: { fontSize: 18, fontWeight: '900', color: COLORS.text, marginBottom: 4 },
   offerDesc: { fontSize: 11, color: COLORS.textMuted, lineHeight: 15 },
+  expandedCard: { flex: 2, borderColor: COLORS.primary, zIndex: 10, ...SHADOW.medium },
+  readMoreText: { fontSize: 10, color: COLORS.primary, fontWeight: '700', marginTop: 4 },
   chatBox: {
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,

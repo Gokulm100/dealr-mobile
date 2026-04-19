@@ -182,6 +182,19 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.actionText}>Post a New Ad</Text>
             <Icon name="chevron-right" size={16} color={COLORS.border} />
           </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('Consent')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#f5f3ff' }]}>
+              <Icon name="lock" size={18} color='#8b5cf6' />
+            </View>
+            <Text style={styles.actionText}>Privacy & Terms</Text>
+            <Icon name="chevron-right" size={16} color={COLORS.border} />
+          </TouchableOpacity>
         </View>
 
         {/* Logout button */}

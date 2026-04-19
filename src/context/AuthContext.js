@@ -7,6 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [hasConsented, setHasConsented] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,6 +17,8 @@ export function AuthProvider({ children }) {
       if (storedUser && storedToken) {
         setUser(storedUser);
         setToken(storedToken);
+        // Check if user has consented
+        setHasConsented(storedUser.hasConsented || false);
       }
       setLoading(false);
     })();
@@ -29,9 +32,21 @@ export function AuthProvider({ children }) {
     });
     const data = await response.json();
     if (data.token && data.user) {
-      await saveAuth(data.token, data.user);
+      console.log('Login success, backend user:', data.user);
+
+      // Check for consent status using multiple possible field names
+      // Specifically checking 'hasConsented' as mentioned in requirements
+      const userHasConsented = !!(data.user.hasConsented || data.user.isConsented || data.user.consentAccepted);
+
+      console.log('Final hasConsented for state:', userHasConsented);
+
+      // Normalizing the user object to always have hasConsented property
+      const normalizedUser = { ...data.user, hasConsented: userHasConsented };
+
+      await saveAuth(data.token, normalizedUser);
       setToken(data.token);
-      setUser(data.user);
+      setUser(normalizedUser);
+      setHasConsented(userHasConsented);
       return data;
     }
     throw new Error('Login failed');
@@ -41,10 +56,11 @@ export function AuthProvider({ children }) {
     await clearAuth();
     setUser(null);
     setToken(null);
+    setHasConsented(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, token, hasConsented, setHasConsented, loading, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

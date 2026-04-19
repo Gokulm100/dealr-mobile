@@ -46,6 +46,38 @@ export async function clearAuth() {
   await AsyncStorage.removeItem('user');
 }
 
+// FCM Token Update
+export async function updateFcmToken(fcmToken) {
+  try {
+    return await apiFetch('/api/users/save-fcm-token', {
+      method: 'POST',
+      body: JSON.stringify({ fcmToken }),
+    });
+  } catch (error) {
+    console.error('Failed to update FCM token on backend:', error);
+  }
+}
+
+// Consent APIs
+export async function getLatestConsentVersion() {
+  return apiFetch('/api/users/getLatestConsentVersion');
+}
+
+export async function saveUserConsent(version) {
+  return apiFetch('/api/users/acceptConsent', {
+    method: 'POST',
+    body: JSON.stringify({ version, status: 'accepted', timestamp: new Date().toISOString() }),
+  });
+}
+
+export async function revokeUserConsent(version) {
+  return apiFetch('/api/users/revokeConsent', {
+    method: 'POST',
+    body: JSON.stringify({ version, status: 'revoked', timestamp: new Date().toISOString() }),
+  });
+
+}
+
 // Format relative time (same as web app)
 export function formatPostedTime(createdAt) {
   if (!createdAt) return 'Unknown';

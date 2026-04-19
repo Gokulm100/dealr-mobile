@@ -12,9 +12,13 @@ import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AiTextArea from '../components/AiTextArea';
 
-export default function PostAdScreen({ navigation }) {
+export default function PostAdScreen({ navigation, route }) {
   const { user } = useAuth();
   const scrollRef = useRef(null);
+
+  // Use state to track if we are editing
+  const [editingAd, setEditingAd] = useState(null);
+
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
@@ -24,6 +28,7 @@ export default function PostAdScreen({ navigation }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -33,14 +38,48 @@ export default function PostAdScreen({ navigation }) {
   });
 
   useEffect(() => {
+    if (route.params?.ad) {
+      const ad = route.params.ad;
+      setEditingAd(ad);
+      setForm({
+        title: ad.title || '',
+        price: ad.price?.toString() || '',
+        description: ad.description || '',
+      });
+      setLocationSearch(ad.location || '');
+      setSelectedLocation(ad.location ? { name: ad.location } : null);
+      setExistingImages(ad.images || []);
+
+      if (categories.length > 0) {
+        const found = categories.find(c => c.name === ad.category || c.id === ad.category || c.id === ad.categoryId);
+        if (found) {
+          setSelectedCategory(found.id);
+          setSelectedSubCategory(ad.subCategory || '');
+        }
+      }
+    } else {
+      // Clear form when switching from Edit to Post (triggered by Tab listener)
+      setEditingAd(null);
+      setForm({ title: '', price: '', description: '' });
+      setLocationSearch('');
+      setSelectedLocation(null);
+      setImages([]);
+      setExistingImages([]);
+      setSelectedCategory('');
+      setSelectedSubCategory('');
+    }
+  }, [route.params?.ad, categories]);
+
+  useEffect(() => {
     // Fetch categories
     apiFetch('/api/ads/listCategories').then(data => {
       if (Array.isArray(data)) {
-        setCategories(data.map(cat => ({
+        const mapped = data.map(cat => ({
           id: cat._id,
           name: cat.name,
           subCategories: cat.subCategory || [],
-        })));
+        }));
+        setCategories(mapped);
       }
     }).catch(() => {});
 
@@ -55,7 +94,6 @@ export default function PostAdScreen({ navigation }) {
   useEffect(() => {
     const cat = categories.find(c => c.id === selectedCategory);
     setSubCategories(cat?.subCategories || []);
-    setSelectedSubCategory('');
   }, [selectedCategory, categories]);
 
   const filteredLocations = locations.filter(l =>
@@ -95,6 +133,11 @@ export default function PostAdScreen({ navigation }) {
       if (selectedSubCategory) formData.append('subCategory', selectedSubCategory);
       formData.append('description', form.description);
 
+      // Add existing images that weren't removed
+      if (editingAd) {
+         formData.append('existingImages', JSON.stringify(existingImages));
+      }
+
       images.forEach((img, idx) => {
         formData.append('images', {
           uri: img.uri,
@@ -103,26 +146,29 @@ export default function PostAdScreen({ navigation }) {
         });
       });
 
-      const res = await fetch(`${API_BASE_URL}/api/ads/postAdd`, {
-        method: 'POST',
+      const url = editingAd ? `${API_BASE_URL}/api/ads/edit/${editingAd.id}` : `${API_BASE_URL}/api/ads/postAdd`;
+      const res = await fetch(url, {
+        method: editingAd ? 'PUT' : 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
       if (res.ok) {
-        Alert.alert('Success', 'Your ad has been posted!', [
-          { text: 'OK', onPress: () => navigation.navigate('Home') },
+        Alert.alert('Success', editingAd ? 'Your ad has been updated!' : 'Your ad has been posted!', [
+          { text: 'OK', onPress: () => navigation.navigate(editingAd ? 'MyAds' : 'Home') },
         ]);
-        setForm({ title: '', price: '', description: '' });
-        setImages([]);
-        setSelectedCategory('');
-        setSelectedLocation(null);
-        setLocationSearch('');
+        if (!editingAd) {
+          setForm({ title: '', price: '', description: '' });
+          setImages([]);
+          setSelectedCategory('');
+          setSelectedLocation(null);
+          setLocationSearch('');
+        }
       } else {
-        throw new Error('Failed to post');
+        throw new Error('Failed to save');
       }
     } catch {
-      Alert.alert('Error', 'Failed to post ad. Please try again.');
+      Alert.alert('Error', `Failed to ${editingAd ? 'update' : 'post'} ad. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -133,7 +179,7 @@ export default function PostAdScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Post Ad</Text>
+        <Text style={styles.headerTitle}>{editingAd ? 'Edit Ad' : 'Post Ad'}</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -289,7 +335,7 @@ export default function PostAdScreen({ navigation }) {
           >
             {loading
               ? <ActivityIndicator color={COLORS.white} />
-              : <Text style={styles.submitText}>Post Ad</Text>
+              : <Text style={styles.submitText}>{editingAd ? 'Save Changes' : 'Post Ad'}</Text>
             }
           </TouchableOpacity>
 

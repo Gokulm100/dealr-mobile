@@ -34,7 +34,12 @@ export default function MyAdsScreen({ navigation }) {
     }
   }, [user]);
 
-  useEffect(() => { fetchMyAds(); }, [fetchMyAds]);
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchMyAds();
+    });
+    return unsubscribe;
+  }, [navigation, fetchMyAds]);
 
   const handleToggleStatus = (item) => {
     const isDisabling = !item.disabled;
@@ -123,7 +128,15 @@ export default function MyAdsScreen({ navigation }) {
           <Text style={styles.posted}>{item.category}</Text>
         </View>
       </TouchableOpacity>
+
       <View style={styles.actions}>
+        <TouchableOpacity
+          style={[styles.statusBtn, { backgroundColor: '#f0f4ff' }]}
+          onPress={() => navigation.navigate('Post', { ad: item })}
+        >
+          <Text style={[styles.statusBtnText, { color: COLORS.accent }]}>Edit</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.statusBtn, { backgroundColor: item.disabled ? '#e6fcf5' : '#fff5f5' }]}
           onPress={() => handleToggleStatus(item)}

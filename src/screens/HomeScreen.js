@@ -233,7 +233,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.header}>
         <View>
           <Text style={styles.logo}>Dea<Text style={{ color: '#ff6666' }}>l</Text>r</Text>
-          <Text style={styles.subtext}>Smart deals. Local feels.</Text>
+          <Text style={styles.subtext}>Deal with the Right App!</Text>
         </View>
         <View style={styles.headerRight}>
           {user && (

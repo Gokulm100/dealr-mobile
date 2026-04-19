@@ -12,11 +12,15 @@ import MyAdsScreen from '../screens/MyAdsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ConsentScreen from '../screens/ConsentScreen';
 import { COLORS } from '../utils/theme';
 import { useMessages } from '../context/MessagesContext';
+import { useAuth } from '../context/AuthContext';
+import { navigationRef } from '../utils/navigation';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
 
 // Stack for Home tab (Home → Ad Detail)
 function HomeStack() {
@@ -33,7 +37,7 @@ function MessagesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MessagesList" component={MessagesScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="ChatDetail" component={ChatScreen} />
     </Stack.Navigator>
   );
 }
@@ -93,6 +97,13 @@ function TabNavigator() {
         name="Post"
         component={PostAdScreen}
         options={{ tabBarLabel: 'Post Ad' }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Prevent default and force navigation with empty params
+            e.preventDefault();
+            navigation.navigate('Post', { ad: undefined });
+          },
+        })}
       />
       <Tab.Screen
         name="MyAds"
@@ -105,9 +116,37 @@ function TabNavigator() {
 }
 
 export default function AppNavigator() {
+  const { user, hasConsented, loading } = useAuth();
+
+  if (loading) return null;
+
+  // Key change forces a total remount.
+  // We strictly control what routes exist based on user status.
+  const navKey = user ? (hasConsented ? 'app-consented' : 'app-needs-consent') : 'guest';
+
   return (
-    <NavigationContainer>
-      <TabNavigator />
+    <NavigationContainer ref={navigationRef}>
+      <RootStack.Navigator
+        key={navKey}
+        screenOptions={{ headerShown: false }}
+        initialRouteName={user && !hasConsented ? "ConsentGuard" : "MainTabs"}
+      >
+        {!user ? (
+          // 1. GUEST: Only main tabs available
+          <RootStack.Screen name="MainTabs" component={TabNavigator} />
+        ) : !hasConsented ? (
+          // 2. LOGGED IN, NO CONSENT: Lock to Consent screen ONLY
+          // We use "ConsentGuard" name here to avoid React Navigation trying to
+          // preserve the screen when we transition to the main app.
+          <RootStack.Screen name="ConsentGuard" component={ConsentScreen} />
+        ) : (
+          // 3. LOGGED IN, CONSENTED: Full access
+          <>
+            <RootStack.Screen name="MainTabs" component={TabNavigator} />
+            <RootStack.Screen name="Consent" component={ConsentScreen} />
+          </>
+        )}
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }
