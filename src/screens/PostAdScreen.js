@@ -11,6 +11,7 @@ import { apiFetch, API_BASE_URL } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AiTextArea from '../components/AiTextArea';
+import { checkAndPromptNotifications } from '../utils/notifications';
 
 export default function PostAdScreen({ navigation, route }) {
   const { user } = useAuth();
@@ -155,7 +156,16 @@ export default function PostAdScreen({ navigation, route }) {
 
       if (res.ok) {
         Alert.alert('Success', editingAd ? 'Your ad has been updated!' : 'Your ad has been posted!', [
-          { text: 'OK', onPress: () => navigation.navigate(editingAd ? 'MyAds' : 'Home') },
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate(editingAd ? 'MyAds' : 'Home');
+              if (!editingAd) {
+                // Prompt for notifications only after a new post
+                setTimeout(checkAndPromptNotifications, 500);
+              }
+            }
+          },
         ]);
         if (!editingAd) {
           setForm({ title: '', price: '', description: '' });

@@ -9,6 +9,7 @@ import { COLORS, RADIUS } from '../utils/theme';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useMessages } from '../context/MessagesContext';
+import { checkAndPromptNotifications } from '../utils/notifications';
 
 export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
@@ -71,6 +72,9 @@ export default function ChatScreen({ route, navigation }) {
   useEffect(() => {
     fetchMessages();
     markAsSeen();
+
+    // Prompt for notifications
+    setTimeout(checkAndPromptNotifications, 1000);
 
     const keyboardShowSub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => {
