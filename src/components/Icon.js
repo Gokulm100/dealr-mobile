@@ -209,7 +209,55 @@ const OfferSvg = ({ size, color }) => (
   </Svg>
 );
 
+const FlagSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1v12zm0 0v7"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const AlertCircleSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+      stroke={color}
+      strokeWidth="2"
+    />
+    <Path
+      d="M12 8V12"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+    <Path
+      d="M12 16H12.01"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
 export default function Icon({ name, size = 16, color = '#000', style }) {
+  if (name === 'flag') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <FlagSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'alert-circle') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <AlertCircleSvg size={size} color={color} />
+      </View>
+    );
+  }
   if (name === 'message-circle') {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>

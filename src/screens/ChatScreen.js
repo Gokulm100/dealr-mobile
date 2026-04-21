@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Alert,
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import Icon from '../components/Icon';
@@ -201,6 +201,35 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
+  const handleReportUser = async () => {
+    const targetId = isSeller ? buyerId : sellerId;
+    if (!targetId) return;
+
+    Alert.alert(
+      "Report User",
+      "Are you sure you want to report this user for suspicious activity?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Report",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiFetch('/api/users/reportUser', {
+                method: 'POST',
+                body: JSON.stringify({ userId: targetId }),
+              });
+              Alert.alert("Reported", "Thank you for reporting. We will investigate this user.");
+            } catch (e) {
+              console.warn('reportUser error:', e?.message);
+              Alert.alert("Error", "Failed to report user. Please try again later.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const formatDateSeparator = (dateStr) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -282,6 +311,15 @@ export default function ChatScreen({ route, navigation }) {
                  <Text style={styles.fraudRecommendation}>{fraudCheck.recommendations}</Text>
                </View>
              ) : null}
+
+             {fraudCheck.type !== 'SAFE' && (
+               <TouchableOpacity
+                 style={styles.reportBtn}
+                 onPress={handleReportUser}
+               >
+                 <Text style={styles.reportBtnText}>Report User</Text>
+               </TouchableOpacity>
+             )}
           </View>
         </View>
       </View>
@@ -305,6 +343,13 @@ export default function ChatScreen({ route, navigation }) {
             <Text style={styles.headerAd} numberOfLines={1}>{chat.adTitle}</Text>
           ) : null}
         </View>
+        <TouchableOpacity
+          onPress={handleReportUser}
+          style={styles.headerActionBtn}
+          activeOpacity={0.7}
+        >
+          <Icon name="flag" size={18} color={COLORS.white} />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
@@ -442,6 +487,14 @@ const styles = StyleSheet.create({
   headerInfo: { flex: 1 },
   headerName: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
   headerAd: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 },
+  headerActionBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   msgList: { padding: 14, paddingBottom: 8 },
   dateSeparator: {
     flexDirection: 'row',
@@ -652,5 +705,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.text,
     lineHeight: 17,
+  },
+  reportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    borderRadius: RADIUS.md,
+    marginTop: 4,
+  },
+  reportBtnText: {
+    color: COLORS.error,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
