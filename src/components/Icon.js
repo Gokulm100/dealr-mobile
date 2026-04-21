@@ -39,6 +39,7 @@ const ICONS = {
   'AI':            '˙✦',
   'trending-up':   '📈',
   'award':         '🏆',
+  'dolar-sign':    '💲',
 };
 
 const ChatSvg = ({ size, color }) => (
@@ -175,6 +176,39 @@ const LockSvg = ({ size, color }) => (
   </Svg>
 );
 
+const OfferSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M16 4H4C2.89543 4 2 4.89543 2 6V18C2 19.1046 2.89543 20 4 20H20C21.1046 20 22 19.1046 22 18V10"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M15 7L22 7M15 7L18.5 3.5M15 7L18.5 10.5"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M7 12H13"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M7 16H10"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 export default function Icon({ name, size = 16, color = '#000', style }) {
   if (name === 'message-circle') {
     return (
@@ -225,6 +259,13 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <LockSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'offer') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <OfferSvg size={size} color={color} />
       </View>
     );
   }

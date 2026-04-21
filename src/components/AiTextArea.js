@@ -1,9 +1,11 @@
 // src/components/AiTextArea.js
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, StyleSheet, ScrollView,
+  View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { COLORS, RADIUS } from '../utils/theme';
+import { apiFetch } from '../utils/api';
+import Icon from './Icon';
 
 // Field definitions per category/subcategory (same as web app)
 const FIELD_MAP = {
@@ -117,8 +119,70 @@ function isFieldPresent(text, field) {
   return FIELD_CHECKERS[field.key]?.(lower) ?? false;
 }
 
-export default function AiTextArea({ value, onChange, category, subcategory, onFocus }) {
+export default function AiTextArea({ value, onChange, category, subcategory, onFocus, title }) {
   const [touched, setTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const typingIntervalRef = useRef(null);
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+    };
+  }, []);
+
+  const handleAiWrite = async () => {
+    if (!title) {
+      Alert.alert('Title Required', 'Please enter a title first so AI can generate a better description.');
+      return;
+    }
+
+    // Stop any ongoing typing animation
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiFetch('/api/ads/generateDescriptionUsingAI', {
+        method: 'POST',
+        body: JSON.stringify({
+          title,
+          category: category || 'General',
+          subCategory: subcategory || 'General',
+          description: value || '',
+        }),
+      });
+
+      if (res.success === true && res.data) {
+        const fullText = res.data;
+        let index = 0;
+
+        // Typewriter effect
+        typingIntervalRef.current = setInterval(() => {
+          index++;
+          const nextChar = fullText.slice(0, index);
+          onChange?.({ target: { value: nextChar } });
+
+          if (index >= fullText.length) {
+            if (typingIntervalRef.current) {
+              clearInterval(typingIntervalRef.current);
+              typingIntervalRef.current = null;
+            }
+          }
+        }, 15); // 15ms per character for a smooth effect
+
+        console.log('AI generated description:', res.data);
+      } else if (typeof res === 'string') {
+        onChange?.({ target: { value: res } });
+      }
+    } catch (err) {
+      Alert.alert('AI Error', 'Failed to generate description. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const requiredFields =
     FIELD_MAP[category]?.[subcategory] ||
@@ -130,6 +194,24 @@ export default function AiTextArea({ value, onChange, category, subcategory, onF
 
   return (
     <View style={styles.container}>
+      <View style={styles.topRow}>
+        <Text style={styles.label}>Description</Text>
+        <TouchableOpacity
+          style={styles.aiBtn}
+          onPress={handleAiWrite}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          ) : (
+            <>
+              <Icon name="AI" size={14} color={COLORS.primary} />
+              <Text style={styles.aiBtnText}>AI Write</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <TextInput
         style={[
           styles.input,
@@ -210,6 +292,28 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  aiBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   label: {
     fontSize: 13,

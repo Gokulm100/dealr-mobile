@@ -9,7 +9,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { MessagesProvider } from './src/context/MessagesContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { navigationRef } from './src/utils/navigation';
-import { updateFcmToken } from './src/utils/api';
+import { updateFcmToken, getStoredUser } from './src/utils/api';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -45,7 +45,31 @@ export default function App() {
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
       console.log('Foreground notification:', remoteMessage);
 
-      // Request permission (required for iOS/Android 13+)
+      // 1. Skip if message is from the current user
+      const currentUser = await getStoredUser();
+      const senderId = remoteMessage.data?.senderId || remoteMessage.data?.from;
+
+      if (currentUser && senderId === currentUser._id) {
+        console.log('Skipping notification for self-sent message');
+        return;
+      }
+
+      // 2. SILENT RELOAD IF IN CHAT: Check if the user is already looking at this chat
+      if (navigationRef.isReady()) {
+        const route = navigationRef.getCurrentRoute();
+        if (route?.name === 'Chat') {
+          const activeAdId = route.params?.chat?.adId || route.params?.chat?.ad?._id || route.params?.chat?._id;
+          const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
+
+          if (activeAdId?.toString() === incomingAdId?.toString()) {
+            console.log('User is in the active chat. Skipping notification popup.');
+            // We return early so NO notification popup is shown, as ChatScreen is handling the reload
+            return;
+          }
+        }
+      }
+
+      // 3. Request permission (required for iOS/Android 13+)
       await notifee.requestPermission();
 
       // Create a channel (required for Android)

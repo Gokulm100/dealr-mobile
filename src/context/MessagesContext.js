@@ -1,5 +1,6 @@
 // src/context/MessagesContext.js
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import messaging from '@react-native-firebase/messaging';
 import { apiFetch } from '../utils/api';
 import { useAuth } from './AuthContext';
 
@@ -53,6 +54,15 @@ export function MessagesProvider({ children }) {
 
   useEffect(() => {
     refresh();
+
+    // Global listener for FCM messages
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('Global FCM listener in MessagesContext:', remoteMessage.data);
+      // Always refresh the badge count when any message arrives
+      refresh();
+    });
+
+    return () => unsubscribe();
   }, [refresh]);
 
   return (

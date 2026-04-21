@@ -305,6 +305,7 @@ export default function PostAdScreen({ navigation, route }) {
             onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
             category={categories.find(c => c.id === selectedCategory)?.name}
             subcategory={selectedSubCategory}
+            title={form.title}
             onFocus={() => {
               setTimeout(() => {
                 scrollRef.current?.scrollTo({ y: 1000, animated: true });

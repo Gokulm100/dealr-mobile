@@ -4,22 +4,27 @@ import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard,
 } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 import Icon from '../components/Icon';
-import { COLORS, RADIUS } from '../utils/theme';
+import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useMessages } from '../context/MessagesContext';
+import { useIsFocused } from '@react-navigation/native';
 import { checkAndPromptNotifications } from '../utils/notifications';
 
 export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
   const { user } = useAuth();
-  const { refresh } = useMessages();
+  const { refresh, messageCount } = useMessages();
+  const isFocused = useIsFocused();
   const [messages, setMessages] = useState([]);
   const [fraudCheck, setFraudCheck] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showOfferInput, setShowOfferInput] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
   const listRef = useRef(null);
 
   // Resolve adId, buyerId, sellerId from whatever shape the chat object has
@@ -69,9 +74,47 @@ export default function ChatScreen({ route, navigation }) {
     }
   };
 
+  // Watch for messageCount changes to trigger a refresh
+  useEffect(() => {
+    if (isFocused) {
+      console.log('ChatScreen: messageCount changed, refreshing messages...');
+      fetchMessages(true);
+      markAsSeen();
+    }
+  }, [messageCount, isFocused]);
+
+  // Watch for messageCount changes to trigger a refresh
+  useEffect(() => {
+    if (isFocused) {
+      console.log('ChatScreen: messageCount changed, refreshing messages...');
+      fetchMessages(true);
+      markAsSeen();
+    }
+  }, [messageCount, isFocused]);
+
   useEffect(() => {
     fetchMessages();
     markAsSeen();
+
+    // Listen for incoming messages while in this chat
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('ChatScreen: Received foreground FCM:', remoteMessage.data);
+
+      const data = remoteMessage.data || {};
+      const incomingAdId = (data.adId || data.ad_id || data.listingId)?.toString();
+      const incomingSenderId = (data.senderId || data.from || data.sender_id)?.toString();
+
+      const currentAdId = adId?.toString();
+      const expectedSenderId = (isSeller ? buyerId : sellerId)?.toString();
+
+      console.log(`Matching Attempt: Ad(${incomingAdId}===${currentAdId}) Sender(${incomingSenderId}===${expectedSenderId})`);
+
+      if (incomingAdId === currentAdId && incomingSenderId === expectedSenderId) {
+        console.log('Match found! Reloading messages...');
+        fetchMessages(true);
+        markAsSeen();
+      }
+    });
 
     // Prompt for notifications
     setTimeout(checkAndPromptNotifications, 1000);
@@ -84,6 +127,7 @@ export default function ChatScreen({ route, navigation }) {
 
     return () => {
       keyboardShowSub.remove();
+      unsubscribe();
     };
   }, []);
 
@@ -106,6 +150,52 @@ export default function ChatScreen({ route, navigation }) {
     } catch (e) {
     console.log('hii')
       console.warn('sendMessage error:', e?.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const sendOffer = async () => {
+    if (!offerAmount.trim()) return;
+    setSending(true);
+    const amount = offerAmount.trim();
+    setOfferAmount('');
+    setShowOfferInput(false);
+    try {
+      await apiFetch('/api/ads/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          adId,
+          from: isSeller ? sellerId : buyerId,
+          to: isSeller ? buyerId : sellerId,
+          message: `THE BUYER MADE AN OFFER: ₹${amount}`,
+          isOffer: true,
+          amount: amount
+        }),
+      });
+      fetchMessages(true);
+    } catch (e) {
+      console.warn('sendOffer error:', e?.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const acceptOffer = async (amount) => {
+    setSending(true);
+    try {
+      await apiFetch('/api/ads/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          adId,
+          from: isSeller ? sellerId : buyerId,
+          to: isSeller ? buyerId : sellerId,
+          message: `✅ OFFER ACCEPTED: ₹${amount}`,
+        }),
+      });
+      fetchMessages(true);
+    } catch (e) {
+      console.warn('acceptOffer error:', e?.message);
     } finally {
       setSending(false);
     }
@@ -246,6 +336,62 @@ export default function ChatScreen({ route, navigation }) {
         {/* Fraud Warning */}
         {renderFraudWarning()}
 
+        {/* Offer Bar */}
+        {!isSeller && messages.length > 0 && (
+          <View style={styles.offerBar}>
+            {showOfferInput ? (
+              <View style={styles.offerInputWrapper}>
+                <TextInput
+                  style={styles.offerInput}
+                  placeholder="Enter amount ₹"
+                  keyboardType="numeric"
+                  value={offerAmount}
+                  onChangeText={setOfferAmount}
+                  autoFocus
+                />
+                <TouchableOpacity style={styles.offerSendBtn} onPress={sendOffer}>
+                  <Text style={styles.offerSendText}>Send Offer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowOfferInput(false)} style={styles.offerCancel}>
+                   <Icon name="x" size={16} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.offerTag}
+                onPress={() => setShowOfferInput(true)}
+              >
+                <Icon name="tag" size={14} color={COLORS.primary} />
+                <Text style={styles.offerTagText}>Make an Offer</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {isSeller && messages.length > 0 && (() => {
+          const lastOfferMsg = [...messages].reverse().find(m => m.message?.includes('MADE AN OFFER:'));
+          const isAccepted = messages.some(m => m.message?.includes('OFFER ACCEPTED'));
+
+          console.log('Accept Offer Debug:', { hasOffer: !!lastOfferMsg, isAccepted, isSeller });
+
+          if (lastOfferMsg && !isAccepted) {
+            const amountMatch = lastOfferMsg.message.match(/₹(\d+)/);
+            const amount = amountMatch ? amountMatch[1] : '';
+            return (
+              <View style={styles.offerBar}>
+                <TouchableOpacity
+                  style={[styles.offerTag, { borderColor: COLORS.success, alignSelf: 'flex-start' }]}
+                  onPress={() => acceptOffer(amount)}
+                >
+                  <Icon name="check-circle" size={14} color={COLORS.success} />
+                  <Text style={[styles.offerTagText, { color: COLORS.success }]}>Accept Offer (₹{amount})</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          return null;
+        })()}
+
         {/* Input */}
         <View style={styles.inputBar}>
           <TextInput
@@ -360,6 +506,60 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { backgroundColor: COLORS.border },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyText: { color: COLORS.textMuted, fontSize: 14 },
+  offerBar: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  offerTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    alignSelf: 'flex-end',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    ...SHADOW?.small,
+  },
+  offerTagText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  offerInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.white,
+    padding: 6,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  offerInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.text,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  offerSendBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+  },
+  offerSendText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  offerCancel: {
+    padding: 4,
+  },
   fraudWrapper: {
     paddingHorizontal: 12,
     paddingBottom: 8,
