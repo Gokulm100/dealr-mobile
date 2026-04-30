@@ -47,7 +47,6 @@ export function MessagesProvider({ children }) {
         setMessageCount(getUnreadCount(buyingData) + getUnreadCount(sellingData));
       }
     } catch (err) {
-      console.log('Error refreshing message count:', err);
       setMessageCount(0);
     }
   }, [user, token]);
@@ -57,7 +56,6 @@ export function MessagesProvider({ children }) {
 
     // Global listener for FCM messages
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('Global FCM listener in MessagesContext:', remoteMessage.data);
       // Always refresh the badge count when any message arrives
       refresh();
     });

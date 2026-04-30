@@ -6,7 +6,6 @@ import App from './App';
 // Background handler (required)
 // Register this outside of any component, at the top level of index.js
 messaging().setBackgroundMessageHandler(async remoteMessage => {
-  console.log('Background message:', remoteMessage);
   // FCM auto-shows notification if `notification` key is present
   // Handle data-only messages here if needed
 });

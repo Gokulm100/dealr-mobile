@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ⚠️ CHANGE THIS to your backend URL
 export const API_BASE_URL = 'https://e4u-backend.onrender.com';
 
-// Centralized fetch wrapper
+// Centralized fetch wrapper with debugging
 export async function apiFetch(path, options = {}) {
   const token = await AsyncStorage.getItem('authToken');
   const headers = {
@@ -13,17 +13,43 @@ export async function apiFetch(path, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const url = `${API_BASE_URL}${path}`;
+  console.log(`[API] Fetching: ${url}`);
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || `HTTP ${response.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const text = await response.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (e) {
+      console.warn(`[API] Response for ${path} was not JSON:`, text.substring(0, 100));
+    }
+
+    if (!response.ok) {
+      const errorMessage = data?.message || `HTTP ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      console.error(`[API] Request timed out for ${url} (Render might be sleeping)`);
+      throw new Error('Server is taking too long to respond. Please try again in a moment.');
+    }
+    console.error(`[API] Network error for ${url}:`, err);
+    throw err;
   }
-
-  return response.json();
 }
 
 // Auth helpers
@@ -115,12 +141,17 @@ export function mapListing(listing) {
     views: listing.views || 0,
     subCategory: subCatName || 'General',
     posted: formatPostedTime(listing.createdAt),
+    createdAt: listing.createdAt,
+    sellerSince: listing.seller?.createdAt ? new Date(listing.seller.createdAt).getFullYear() : null,
     disabled: listing.disabled || false,
     status: listing.status || 'active',
     isSold: listing.isSold || false,
     images:
       Array.isArray(listing.images) && listing.images.length > 0
-        ? ['https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=300&fit=crop','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg']
+        ? listing.images.map(img => {
+            if (typeof img !== 'string') return null;
+            return img.startsWith('http') ? img : `${API_BASE_URL}/${img.startsWith('/') ? img.substring(1) : img}`;
+          }).filter(Boolean)
         : ['https://images.pexels.com/photos/10703759/pexels-photo-10703759.jpeg','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg'],
   };
 }

@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMessages } from '../context/MessagesContext';
 import { useIsFocused } from '@react-navigation/native';
 import { checkAndPromptNotifications } from '../utils/notifications';
+import { getSocket } from '../utils/socket';
 
 export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
@@ -77,17 +78,6 @@ export default function ChatScreen({ route, navigation }) {
   // Watch for messageCount changes to trigger a refresh
   useEffect(() => {
     if (isFocused) {
-      console.log('ChatScreen: messageCount changed, refreshing messages...');
-      fetchMessages(true);
-      markAsSeen();
-    }
-  }, [messageCount, isFocused]);
-
-  // Watch for messageCount changes to trigger a refresh
-  useEffect(() => {
-    if (isFocused) {
-      console.log('ChatScreen: messageCount changed, refreshing messages...');
-      fetchMessages(true);
       markAsSeen();
     }
   }, [messageCount, isFocused]);
@@ -96,22 +86,41 @@ export default function ChatScreen({ route, navigation }) {
     fetchMessages();
     markAsSeen();
 
-    // Listen for incoming messages while in this chat
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('ChatScreen: Received foreground FCM:', remoteMessage.data);
+    // WebSocket Setup
+    const socket = getSocket(user?._id);
 
-      const data = remoteMessage.data || {};
-      const incomingAdId = (data.adId || data.ad_id || data.listingId)?.toString();
-      const incomingSenderId = (data.senderId || data.from || data.sender_id)?.toString();
+    console.log('DEBUG: Emitting join event with ID:', user?._id);
+    socket.emit('join', user?._id);
 
+    socket.on('chat:new-message', (payload) => {
+      console.log('DEBUG: Socket Payload Received:', JSON.stringify(payload));
+
+      const msg = payload.chat;
+      if (!msg) return;
+
+      // Ensure IDs are strings for comparison
+      // Extract _id if adId is an object (populated)
+      const rawIncomingAdId = msg.adId?._id || msg.adId;
+      const incomingAdId = rawIncomingAdId?.toString();
       const currentAdId = adId?.toString();
-      const expectedSenderId = (isSeller ? buyerId : sellerId)?.toString();
 
-      console.log(`Matching Attempt: Ad(${incomingAdId}===${currentAdId}) Sender(${incomingSenderId}===${expectedSenderId})`);
+      console.log(`DEBUG: Comparing Ad IDs: Incoming(${incomingAdId}) vs Current(${currentAdId})`);
 
-      if (incomingAdId === currentAdId && incomingSenderId === expectedSenderId) {
-        console.log('Match found! Reloading messages...');
-        fetchMessages(true);
+      if (incomingAdId !== currentAdId) {
+        console.log('DEBUG: Message ignored (different conversation)');
+        return;
+      }
+
+      const fromId = (msg.from?._id || msg.from)?.toString();
+      const currentUserId = user?._id?.toString();
+
+      if (fromId !== currentUserId) {
+        console.log('DEBUG: Adding message to UI state');
+        setMessages(prev => {
+          if (prev.find(m => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
+        setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 300);
         markAsSeen();
       }
     });
@@ -127,40 +136,28 @@ export default function ChatScreen({ route, navigation }) {
 
     return () => {
       keyboardShowSub.remove();
-      unsubscribe();
+      socket.off('chat:new-message');
+      socket.emit('leave', user?._id);
     };
   }, []);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    setSending(true);
+    if (!input.trim() || sending) return;
     const text = input.trim();
     setInput('');
-    try {
-      await apiFetch('/api/ads/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          adId,
-          from:isSeller? sellerId: buyerId,
-          to:isSeller? buyerId:sellerId,
-          message: text
-           }),
-      });
-      fetchMessages(true);
-    } catch (e) {
-    console.log('hii')
-      console.warn('sendMessage error:', e?.message);
-    } finally {
-      setSending(false);
-    }
-  };
 
-  const sendOffer = async () => {
-    if (!offerAmount.trim()) return;
-    setSending(true);
-    const amount = offerAmount.trim();
-    setOfferAmount('');
-    setShowOfferInput(false);
+    // Optimistic Update
+    const tempId = 'temp-' + Date.now();
+    const optimisticMsg = {
+      _id: tempId,
+      from: user._id,
+      message: text,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+
     try {
       await apiFetch('/api/ads/chat', {
         method: 'POST',
@@ -168,7 +165,46 @@ export default function ChatScreen({ route, navigation }) {
           adId,
           from: isSeller ? sellerId : buyerId,
           to: isSeller ? buyerId : sellerId,
-          message: `THE BUYER MADE AN OFFER: ₹${amount}`,
+          message: text
+        }),
+      });
+      fetchMessages(true);
+    } catch (e) {
+      console.warn('sendMessage error:', e?.message);
+      setMessages(prev => prev.filter(m => m._id !== tempId));
+      setInput(text);
+      Alert.alert("Error", "Message failed to send.");
+    }
+  };
+
+  const sendOffer = async () => {
+    if (!offerAmount.trim()) return;
+    const amount = offerAmount.trim();
+    const offerText = `THE BUYER MADE AN OFFER: ₹${amount}`;
+
+    setOfferAmount('');
+    setShowOfferInput(false);
+
+    // Optimistic Update
+    const tempId = 'offer-' + Date.now();
+    const optimisticOffer = {
+      _id: tempId,
+      from: user._id,
+      message: offerText,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, optimisticOffer]);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+
+    try {
+      await apiFetch('/api/ads/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          adId,
+          from: isSeller ? sellerId : buyerId,
+          to: isSeller ? buyerId : sellerId,
+          message: offerText,
           isOffer: true,
           amount: amount
         }),
@@ -176,8 +212,9 @@ export default function ChatScreen({ route, navigation }) {
       fetchMessages(true);
     } catch (e) {
       console.warn('sendOffer error:', e?.message);
-    } finally {
-      setSending(false);
+      setMessages(prev => prev.filter(m => m._id !== tempId));
+      setOfferAmount(amount);
+      setShowOfferInput(true);
     }
   };
 
@@ -254,23 +291,42 @@ export default function ChatScreen({ route, navigation }) {
       return new Date(prev.createdAt).toDateString() !== new Date(item.createdAt).toDateString();
     })();
 
+    const isLastInGroup = index === messages.length - 1 || (() => {
+      const next = messages[index + 1];
+      if (!next) return true;
+      const nextFromId = next.from?._id || next.from;
+      return nextFromId !== fromId;
+    })();
+
     return (
       <View>
         {showDateSeparator && item.createdAt && (
           <View style={styles.dateSeparator}>
-            <View style={styles.dateLine} />
             <Text style={styles.dateText}>{formatDateSeparator(item.createdAt)}</Text>
-            <View style={styles.dateLine} />
           </View>
         )}
-        <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+        <View style={[
+          styles.bubble,
+          isMe ? styles.bubbleMe : styles.bubbleThem,
+          isMe ? (isLastInGroup ? styles.bubbleMeLast : null) : (isLastInGroup ? styles.bubbleThemLast : null)
+        ]}>
           <Text style={[styles.bubbleText, isMe && { color: COLORS.white }]}>
             {item.message}
           </Text>
           {item.createdAt && (
-            <Text style={[styles.bubbleTime, isMe && { color: 'rgba(255,255,255,0.7)' }]}>
-              {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
+            <View style={styles.bubbleFooter}>
+              <Text style={[styles.bubbleTime, isMe && { color: 'rgba(255,255,255,0.7)' }]}>
+                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+              {isMe && (
+                 <Icon
+                   name="check-circle"
+                   size={10}
+                   color={item._id.startsWith('temp-') ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.8)'}
+                   style={{ marginLeft: 4 }}
+                 />
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -330,19 +386,27 @@ export default function ChatScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-          activeOpacity={0.7}
-        >
-          <Icon name="arrow-left" size={20} color={COLORS.white} />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{otherName}</Text>
-          {chat.adTitle ? (
-            <Text style={styles.headerAd} numberOfLines={1}>{chat.adTitle}</Text>
-          ) : null}
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+          >
+            <Icon name="arrow-left" size={20} color={COLORS.white} />
+          </TouchableOpacity>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{otherName?.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerName} numberOfLines={1}>{otherName}</Text>
+            {chat.adTitle ? (
+              <Text style={styles.headerAd} numberOfLines={1}>{chat.adTitle}</Text>
+            ) : (
+              <Text style={styles.headerStatus}>Online</Text>
+            )}
+          </View>
         </View>
+
         <TouchableOpacity
           onPress={handleReportUser}
           style={styles.headerActionBtn}
@@ -382,7 +446,7 @@ export default function ChatScreen({ route, navigation }) {
         {renderFraudWarning()}
 
         {/* Offer Bar */}
-        {!isSeller && messages.length > 0 && (
+        {!isSeller && messages.length > 0 && fraudCheck?.type === 'SAFE' && (
           <View style={styles.offerBar}>
             {showOfferInput ? (
               <View style={styles.offerInputWrapper}>
@@ -466,95 +530,139 @@ export default function ChatScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4ff' },
+  container: { flex: 1, backgroundColor: '#f7f9fc' },
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: 12,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    justifyContent: 'space-between',
+    ...SHADOW.medium,
   },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerInfo: { flex: 1 },
-  headerName: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
-  headerAd: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 },
-  headerActionBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  msgList: { padding: 14, paddingBottom: 8 },
-  dateSeparator: {
+  headerLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 8,
+    gap: 10,
   },
-  dateLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-    opacity: 0.5,
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  avatarText: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerInfo: { flex: 1 },
+  headerName: { color: COLORS.white, fontSize: 17, fontWeight: '700' },
+  headerAd: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
+  headerStatus: { color: 'rgba(255,255,255,0.6)', fontSize: 11 },
+  headerActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  msgList: { paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
+  dateSeparator: {
+    alignItems: 'center',
+    marginVertical: 20,
   },
   dateText: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
     paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   bubble: {
-    maxWidth: '75%',
-    borderRadius: RADIUS.lg,
+    maxWidth: '80%',
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    marginBottom: 8,
+    paddingVertical: 10,
+    marginBottom: 4,
     backgroundColor: COLORS.white,
-    alignSelf: 'flex-start',
+    ...SHADOW.small,
   },
-  bubbleMe: { backgroundColor: COLORS.accent, alignSelf: 'flex-end' },
-  bubbleText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
-  bubbleTime: { fontSize: 10, color: COLORS.textMuted, marginTop: 4, textAlign: 'right' },
+  bubbleThem: {
+    alignSelf: 'flex-start',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomRightRadius: 18,
+    borderBottomLeftRadius: 4,
+  },
+  bubbleMe: {
+    backgroundColor: COLORS.accent,
+    alignSelf: 'flex-end',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 4,
+  },
+  bubbleMeLast: {
+    borderBottomRightRadius: 0,
+  },
+  bubbleThemLast: {
+    borderBottomLeftRadius: 0,
+  },
+  bubbleText: { fontSize: 15, color: COLORS.text, lineHeight: 21 },
+  bubbleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
+  bubbleTime: { fontSize: 10, color: COLORS.textMuted },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
+    gap: 10,
     backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    paddingBottom: Platform.OS === 'ios' ? 25 : 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: '#eee',
   },
   input: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    fontSize: 14,
-    maxHeight: 100,
+    backgroundColor: '#f0f2f5',
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    fontSize: 15,
+    maxHeight: 120,
     color: COLORS.text,
   },
   sendBtn: {
     backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.full,
-    width: 42,
-    height: 42,
+    borderRadius: 22,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW.small,
   },
   sendBtnDisabled: { backgroundColor: COLORS.border },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },

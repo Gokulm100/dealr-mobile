@@ -85,12 +85,11 @@ export default function PostAdScreen({ navigation, route }) {
     }).catch(() => {});
 
     // Fetch Kerala cities
-    fetch('https://api.countrystatecity.in/v1/countries/IN/states/KL/cities', {
-      headers: { 'X-CSCAPI-KEY': 'NTJPRVA2dFdZTWl6ZUhCSXRzVmdWem5BRk1tdE1VbE5KUlBubGVPQg==' },
-    }).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setLocations(data.map(c => ({ id: c.id, name: c.name })));
+    apiFetch('/api/users/locations').then(res => {
+    let data = res.data;
+      if (Array.isArray(data)) setLocations(data.map(c => ({ id: c.id, name: c.locality+','+c.city })));
     }).catch(() => {});
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const cat = categories.find(c => c.id === selectedCategory);
@@ -280,20 +279,22 @@ export default function PostAdScreen({ navigation, route }) {
           />
           {showLocationDropdown && locationSearch.length > 0 && (
             <View style={styles.dropdown}>
-              {filteredLocations.map(loc => (
-                <TouchableOpacity
-                  key={loc.id}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedLocation(loc);
-                    setLocationSearch(loc.name);
-                    setShowLocationDropdown(false);
-                  }}
-                >
-                  <Icon name="map-pin" size={13} color={COLORS.textMuted} />
-                  <Text style={styles.dropdownText}>{loc.name}</Text>
-                </TouchableOpacity>
-              ))}
+              <ScrollView nestedScrollEnabled={true}>
+                {filteredLocations.map(loc => (
+                  <TouchableOpacity
+                    key={loc.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedLocation(loc);
+                      setLocationSearch(loc.name);
+                      setShowLocationDropdown(false);
+                    }}
+                  >
+                    <Icon name="map-pin" size={13} color={COLORS.textMuted} />
+                    <Text style={styles.dropdownText}>{loc.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
           {/* Description */}

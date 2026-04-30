@@ -34,7 +34,6 @@ export default function ProfileScreen({ navigation }) {
 
       await loginWithGoogle(idToken);
     } catch (error) {
-    console.log(error);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled — do nothing
       } else if (error.code === statusCodes.IN_PROGRESS) {

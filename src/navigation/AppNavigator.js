@@ -17,6 +17,7 @@ import { COLORS } from '../utils/theme';
 import { useMessages } from '../context/MessagesContext';
 import { useAuth } from '../context/AuthContext';
 import { navigationRef } from '../utils/navigation';
+import { Alert } from 'react-native';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -54,6 +55,7 @@ function MyAdsStack() {
 
 function TabNavigator() {
   const { messageCount } = useMessages();
+  const { user } = useAuth();
 
   return (
     <Tab.Navigator
@@ -92,6 +94,18 @@ function TabNavigator() {
           tabBarBadge: messageCount > 0 ? messageCount : undefined,
           tabBarBadgeStyle: { backgroundColor: COLORS.badgeBg },
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            if (user?.isBlocked) {
+              e.preventDefault();
+              Alert.alert(
+                "Account Blocked",
+                "You have been blocked due to repeated suspicious activity. Please wait for another 30 days to access messages.",
+                [{ text: "OK" }]
+              );
+            }
+          },
+        })}
       />
       <Tab.Screen
         name="Post"
@@ -99,9 +113,18 @@ function TabNavigator() {
         options={{ tabBarLabel: 'Post Ad' }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
-            // Prevent default and force navigation with empty params
-            e.preventDefault();
-            navigation.navigate('Post', { ad: undefined });
+            if (user?.isBlocked) {
+              e.preventDefault();
+              Alert.alert(
+                "Account Blocked",
+                "You have been blocked due to repeated suspicious activity. Please wait for another 30 days to post any new ads.",
+                [{ text: "OK" }]
+              );
+            } else {
+              // Prevent default and force navigation with empty params
+              e.preventDefault();
+              navigation.navigate('Post', { ad: undefined });
+            }
           },
         })}
       />

@@ -2,8 +2,8 @@
 export const COLORS = {
   primary: '#378cf6',
   primaryLight: '#5b6fa0',
-  accent: 'rgb(98 129 183)',
-  accentLight: '#a1c4fd',
+  accent: '#3b82f6',
+  accentLight: '#eff6ff',
   background: '#f5f5f5',
   white: '#ffffff',
   card: '#ffffff',

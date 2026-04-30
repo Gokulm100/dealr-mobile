@@ -26,13 +26,11 @@ export default function App() {
 
         if (enabled) {
           const token = await messaging().getToken();
-          console.log('FCM Token:', token);
 
           // Send token to backend
           await updateFcmToken(token);
 
           messaging().onTokenRefresh(async newToken => {
-            console.log('New FCM Token:', newToken);
             await updateFcmToken(newToken);
           });
         }
@@ -43,14 +41,12 @@ export default function App() {
 
     // Handle incoming messages and notification interactions
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-      console.log('Foreground notification:', remoteMessage);
 
       // 1. Skip if message is from the current user
       const currentUser = await getStoredUser();
       const senderId = remoteMessage.data?.senderId || remoteMessage.data?.from;
 
       if (currentUser && senderId === currentUser._id) {
-        console.log('Skipping notification for self-sent message');
         return;
       }
 
@@ -62,7 +58,6 @@ export default function App() {
           const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
 
           if (activeAdId?.toString() === incomingAdId?.toString()) {
-            console.log('User is in the active chat. Skipping notification popup.');
             // We return early so NO notification popup is shown, as ChatScreen is handling the reload
             return;
           }
@@ -96,19 +91,16 @@ export default function App() {
     // Handle Notifee foreground events (clicks)
     const unsubscribeNotifee = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS) {
-        console.log('User pressed notification', detail.notification);
         // Just opening the app
       }
     });
 
     messaging().onNotificationOpenedApp(remoteMessage => {
-      console.log('Background notification click:', remoteMessage);
       // Default behavior is to open the app
     });
 
     messaging().getInitialNotification().then(remoteMessage => {
       if (remoteMessage) {
-        console.log('Quit state notification click:', remoteMessage);
       }
     });
 

@@ -19,8 +19,9 @@ import AiAnalytics from '../components/AiAnalytics';
 const { width } = Dimensions.get('window');
 
 export default function AdDetailScreen({ route, navigation }) {
-  const { listing } = route.params;
+  const { listing, isTrending } = route.params;
   const { user } = useAuth();
+  const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
   const [currentImg, setCurrentImg] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
@@ -125,6 +126,14 @@ export default function AdDetailScreen({ route, navigation }) {
       Alert.alert('Login required', 'Please login to chat with the seller.');
       return;
     }
+    if (user.isBlocked) {
+      Alert.alert(
+        "Account Blocked",
+        "You have been blocked due to repeated suspicious activity. Please wait for another 30 days to contact any seller.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
     if (user._id === listing.sellerId) {
       Alert.alert('This is your ad', 'You cannot chat with yourself.');
       return;
@@ -200,13 +209,24 @@ export default function AdDetailScreen({ route, navigation }) {
                 <Text style={styles.tagText}>{listing.subCategory}</Text>
               </View>
             )}
+            {isNew && (
+              <View style={[styles.tag, { backgroundColor: COLORS.success + '15' }]}>
+                <Text style={[styles.tagText, { color: COLORS.success }]}>NEW</Text>
+              </View>
+            )}
+            {isTrending && (
+              <View style={[styles.tag, { backgroundColor: '#fff7ed' }]}>
+                <Text style={{ fontSize: 12 }}>🔥</Text>
+                <Text style={[styles.tagText, { color: '#f97316', marginLeft: 4 }]}>TRENDING</Text>
+              </View>
+            )}
           </View>
 
           {/* Meta */}
           <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <Icon name="map-pin" size={14} color={COLORS.textMuted} />
-              <Text style={styles.metaText}>{listing.location}</Text>
+            <View style={[styles.metaItem, { width: '100%' }]}>
+              <Icon name="map-pin" size={14} color={COLORS.textMuted} style={{ alignSelf: 'flex-start', marginTop: 2 }} />
+              <Text style={[styles.metaText, { flex: 1 }]}>{listing.location}</Text>
             </View>
             <View style={styles.metaItem}>
               <Icon name="eye" size={14} color={COLORS.textMuted} />
@@ -314,6 +334,9 @@ export default function AdDetailScreen({ route, navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.sellerLabel}>Posted by</Text>
               <Text style={styles.sellerName}>{listing.seller}</Text>
+              {listing.sellerSince && (
+                <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
+              )}
             </View>
           </View>
 
