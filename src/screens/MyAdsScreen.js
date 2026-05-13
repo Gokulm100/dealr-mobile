@@ -50,6 +50,15 @@ export default function MyAdsScreen({ navigation }) {
     return unsubscribe;
   }, [navigation, fetchMyAds]);
 
+  const formatLocation = (loc) => {
+    if (!loc) return '';
+    const commaIndex = loc.indexOf(',');
+    if (commaIndex !== -1 && loc.length > commaIndex + 4) {
+      return loc.substring(0, commaIndex + 4) + '...';
+    }
+    return loc;
+  };
+
   const handleToggleStatus = (item) => {
     const isDisabling = !item.disabled;
     const title = isDisabling ? 'Disable Ad' : 'Enable Ad';
@@ -177,7 +186,7 @@ export default function MyAdsScreen({ navigation }) {
               </Text>
               <View style={styles.metaRow}>
                 <Icon name="map-pin" size={12} color={COLORS.textMuted} />
-                <Text style={styles.metaText}>{item.location}</Text>
+                <Text style={styles.metaText}>{formatLocation(item.location)}</Text>
                 <Icon name="eye" size={12} color={COLORS.textMuted} style={{ marginLeft: 8 }} />
                 <Text style={styles.metaText}>{item.views}</Text>
               </View>

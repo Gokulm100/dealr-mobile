@@ -335,7 +335,21 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             key={cat.id}
             style={[styles.pill, selectedCategory === cat.name && styles.pillActive]}
-            onPress={() => setSelectedCategory(cat.name)}
+            onPress={() => {
+              if (cat.name === 'All') {
+                // Reset all filters when 'All' is clicked
+                setSearchQuery('');
+                setSearchInput('');
+                setLocationQuery('');
+                setLocationInput('');
+                setMinPrice('');
+                setMinPriceInput('');
+                setMaxPrice('');
+                setMaxPriceInput('');
+                setSelectedSubCategory('');
+              }
+              setSelectedCategory(cat.name);
+            }}
           >
             <Text style={[styles.pillText, selectedCategory === cat.name && styles.pillTextActive]}>
               {cat.name}
@@ -617,7 +631,7 @@ const styles = StyleSheet.create({
   categoryContent: { paddingHorizontal: 0, gap: 10, paddingVertical: 8 },
   pill: {
     paddingHorizontal: 16,
-    paddingVertical: 7,
+    paddingVertical: 5,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.white,
     borderWidth: 1,
@@ -633,7 +647,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderBottomColor: 'rgba(0,0,0,0.0)',
   },
   resultsLabel: { fontSize: 13, color: COLORS.textMuted, marginBottom: 8, marginLeft: 2 },
   loader: { paddingVertical: 20, alignItems: 'center' },

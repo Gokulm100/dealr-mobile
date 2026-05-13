@@ -5,23 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="92be92c9-3ba0-41de-ac48-f20ac85bda1a" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/AdCard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/AdCard.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/AiTextArea.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/AiTextArea.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Icon.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Icon.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/navigation/AppNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/navigation/AppNavigator.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/AdDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/AdDetailScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/ChatScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ChatScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/HomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/HomeScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/MessagesScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/MessagesScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/MyAdsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/MyAdsScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/PostAdScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/PostAdScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/ProfileScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ProfileScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/theme.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/theme.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,12 +30,16 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;,
-    &quot;assignee&quot;: &quot;Gokulm100&quot;
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "history": [
+    {
+      "assignee": "Gokulm100"
+    }
+  ],
+  "lastFilter": {
+    "assignee": "Gokulm100"
   }
-}</component>
+}]]></component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/Gokulm100/e4you-mobile.git&quot;,
@@ -171,6 +165,7 @@
     <option name="OPEN_GENERIC_TABS">
       <map>
         <entry key="9273bbdd-f84d-4751-a779-bdfeb7cabf52" value="TOOL_WINDOW" />
+        <entry key="a558b611-8b00-48f0-8486-0d9be674cc59" value="TOOL_WINDOW" />
       </map>
     </option>
     <option name="TAB_STATES">
@@ -181,6 +176,23 @@
           </value>
         </entry>
         <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="develop" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+        <entry key="a558b611-8b00-48f0-8486-0d9be674cc59">
           <value>
             <State>
               <option name="FILTERS">

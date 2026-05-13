@@ -307,10 +307,10 @@ export default function AdDetailScreen({ route, navigation }) {
               <View style={{ flex: 1 }}>
                 <View style={styles.sellerNameRow}>
                   <Text style={styles.sellerName}>{listing.seller}</Text>
-                  <View style={styles.verifiedBadge}>
-                    <Icon name="check-circle" size={10} color={COLORS.success} />
-                    <Text style={styles.verifiedText}>Verified</Text>
-                  </View>
+                  <TouchableOpacity style={styles.verifiedBadgeModern} activeOpacity={0.8}>
+                    <Icon name="check-circle" size={10} color={COLORS.white} />
+                    <Text style={styles.verifiedTextModern}>VERIFIED</Text>
+                  </TouchableOpacity>
                 </View>
                 {listing.sellerSince && (
                   <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
@@ -459,12 +459,17 @@ const styles = StyleSheet.create({
   },
   sellerNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sellerName: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  verifiedBadge: {
+  verifiedBadgeModern: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop:2,
+    borderRadius: RADIUS.full,
   },
-  verifiedText: { fontSize: 11, fontWeight: '600', color: COLORS.success },
+  verifiedTextModern: { fontSize: 8, fontWeight: '900', color: COLORS.white, letterSpacing: 0.5 },
   sellerSince: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
   viewProfileBtn: {
     flexDirection: 'row',

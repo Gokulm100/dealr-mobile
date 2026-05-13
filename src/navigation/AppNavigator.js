@@ -118,7 +118,7 @@ function TabNavigator() {
         name="Post"
         component={PostAdScreen}
         options={{
-          tabBarLabel: 'Post Ad',
+          tabBarLabel: ' ',
           tabBarLabelStyle: {
             fontSize: 11,
             fontWeight: '600',
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -25,
+    marginTop: -0,
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
