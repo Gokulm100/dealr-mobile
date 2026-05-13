@@ -19,8 +19,8 @@ export const COLORS = {
 };
 
 export const FONTS = {
-  regular: 'System',
-  bold: 'System',
+  regular: 'sans-serif',
+  bold: 'sans-serif',
 };
 
 export const RADIUS = {

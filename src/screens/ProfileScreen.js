@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     paddingHorizontal: 16,
   },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: '800' },
+  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
   // Logged out
   centeredContent: {

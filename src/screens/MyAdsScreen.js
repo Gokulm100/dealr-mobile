@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerTitle: { color: COLORS.white, fontSize: 20, fontWeight: '800' },
+  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
   postBtn: {
     flexDirection: 'row',
     alignItems: 'center',

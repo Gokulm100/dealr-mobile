@@ -3,7 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Icon from '../screens/../components/Icon';
+import Icon from '../components/Icon';
 
 import HomeScreen from '../screens/HomeScreen';
 import AdDetailScreen from '../screens/AdDetailScreen';
@@ -17,7 +17,7 @@ import { COLORS } from '../utils/theme';
 import { useMessages } from '../context/MessagesContext';
 import { useAuth } from '../context/AuthContext';
 import { navigationRef } from '../utils/navigation';
-import { Alert } from 'react-native';
+import { Alert, View, StyleSheet } from 'react-native';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -66,23 +66,30 @@ function TabNavigator() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 70,
+          paddingBottom: 20,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
         },
-        tabBarIcon: ({ color, size, focused }) => {
+        tabBarIcon: ({ color, size }) => {
           const icons = {
             Home: 'home',
             Chat: 'message-circle',
-            Post: 'plus-circle',
             MyAds: 'speaker',
             Profile: 'user',
           };
-          const iconColor = route.name === 'Post' ? (focused ? '#ff6666' : COLORS.textMuted) : color;
-          return <Icon name={icons[route.name]} size={size} color={iconColor} />;
+
+          if (route.name === 'Post') {
+            return (
+              <View style={styles.postButton}>
+                <Icon name="plus" size={32} color={COLORS.white} />
+              </View>
+            );
+          }
+
+          return <Icon name={icons[route.name]} size={size} color={color} />;
         },
       })}
     >
@@ -110,7 +117,14 @@ function TabNavigator() {
       <Tab.Screen
         name="Post"
         component={PostAdScreen}
-        options={{ tabBarLabel: 'Post Ad' }}
+        options={{
+          tabBarLabel: 'Post Ad',
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: 4,
+          }
+        }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             if (user?.isBlocked) {
@@ -137,6 +151,25 @@ function TabNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  postButton: {
+    width: 55,
+    height: 55,
+    backgroundColor: COLORS.accent,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    borderWidth: 4,
+    borderColor: COLORS.white,
+  },
+});
 
 export default function AppNavigator() {
   const { user, hasConsented, loading } = useAuth();

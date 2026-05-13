@@ -4,6 +4,7 @@ import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import messaging from '@react-native-firebase/messaging';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
@@ -17,6 +18,7 @@ import { getSocket } from '../utils/socket';
 export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const { refresh, messageCount } = useMessages();
   const isFocused = useIsFocused();
   const [messages, setMessages] = useState([]);
@@ -385,14 +387,14 @@ export default function ChatScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backBtn}
             activeOpacity={0.7}
           >
-            <Icon name="arrow-left" size={20} color={COLORS.white} />
+            <Icon name="arrow-left" size={20} color={COLORS.text} />
           </TouchableOpacity>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{otherName?.charAt(0).toUpperCase()}</Text>
@@ -402,7 +404,7 @@ export default function ChatScreen({ route, navigation }) {
             {chat.adTitle ? (
               <Text style={styles.headerAd} numberOfLines={1}>{chat.adTitle}</Text>
             ) : (
-              <Text style={styles.headerStatus}>Online</Text>
+              <Text style={styles.headerStatus}>Active Now</Text>
             )}
           </View>
         </View>
@@ -412,7 +414,7 @@ export default function ChatScreen({ route, navigation }) {
           style={styles.headerActionBtn}
           activeOpacity={0.7}
         >
-          <Icon name="flag" size={18} color={COLORS.white} />
+          <Icon name="flag" size={18} color={COLORS.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -532,53 +534,53 @@ export default function ChatScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f9fc' },
   header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: Platform.OS === 'ios' ? 50 : 40,
-    paddingBottom: 12,
+    backgroundColor: COLORS.white,
+    paddingBottom: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    ...SHADOW.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    zIndex: 10,
   },
   headerLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.5)',
+    ...SHADOW.small,
   },
   avatarText: {
     color: COLORS.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   headerInfo: { flex: 1 },
-  headerName: { color: COLORS.white, fontSize: 17, fontWeight: '700' },
-  headerAd: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
-  headerStatus: { color: 'rgba(255,255,255,0.6)', fontSize: 11 },
+  headerName: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
+  headerAd: { color: COLORS.primary, fontSize: 13, fontWeight: '600', marginTop: 1 },
+  headerStatus: { color: COLORS.success, fontSize: 12, fontWeight: '600' },
   headerActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -598,26 +600,26 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   bubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 4,
-    backgroundColor: COLORS.white,
-    ...SHADOW.small,
+    maxWidth: '85%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 6,
   },
   bubbleThem: {
+    backgroundColor: COLORS.white,
     alignSelf: 'flex-start',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderBottomRightRadius: 18,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
     borderBottomLeftRadius: 4,
+    ...SHADOW.small,
   },
   bubbleMe: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primary,
     alignSelf: 'flex-end',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderBottomLeftRadius: 18,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
     borderBottomRightRadius: 4,
   },
   bubbleMeLast: {
@@ -637,29 +639,31 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 10,
+    gap: 12,
     backgroundColor: COLORS.white,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    paddingBottom: Platform.OS === 'ios' ? 25 : 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? Math.max(useSafeAreaInsets().bottom, 16) : 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: COLORS.border,
   },
   input: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    fontSize: 15,
+    backgroundColor: COLORS.background,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    fontSize: 16,
     maxHeight: 120,
     color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   sendBtn: {
-    backgroundColor: COLORS.accent,
-    borderRadius: 22,
-    width: 44,
-    height: 44,
+    backgroundColor: COLORS.primary,
+    borderRadius: 24,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOW.small,

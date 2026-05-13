@@ -3,8 +3,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, ScrollView, RefreshControl,
-  StatusBar, Image, Animated,
+  StatusBar, Image, Animated, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
 import { apiFetch, mapListing, API_BASE_URL } from '../utils/api';
@@ -15,6 +16,7 @@ const LIMIT = 8;
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [listings, setListings] = useState([]);
   const [categories, setCategories] = useState([{ id: 'all', name: 'All' }]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -26,6 +28,11 @@ export default function HomeScreen({ navigation }) {
   const [locationInput, setLocationInput] = useState('');
   const [locations, setLocations] = useState([]);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -106,6 +113,8 @@ export default function HomeScreen({ navigation }) {
         limit: LIMIT,
         search: searchQuery.trim() || undefined,
         location: locationQuery.trim() || undefined,
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
         category: catId,
         subCategory: selectedSubCategory || undefined,
         userId: user?._id || undefined,
@@ -144,7 +153,7 @@ export default function HomeScreen({ navigation }) {
       isFirstLoad.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, locationQuery, selectedCategory, selectedSubCategory]);
+  }, [searchQuery, locationQuery, selectedCategory, selectedSubCategory, minPrice, maxPrice]);
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
@@ -166,15 +175,14 @@ export default function HomeScreen({ navigation }) {
     );
   };
 
-  const handleSearch = (keyword = searchInput, location = locationInput) => {
-    // Selection from dropdown or submit triggers this
-    // We update state which triggers the useEffect
-    const cleanKeyword = String(keyword || '').trim();
-    const cleanLocation = String(location || '').trim();
-
-    setSearchQuery(cleanKeyword);
-    setLocationQuery(cleanLocation);
+  const handleSearch = () => {
+    // Updates active search states from UI input states
+    setSearchQuery(searchInput.trim());
+    setLocationQuery(locationInput.trim());
+    setMinPrice(minPriceInput);
+    setMaxPrice(maxPriceInput);
     setShowLocationDropdown(false);
+    setShowFilters(false);
   };
 
   const filteredLocations = locations.filter(l =>
@@ -183,81 +191,113 @@ export default function HomeScreen({ navigation }) {
 
   const renderHeader = () => (
     <View style={{ backgroundColor: COLORS.background, zIndex: 100 }}>
-      {/* Combined Search & Location Bar */}
+      {/* Search Bar Row */}
       <View style={[styles.searchRow, { paddingHorizontal: 16 }]}>
-        <View style={styles.combinedSearchBox}>
-          {/* Keyword Search Part (Left) */}
-          <View style={styles.searchPart}>
-            <Icon name="search" size={14} color={COLORS.textMuted} style={styles.searchIcon} />
-            <View style={{ flex: 1, height: '100%', justifyContent: 'center' }}>
-              {searchInput === '' && (
-                <View style={styles.placeholderContainer} pointerEvents="none">
-                  <Text style={styles.placeholderStatic}>Search : </Text>
-                  <Animated.Text
-                    style={[
-                      styles.placeholderDynamic,
-                      { opacity: fadeAnim, fontSize: 13 }
-                    ]}
-                  >
-                    {categoriesToSearch[placeholderIndex]}
-                  </Animated.Text>
-                </View>
-              )}
-              <TextInput
-                style={styles.searchInput}
-                value={searchInput}
-                onChangeText={setSearchInput}
-                onSubmitEditing={() => handleSearch()}
-                returnKeyType="search"
-              />
-            </View>
-            {searchInput.length > 0 && (
-              <TouchableOpacity
-                onPress={() => { setSearchInput(''); setSearchQuery(''); }}
-                style={{ padding: 4 }}
-              >
-                <Icon name="x" size={12} color={COLORS.textMuted} />
-              </TouchableOpacity>
+        <View style={styles.searchBox}>
+          <Icon name="search" size={14} color={COLORS.textMuted} style={styles.searchIcon} />
+          <View style={{ flex: 1, height: '100%', justifyContent: 'center' }}>
+            {searchInput === '' && (
+              <View style={styles.placeholderContainer} pointerEvents="none">
+                <Text style={styles.placeholderStatic}>Search : </Text>
+                <Animated.Text
+                  style={[
+                    styles.placeholderDynamic,
+                    { opacity: fadeAnim, fontSize: 13 }
+                  ]}
+                >
+                  {categoriesToSearch[placeholderIndex]}
+                </Animated.Text>
+              </View>
             )}
-          </View>
-
-          <View style={styles.verticalSeparator} />
-
-          {/* Location Search Part (Right) */}
-          <View style={styles.locationPart}>
-            <Icon name="map-pin" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
             <TextInput
-              style={styles.locationInput}
-              placeholder="Location"
-              placeholderTextColor={COLORS.textMuted}
-              value={locationInput}
-              onChangeText={v => {
-                setLocationInput(v);
-                setShowLocationDropdown(true);
-              }}
-              onFocus={() => setShowLocationDropdown(true)}
-              onSubmitEditing={() => handleSearch()}
+              style={styles.searchInput}
+              value={searchInput}
+              onChangeText={setSearchInput}
+              onSubmitEditing={handleSearch}
               returnKeyType="search"
             />
-            {locationInput.length > 0 && (
-              <TouchableOpacity
-                onPress={() => { setLocationInput(''); setLocationQuery(''); }}
-                style={{ padding: 4 }}
-              >
-                <Icon name="x" size={12} color={COLORS.textMuted} />
-              </TouchableOpacity>
-            )}
           </View>
+          {searchInput.length > 0 && (
+            <TouchableOpacity
+              onPress={() => { setSearchInput(''); }}
+              style={{ padding: 4 }}
+            >
+              <Icon name="x" size={12} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        <TouchableOpacity style={styles.searchBtn} onPress={() => handleSearch()}>
-          <Icon name="search" size={18} color={COLORS.white} />
+        <TouchableOpacity
+          style={[styles.searchBtn, showFilters && { backgroundColor: COLORS.accent }]}
+          onPress={() => {
+            if (showFilters) setShowLocationDropdown(false);
+            setShowFilters(!showFilters);
+          }}
+        >
+          <Icon name="menu" size={18} color={COLORS.white} />
         </TouchableOpacity>
       </View>
 
-      {/* Location Dropdown - Anchored to the right part */}
-      {showLocationDropdown && locationInput.length > 0 && filteredLocations.length > 0 && (
-        <View style={[styles.dropdownContainer, { right: 68, width: 200, left: undefined }]}>
+      {/* Filter Section */}
+      {showFilters && (
+        <View style={styles.filterSection}>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={styles.filterLabel}>Find ads in</Text>
+            <View style={styles.filterInputWrapper}>
+              <Icon name="map-pin" size={14} color={COLORS.primary} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.filterTextInput}
+                placeholder="City, area or locality..."
+                placeholderTextColor={COLORS.textMuted}
+                value={locationInput}
+                onChangeText={v => {
+                  setLocationInput(v);
+                  setShowLocationDropdown(true);
+                }}
+                onFocus={() => setShowLocationDropdown(true)}
+                onSubmitEditing={handleSearch}
+              />
+              {locationInput.length > 0 && (
+                <TouchableOpacity onPress={() => setLocationInput('')}>
+                  <Icon name="x" size={12} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <Text style={styles.filterLabel}>Price Range</Text>
+          <View style={styles.filterRow}>
+            <View style={[styles.filterInputWrapper, { flex: 1 }]}>
+              <Text style={{ color: COLORS.textMuted, fontSize: 12, marginRight: 6 }}>Min:</Text>
+              <TextInput
+                style={styles.filterTextInput}
+                placeholder="0"
+                keyboardType="numeric"
+                value={minPriceInput}
+                onChangeText={setMinPriceInput}
+              />
+            </View>
+            <View style={[styles.filterInputWrapper, { flex: 1 }]}>
+              <Text style={{ color: COLORS.textMuted, fontSize: 12, marginRight: 6 }}>Max:</Text>
+              <TextInput
+                style={styles.filterTextInput}
+                placeholder="Any"
+                keyboardType="numeric"
+                value={maxPriceInput}
+                onChangeText={setMaxPriceInput}
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.applyBtn} onPress={() => handleSearch()}>
+            <Text style={styles.applyBtnText}>Apply Filters</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Location Dropdown - Anchored to location input when filters are open */}
+      {showFilters && showLocationDropdown && locationInput.length > 0 && filteredLocations.length > 0 && (
+        <View style={[styles.dropdownContainer, { top: 110, left: 16, right: 16, width: undefined }]}>
           <ScrollView
             style={styles.dropdownScroll}
             keyboardShouldPersistTaps="handled"
@@ -269,7 +309,7 @@ export default function HomeScreen({ navigation }) {
                 style={styles.dropdownItem}
                 onPress={() => {
                   setLocationInput(loc.name);
-                  handleSearch(searchInput, loc.name);
+                  setShowLocationDropdown(false);
                 }}
               >
                 <Icon name="map-pin" size={12} color={COLORS.textMuted} />
@@ -448,7 +488,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  logo: { color: 'white', fontSize: 35, fontWeight: '800', letterSpacing: 0.5 },
+  logo: { color: 'white', fontSize: 40, fontWeight: '800', letterSpacing: 0.5 },
   subtext: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
@@ -471,44 +511,65 @@ const styles = StyleSheet.create({
     height: 44,
     ...SHADOW.small,
   },
-  combinedSearchBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.full,
-    height: 44,
-    ...SHADOW.small,
-    overflow: 'hidden',
-  },
-  searchPart: {
-    flex: 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 10,
-    height: '100%',
-  },
-  locationPart: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 12,
-    paddingRight: 4,
-    height: '100%',
-  },
-  verticalSeparator: {
-    width: 1,
-    height: '50%',
-    backgroundColor: 'rgba(0,0,0,0.1)',
-  },
   searchIcon: { marginRight: 6 },
   searchInput: { flex: 1, fontSize: 13, color: COLORS.text, height: '100%' },
   locationInput: { flex: 1, fontSize: 13, color: COLORS.text, height: '100%' },
+  filterSection: {
+    backgroundColor: COLORS.white,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  filterInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 12,
+    height: 40,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  filterTextInput: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.text,
+    marginTop:1,
+    height: '100%',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  filterInputGroup: {
+    flex: 1,
+  },
+  applyBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOW.small,
+  },
+  applyBtnText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
   dropdownContainer: {
     position: 'absolute',
     top: 60,
     left: 16,
-    right: 68,
+    right: 16,
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.md,
     maxHeight: 250,
@@ -551,16 +612,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...SHADOW.small,
   },
-  categoryScroll: { marginBottom: 4 },
-  subCategoryScroll: { marginBottom: 10 },
-  categoryContent: { paddingHorizontal: 0, gap: 8, paddingVertical: 4 },
+  categoryScroll: { marginBottom: 6 },
+  subCategoryScroll: { marginBottom: 12 },
+  categoryContent: { paddingHorizontal: 0, gap: 10, paddingVertical: 8 },
   pill: {
     paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#e5e7eb',
+    ...SHADOW.small,
   },
   pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   pillSub: { backgroundColor: '#f0f4ff', borderColor: '#c7d4f0' },
@@ -568,8 +630,8 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
   pillTextActive: { color: COLORS.white },
   stickyContainer: {
-    backgroundColor: COLORS.background,
-    paddingVertical: 4,
+    backgroundColor: COLORS.white,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },

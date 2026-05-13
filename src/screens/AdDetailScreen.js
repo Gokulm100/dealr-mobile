@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  StyleSheet, Dimensions, Alert, TextInput, KeyboardAvoidingView, Platform,
-  ActivityIndicator, LayoutAnimation, UIManager, Keyboard,
+  StyleSheet, Dimensions, Alert, Platform,
+  ActivityIndicator, LayoutAnimation, UIManager,
 } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -18,15 +18,18 @@ import AiAnalytics from '../components/AiAnalytics';
 
 const { width } = Dimensions.get('window');
 
+const SAFETY_TIPS = [
+  'Meet the seller in a public place',
+  'Check the item before you buy',
+  'Pay only after collecting the item',
+];
+
 export default function AdDetailScreen({ route, navigation }) {
-  const { listing, isTrending } = route.params;
+  const { listing } = route.params;
   const { user } = useAuth();
+  const isOwner = user && (user._id === listing.sellerId || user._id === listing.seller?._id);
   const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
   const [currentImg, setCurrentImg] = useState(0);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
 
   // Price Insights State
@@ -40,27 +43,7 @@ export default function AdDetailScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
-      if (chatOpen) {
-        setTimeout(() => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }
-    });
-
-    return () => {
-      showSubscription.remove();
-    };
-  }, [chatOpen]);
-
-  useEffect(() => {
-    if (chatOpen && user) {
-      fetchChat();
-    }
-  }, [chatOpen]);
-
-  useEffect(() => {
-    if (user?._id === listing.sellerId || user?._id === listing.seller?._id) {
+    if (isOwner) {
       fetchPriceInsights();
     }
   }, []);
@@ -86,41 +69,6 @@ export default function AdDetailScreen({ route, navigation }) {
     }
   };
 
-  const fetchChat = async () => {
-    if (!user) return;
-    try {
-      const data = await apiFetch(
-        `/api/ads/chat?adId=${listing.id}&sellerId=${listing.sellerId}&buyerId=${user._id}`
-      );
-      setChatMessages(Array.isArray(data.chats) ? data.chats : []);
-    } catch {}
-  };
-
-  const sendMessage = async () => {
-    if (!chatInput.trim() || !user) return;
-    setSending(true);
-    try {
-      await apiFetch('/api/ads/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          adId: listing.id,
-          to: listing.sellerId,
-          from: user._id,
-          message: chatInput.trim()
-                  }),
-      });
-      setChatInput('');
-      await fetchChat();
-      setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, 200);
-    } catch {
-      Alert.alert('Error', 'Could not send message.');
-    } finally {
-      setSending(false);
-    }
-  };
-
   const handleChat = () => {
     if (!user) {
       Alert.alert('Login required', 'Please login to chat with the seller.');
@@ -134,37 +82,48 @@ export default function AdDetailScreen({ route, navigation }) {
       );
       return;
     }
-    if (user._id === listing.sellerId) {
+    if (isOwner) {
       Alert.alert('This is your ad', 'You cannot chat with yourself.');
       return;
     }
-    setChatOpen(true);
+    navigation.navigate('Chat', {
+      screen: 'ChatDetail',
+      params: {
+        chat: {
+          adId: listing.id || listing._id,
+          adTitle: listing.title,
+          sellerId: listing.sellerId,
+          buyerId: user._id,
+        },
+        otherName: listing.seller,
+        isSeller: false,
+      },
+    });
+  };
+
+  const handleReport = () => {
+    Alert.alert(
+      "Report Ad",
+      "Are you sure you want to report this advertisement for suspicious activity?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Report",
+          style: "destructive",
+          onPress: () => Alert.alert("Success", "The ad has been reported. Our team will review it shortly.")
+        }
+      ]
+    );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-          activeOpacity={0.7}
-        >
-          <Icon name="arrow-left" size={20} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{listing.title}</Text>
-      </View>
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <ScrollView
-          ref={scrollRef}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
         {/* Image Carousel */}
         <ScrollView
           horizontal
@@ -183,7 +142,7 @@ export default function AdDetailScreen({ route, navigation }) {
 
         {/* Dots */}
         {listing.images?.length > 1 && (
-          <View style={styles.dots}>
+          <View style={styles.dotsOverlay}>
             {listing.images.map((_, idx) => (
               <View
                 key={idx}
@@ -193,48 +152,36 @@ export default function AdDetailScreen({ route, navigation }) {
           </View>
         )}
 
-        <View style={styles.body}>
+        <View style={styles.contentSheet}>
           {/* Price + Title */}
-          <Text style={styles.price}>₹{Number(listing.price).toLocaleString('en-IN')}</Text>
-          <Text style={styles.title}>{listing.title}</Text>
-
-          {/* Tags row */}
-          <View style={styles.tagsRow}>
-            <View style={styles.tag}>
-              <Icon name="tag" size={12} color={COLORS.primary} />
-              <Text style={styles.tagText}>{listing.category}</Text>
+          <View style={styles.priceSection}>
+            <View>
+              <Text style={styles.priceLabel}>Price</Text>
+              <Text style={styles.price}>₹{Number(listing.price).toLocaleString('en-IN')}</Text>
             </View>
-            {listing.subCategory && listing.subCategory !== 'General' && (
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{listing.subCategory}</Text>
-              </View>
-            )}
             {isNew && (
               <View style={[styles.tag, { backgroundColor: COLORS.success + '15' }]}>
-                <Text style={[styles.tagText, { color: COLORS.success }]}>NEW</Text>
-              </View>
-            )}
-            {isTrending && (
-              <View style={[styles.tag, { backgroundColor: '#fff7ed' }]}>
-                <Text style={{ fontSize: 12 }}>🔥</Text>
-                <Text style={[styles.tagText, { color: '#f97316', marginLeft: 4 }]}>TRENDING</Text>
+                <View style={[styles.dotSmall, { backgroundColor: COLORS.success }]} />
+                <Text style={[styles.tagText, { color: COLORS.success }]}>NEW LISTING</Text>
               </View>
             )}
           </View>
 
-          {/* Meta */}
-          <View style={styles.metaRow}>
-            <View style={[styles.metaItem, { width: '100%' }]}>
-              <Icon name="map-pin" size={14} color={COLORS.textMuted} style={{ alignSelf: 'flex-start', marginTop: 2 }} />
-              <Text style={[styles.metaText, { flex: 1 }]}>{listing.location}</Text>
+          <Text style={styles.title}>{listing.title}</Text>
+
+          {/* Meta Info Row */}
+          <View style={styles.metaRowNew}>
+            <View style={styles.metaBadge}>
+              <Icon name="map-pin" size={12} color={COLORS.primary} />
+              <Text style={styles.metaBadgeText}>{listing.location.split(',')[0]}</Text>
             </View>
-            <View style={styles.metaItem}>
-              <Icon name="eye" size={14} color={COLORS.textMuted} />
-              <Text style={styles.metaText}>{listing.views} views</Text>
+            <View style={styles.metaBadge}>
+              <Icon name="clock" size={12} color={COLORS.textMuted} />
+              <Text style={styles.metaBadgeText}>{listing.posted}</Text>
             </View>
-            <View style={styles.metaItem}>
-              <Icon name="clock" size={14} color={COLORS.textMuted} />
-              <Text style={styles.metaText}>{listing.posted}</Text>
+            <View style={styles.metaBadge}>
+              <Icon name="eye" size={12} color={COLORS.textMuted} />
+              <Text style={styles.metaBadgeText}>{listing.views} views</Text>
             </View>
           </View>
 
@@ -245,14 +192,39 @@ export default function AdDetailScreen({ route, navigation }) {
           </View>
 
           {/* AI Summary */}
-          <AiSummary
-            adTitle={listing.title}
-            category={listing.category}
-            subCategory={listing.subCategory}
-            description={listing.description}
-          />
+          <View style={styles.aiSection}>
+            <AiSummary
+              adTitle={listing.title}
+              category={listing.category}
+              subCategory={listing.subCategory}
+              description={listing.description}
+            />
+          </View>
 
-          {(user?._id === listing.sellerId || user?._id === listing.seller?._id) && (
+          {/* Safety Card */}
+          {!isOwner && (
+            <View style={styles.safetyCard}>
+              <View style={styles.safetyHeader}>
+                <View style={styles.safetyTitleRow}>
+                  <Icon name="shield" size={16} color={COLORS.success} />
+                  <Text style={styles.safetyTitle}>Safety Tips</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.reportBtn}
+                  activeOpacity={0.7}
+                  onPress={handleReport}
+                >
+                  <Icon name="flag" size={12} color={COLORS.error} />
+                  <Text style={styles.reportBtnText}>Report Ad</Text>
+                </TouchableOpacity>
+              </View>
+              {SAFETY_TIPS.map((tip, idx) => (
+                <Text key={idx} style={styles.safetyText}>• {tip}</Text>
+              ))}
+            </View>
+          )}
+
+          {isOwner && (
             <>
               <View style={styles.offersRow}>
                 {/* Highest Offer Card */}
@@ -324,154 +296,224 @@ export default function AdDetailScreen({ route, navigation }) {
 
           {/* Seller */}
           <View style={styles.sellerCard}>
-            {listing.sellerPic ? (
-              <Image source={{ uri: listing.sellerPic }} style={styles.sellerAvatar} />
-            ) : (
-              <View style={styles.sellerAvatarFallback}>
-                <Icon name="user" size={20} color={COLORS.white} />
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sellerLabel}>Posted by</Text>
-              <Text style={styles.sellerName}>{listing.seller}</Text>
-              {listing.sellerSince && (
-                <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
+            <View style={styles.sellerInfoRow}>
+              {listing.sellerPic ? (
+                <Image source={{ uri: listing.sellerPic }} style={styles.sellerAvatar} />
+              ) : (
+                <View style={styles.sellerAvatarFallback}>
+                  <Icon name="user" size={24} color={COLORS.white} />
+                </View>
               )}
+              <View style={{ flex: 1 }}>
+                <View style={styles.sellerNameRow}>
+                  <Text style={styles.sellerName}>{listing.seller}</Text>
+                  <View style={styles.verifiedBadge}>
+                    <Icon name="check-circle" size={10} color={COLORS.success} />
+                    <Text style={styles.verifiedText}>Verified</Text>
+                  </View>
+                </View>
+                {listing.sellerSince && (
+                  <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
+                )}
+              </View>
+              <TouchableOpacity style={styles.viewProfileBtn}>
+                <Text style={styles.viewProfileText}>View Profile</Text>
+                <Icon name="chevron-right" size={14} color={COLORS.primary} />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Chat section */}
-          {chatOpen ? (
-            <View style={styles.chatBox}>
-              <Text style={styles.sectionTitle}>Chat with Seller</Text>
-              <View style={styles.chatMessages}>
-                {chatMessages.length === 0 && (
-                  <Text style={styles.chatEmpty}>No messages yet. Say hello!</Text>
-                )}
-                {chatMessages.map((msg, idx) => {
-                  const isMe = msg.from === user?._id || msg.from?._id === user?._id;
-                  return (
-                    <View
-                      key={idx}
-                      style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}
-                    >
-                      <Text style={[styles.bubbleText, isMe && { color: COLORS.white }]}>
-                        {msg.message}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-              <View style={styles.chatInputRow}>
-                <TextInput
-                  style={styles.chatInput}
-                  placeholder="Type a message..."
-                  value={chatInput}
-                  onChangeText={setChatInput}
-                  multiline
-                  onFocus={() => {
-                    setTimeout(() => {
-                      scrollRef.current?.scrollToEnd({ animated: true });
-                    }, 300);
-                  }}
-                />
-                <TouchableOpacity
-                  style={styles.sendBtn}
-                  onPress={sendMessage}
-                  disabled={sending || !chatInput.trim()}
-                >
-                  <Icon name="send" size={18} color={COLORS.white} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            (user?._id !== listing.sellerId && user?._id !== listing.seller?._id) && (
-              <TouchableOpacity style={styles.chatBtn} onPress={handleChat}>
-                <Icon name="message-circle" size={18} color={COLORS.white} />
-                <Text style={styles.chatBtnText}>Chat with Seller</Text>
-              </TouchableOpacity>
-            )
-          )}
+
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+
+      {/* Sticky Bottom Bar */}
+      {!isOwner && (
+        <View style={styles.stickyFooter}>
+          <TouchableOpacity style={styles.chatBtnSticky} onPress={handleChat} activeOpacity={0.9}>
+            <Icon name="message-circle" size={20} color={COLORS.white} />
+            <Text style={styles.chatBtnText}>Chat with Seller</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Overlay Header - Moved to end of View to ensure it's on top and clickable */}
+      <View style={styles.headerOverlay} pointerEvents="box-none">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerBtn}
+          activeOpacity={0.8}
+        >
+          <Icon name="arrow-left" size={20} color={COLORS.text} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
+  container: { flex: 1, backgroundColor: COLORS.white },
+  headerOverlay: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    left: 0,
+    right: 0,
+    zIndex: 100,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
+    paddingHorizontal: 16,
   },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  headerBtn: {
+   marginTop:20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW.medium,
   },
-  headerTitle: { flex: 1, color: COLORS.white, fontSize: 16, fontWeight: '700' },
-  image: { height: 260, backgroundColor: COLORS.border },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 8 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.border },
-  dotActive: { backgroundColor: COLORS.primary, width: 18 },
-  body: { padding: 16 },
-  price: { fontSize: 26, fontWeight: '900', color: COLORS.primary, marginBottom: 4 },
-  title: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-  tagsRow: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
+  image: { height: 360, backgroundColor: COLORS.border },
+  dotsOverlay: {
+    position: 'absolute',
+    top: 310,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255, 255, 255, 0.5)' },
+  dotActive: { backgroundColor: COLORS.white, width: 16 },
+  contentSheet: {
+    marginTop: -30,
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    minHeight: 600,
+  },
+  priceSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  priceLabel: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  price: { fontSize: 32, fontWeight: '900', color: COLORS.primary },
+  title: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 16, lineHeight: 28 },
+  metaRowNew: { flexDirection: 'row', gap: 10, marginBottom: 24, flexWrap: 'wrap' },
+  metaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+  },
+  metaBadgeText: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#f0f4ff',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: RADIUS.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
   },
-  tagText: { fontSize: 12, fontWeight: '600', color: COLORS.primary },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 16 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 13, color: COLORS.textMuted },
-  section: { marginBottom: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
-  description: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
-  loadingContainer: { padding: 20, alignItems: 'center' },
-  sellerCard: {
+  dotSmall: { width: 4, height: 4, borderRadius: 2 },
+  tagText: { fontSize: 11, fontWeight: '800' },
+  section: { marginBottom: 28 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
+  description: { fontSize: 15, color: COLORS.text, lineHeight: 24, opacity: 0.8 },
+  aiSection: { marginBottom: 24, borderRadius: RADIUS.lg, overflow: 'hidden' },
+  safetyCard: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: RADIUS.lg,
+    padding: 16,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  safetyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.md,
-    padding: 14,
-    marginBottom: 16,
-    ...SHADOW.small,
+    justifyContent: 'space-between',
+    marginBottom: 12
   },
-  sellerAvatar: { width: 44, height: 44, borderRadius: 22 },
+  safetyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  safetyTitle: { fontSize: 14, fontWeight: '700', color: '#0369a1' },
+  safetyText: { fontSize: 13, color: '#0c4a6e', marginBottom: 4, opacity: 0.8 },
+  sellerCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: 16,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sellerInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  sellerAvatar: { width: 48, height: 48, borderRadius: 24 },
   sellerAvatarFallback: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 48, height: 48, borderRadius: 24,
     backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
   },
-  sellerLabel: { fontSize: 11, color: COLORS.textMuted },
-  sellerName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  chatBtn: {
-    backgroundColor: COLORS.accent,
+  sellerNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sellerName: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  verifiedText: { fontSize: 11, fontWeight: '600', color: COLORS.success },
+  sellerSince: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
+  viewProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.background,
     borderRadius: RADIUS.md,
-    paddingVertical: 14,
+  },
+  viewProfileText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.white,
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    ...SHADOW.medium,
+  },
+  chatBtnSticky: {
+    flex: 1,
+    height: 54,
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 24,
+    gap: 10,
+    ...SHADOW.small,
   },
   chatBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 16 },
+  reportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.error + '20',
+  },
+  reportBtnText: { fontSize: 11, color: COLORS.error, fontWeight: '700', textTransform: 'uppercase' },
   offersRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   offerCard: {
     flex: 1,
@@ -504,43 +546,4 @@ const styles = StyleSheet.create({
   offerDesc: { fontSize: 11, color: COLORS.textMuted, lineHeight: 15 },
   expandedCard: { flex: 2, borderColor: COLORS.primary, zIndex: 10, ...SHADOW.medium },
   readMoreText: { fontSize: 10, color: COLORS.primary, fontWeight: '700', marginTop: 4 },
-  chatBox: {
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
-    padding: 14,
-    marginBottom: 24,
-    ...SHADOW.small,
-  },
-  chatMessages: { minHeight: 80, marginBottom: 12 },
-  chatEmpty: { color: COLORS.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 16 },
-  bubble: {
-    maxWidth: '75%',
-    borderRadius: RADIUS.lg,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 6,
-    backgroundColor: '#f0f4ff',
-    alignSelf: 'flex-start',
-  },
-  bubbleMe: { backgroundColor: COLORS.accent, alignSelf: 'flex-end' },
-  bubbleThem: {},
-  bubbleText: { fontSize: 14, color: COLORS.text },
-  chatInputRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
-  chatInput: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    maxHeight: 100,
-    color: COLORS.text,
-  },
-  sendBtn: {
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.md,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

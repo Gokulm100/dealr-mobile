@@ -8,14 +8,12 @@ import Svg, { Path } from 'react-native-svg';
 
 const ICONS = {
   'home':          '⌂',
-  'search':        '⌕',
   'heart':         '♡',
   'heart-filled':  '♥',
   'plus-circle':   '✚',
   'plus':          '✚',
   'speaker':       '📃',
   'user':          '👤',
-  'map-pin':       '📍',
   'eye':           '👁',
   'clock':         '🕐',
   'tag':           '🏷',
@@ -243,6 +241,63 @@ const AlertCircleSvg = ({ size, color }) => (
   </Svg>
 );
 
+const MapPinSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const EyeSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const SearchSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M21 21L16.65 16.65"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 export default function Icon({ name, size = 16, color = '#000', style }) {
   if (name === 'flag') {
     return (
@@ -262,6 +317,13 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <ChatSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'search') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <SearchSvg size={size} color={color} />
       </View>
     );
   }
@@ -314,6 +376,20 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <OfferSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'map-pin') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <MapPinSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'eye') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <EyeSvg size={size} color={color} />
       </View>
     );
   }

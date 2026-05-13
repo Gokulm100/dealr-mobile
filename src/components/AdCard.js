@@ -60,9 +60,7 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
       </View>
 
       <View style={styles.body}>
-        <Text style={[styles.title, item.isSold && styles.textMuted]} numberOfLines={2}>
-          {item.title}
-        </Text>
+
 
         <View style={styles.priceRow}>
           <Text style={[styles.price, item.isSold && styles.textMuted]}>
@@ -82,20 +80,28 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
           </View>
         </View>
 
-        <View style={styles.meta}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, item.isSold && styles.textMuted]} numberOfLines={2}>
+            {item.title}
+          </Text>
+        </View>
           <View style={[styles.metaItem, { flex: 1, marginRight: 4 }]}>
             <Icon name="map-pin" size={12} color={COLORS.textMuted} />
             <Text style={styles.metaText} numberOfLines={1}>
               {formatLocation(item.location)}
             </Text>
           </View>
+        <View style={styles.divider} />
+
+        <View style={styles.meta}>
+                <View style={styles.topRow}>
+                  <Text style={styles.postedSmall}>{item.posted}</Text>
+                </View>
           <View style={styles.metaItem}>
             <Icon name="eye" size={12} color={COLORS.textMuted} />
-            <Text style={styles.metaText}>{item.views}</Text>
+            <Text style={styles.metaText}>{item.views} views</Text>
           </View>
         </View>
-
-        <Text style={styles.posted}>{item.posted}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -217,8 +223,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 6,
+    marginBottom: 4,
     flexWrap: 'wrap',
+  },
+  topRow: {
+    marginBottom: 2,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -235,19 +244,40 @@ const styles = StyleSheet.create({
   },
   body: {
     padding: 10,
+    paddingTop: 8,
   },
   title: {
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4,
+    flex: 1,
+    lineHeight: 18,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 4,
     height: 38,
+    marginBottom: 2,
+  },
+  postedSmall: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   price: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 25,
+    fontWeight: '900',
     color: COLORS.primary,
-    marginBottom: 6,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 8,
+    opacity: 0.6,
   },
   meta: {
     flexDirection: 'row',
@@ -264,9 +294,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textMuted,
   },
-  posted: {
-    fontSize: 11,
-    color: COLORS.textMuted,
+  viewCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: 2,
   },
 });

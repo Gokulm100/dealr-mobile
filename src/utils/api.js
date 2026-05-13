@@ -146,6 +146,7 @@ export function mapListing(listing) {
     disabled: listing.disabled || false,
     status: listing.status || 'active',
     isSold: listing.isSold || false,
+    sellerPhone: listing.seller?.phone || listing.phone || null,
     images:
       Array.isArray(listing.images) && listing.images.length > 0
         ? listing.images.map(img => {

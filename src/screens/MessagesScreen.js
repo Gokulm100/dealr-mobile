@@ -3,8 +3,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Image, ActivityIndicator, RefreshControl,
+  Image, ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, formatPostedTime } from '../utils/api';
@@ -15,6 +16,7 @@ const TABS = ['Buying', 'Selling'];
 
 export default function MessagesScreen({ navigation }) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const { refresh } = useMessages();
   const [activeTab, setActiveTab] = useState(0); // 0 = Buying, 1 = Selling
   const [buyingChats, setBuyingChats] = useState([]);
@@ -187,7 +189,7 @@ export default function MessagesScreen({ navigation }) {
 
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
           <Text style={styles.headerTitle}>Messages</Text>
         </View>
 
@@ -267,23 +269,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f1f1',
   },
-  headerTitle: { color: COLORS.white, fontSize: 24, fontWeight: '800' },
+  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
   tabContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#f0f2f5',
-    borderRadius: RADIUS.lg,
+    backgroundColor: '#f1f3f5',
+    borderRadius: RADIUS.xl,
     padding: 4,
   },
   tab: {
@@ -291,15 +291,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 6,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.xl,
   },
   tabActive: {
     backgroundColor: COLORS.white,
     ...SHADOW.small,
   },
-  tabText: { fontSize: 14, fontWeight: '600', color: COLORS.textMuted },
+  tabText: { fontSize: 15, fontWeight: '600', color: COLORS.textMuted },
   tabTextActive: { color: COLORS.primary },
   tabBadge: {
     backgroundColor: COLORS.error,
@@ -317,39 +317,39 @@ const styles = StyleSheet.create({
   chatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f1f1',
   },
   chatRowUnread: {
-    backgroundColor: '#f0f7ff',
+    backgroundColor: '#f8faff',
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: 14,
+    marginRight: 16,
   },
-  avatar: { width: 56, height: 56, borderRadius: 28 },
+  avatar: { width: 60, height: 60, borderRadius: 30 },
   initialsAvatar: {
-    backgroundColor: '#e1e8f0',
+    backgroundColor: '#f0f4f8',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e1e8f0',
   },
   initialsText: {
     color: COLORS.primary,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
   },
   unreadDot: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    top: 0,
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: COLORS.primary,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: COLORS.white,
   },
   chatInfo: { flex: 1, justifyContent: 'center' },
@@ -357,16 +357,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  chatName: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  chatName: { fontSize: 17, fontWeight: '600', color: COLORS.text },
   chatNameUnread: { fontWeight: '800' },
-  chatTime: { fontSize: 12, color: COLORS.textMuted },
+  chatTime: { fontSize: 12, color: COLORS.textMuted, fontWeight: '500' },
   chatAdTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.primary,
-    marginBottom: 2,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   chatPreview: {
     fontSize: 14,
@@ -375,15 +377,17 @@ const styles = StyleSheet.create({
   },
   chatPreviewUnread: {
     color: COLORS.text,
-    fontWeight: '600'
+    fontWeight: '600',
   },
-  meLabel: { color: COLORS.textMuted, fontWeight: '400' },
+  meLabel: { color: COLORS.textMuted, fontWeight: '500' },
   adThumbnail: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.sm,
-    marginLeft: 12,
-    backgroundColor: '#eee',
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.md,
+    marginLeft: 14,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyIconCircle: {

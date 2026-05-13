@@ -195,7 +195,6 @@ export default function AiTextArea({ value, onChange, category, subcategory, onF
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <Text style={styles.label}>Description</Text>
         <TouchableOpacity
           style={styles.aiBtn}
           onPress={handleAiWrite}
