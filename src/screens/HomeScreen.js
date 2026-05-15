@@ -189,6 +189,8 @@ export default function HomeScreen({ navigation }) {
     l.name.toLowerCase().includes(locationInput.toLowerCase())
   ).slice(0, 15);
 
+  const hasActiveFilters = locationQuery.trim() !== '' || minPrice !== '' || maxPrice !== '';
+
   const renderHeader = () => (
     <View style={{ backgroundColor: COLORS.background, zIndex: 100 }}>
       {/* Search Bar Row */}
@@ -235,6 +237,7 @@ export default function HomeScreen({ navigation }) {
           }}
         >
           <Icon name="menu" size={18} color={COLORS.white} />
+          {hasActiveFilters && <View style={styles.filterBadge} />}
         </TouchableOpacity>
       </View>
 
@@ -625,6 +628,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOW.small,
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.error || '#ef4444',
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
   },
   categoryScroll: { marginBottom: 6 },
   subCategoryScroll: { marginBottom: 12 },

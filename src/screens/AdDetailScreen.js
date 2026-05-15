@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, Image, TouchableOpacity,
-  StyleSheet, Dimensions, Alert, Platform,
+  StyleSheet, Alert, Platform,
   ActivityIndicator, LayoutAnimation, UIManager,
 } from 'react-native';
 
@@ -15,8 +15,7 @@ import { apiFetch, API_BASE_URL } from '../utils/api';
 import AiSummary from '../components/AiSummary';
 import { useAuth } from '../context/AuthContext';
 import AiAnalytics from '../components/AiAnalytics';
-
-const { width } = Dimensions.get('window');
+import AdImageGallery from '../components/AdImageGallery';
 
 const SAFETY_TIPS = [
   'Meet the seller in a public place',
@@ -29,7 +28,6 @@ export default function AdDetailScreen({ route, navigation }) {
   const { user } = useAuth();
   const isOwner = user && (user._id === listing.sellerId || user._id === listing.seller?._id);
   const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
-  const [currentImg, setCurrentImg] = useState(0);
   const scrollRef = useRef(null);
 
   // Price Insights State
@@ -124,33 +122,10 @@ export default function AdDetailScreen({ route, navigation }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Image Carousel */}
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={e => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-            setCurrentImg(idx);
-          }}
-          scrollEventThrottle={16}
-        >
-          {(listing.images || []).map((uri, idx) => (
-            <Image key={idx} source={{ uri }} style={[styles.image, { width }]} resizeMode="cover" />
-          ))}
-        </ScrollView>
-
-        {/* Dots */}
-        {listing.images?.length > 1 && (
-          <View style={styles.dotsOverlay}>
-            {listing.images.map((_, idx) => (
-              <View
-                key={idx}
-                style={[styles.dot, currentImg === idx && styles.dotActive]}
-              />
-            ))}
-          </View>
-        )}
+        <AdImageGallery
+          images={listing.images || []}
+          onBack={() => navigation.goBack()}
+        />
 
         <View style={styles.contentSheet}>
           {/* Price + Title */}
@@ -337,59 +312,19 @@ export default function AdDetailScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Overlay Header - Moved to end of View to ensure it's on top and clickable */}
-      <View style={styles.headerOverlay} pointerEvents="box-none">
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerBtn}
-          activeOpacity={0.8}
-        >
-          <Icon name="arrow-left" size={20} color={COLORS.text} />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
-  headerOverlay: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-  },
-  headerBtn: {
-   marginTop:20,
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOW.medium,
-  },
-  image: { height: 360, backgroundColor: COLORS.border },
-  dotsOverlay: {
-    position: 'absolute',
-    top: 310,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255, 255, 255, 0.5)' },
-  dotActive: { backgroundColor: COLORS.white, width: 16 },
   contentSheet: {
-    marginTop: -30,
+    marginTop: -20,
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
+    paddingTop: 28,
     minHeight: 600,
   },
   priceSection: {

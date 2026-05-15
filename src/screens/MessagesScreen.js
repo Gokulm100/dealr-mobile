@@ -75,7 +75,16 @@ export default function MessagesScreen({ navigation }) {
 
   const currentChats = activeTab === 0 ? buyingChats : sellingChats;
 
-  const renderItem = ({ item }) => {
+  const getChatKey = (item, idx) => {
+    const id = item._id || item.chatId;
+    if (id) return String(id);
+    const adId = item.adId?._id || item.adId || item.ad?._id || '';
+    const buyerId = item.buyerId || item.buyer?._id || '';
+    const sellerId = item.sellerId || item.seller?._id || '';
+    return `${adId}-${buyerId}-${sellerId}-${idx}`;
+  };
+
+  const renderItem = ({ item, index }) => {
     const isBuying = activeTab === 0;
     const otherName = isBuying
       ? (item.sellerName || item.seller?.name || 'Seller')
@@ -130,9 +139,15 @@ export default function MessagesScreen({ navigation }) {
     const isMe = lastMsgFrom && user?._id && String(lastMsgFrom) === String(user._id);
     const isUnread = item.isSeen === false && !isMe;
 
+    const isLast = index === currentChats.length - 1;
+
     return (
       <TouchableOpacity
-        style={[styles.chatRow, isUnread && styles.chatRowUnread]}
+        style={[
+          styles.chatRow,
+          isUnread && styles.chatRowUnread,
+          !isLast && styles.chatRowBorder,
+        ]}
         onPress={() => navigation.navigate('ChatDetail', {
           chat: { ...item, adId, buyerId, sellerId, adTitle },
           otherName,
@@ -231,8 +246,9 @@ export default function MessagesScreen({ navigation }) {
       ) : (
         <FlatList
           data={currentChats}
-          keyExtractor={(item, idx) => item._id || String(idx)}
+          keyExtractor={getChatKey}
           renderItem={renderItem}
+          extraData={activeTab}
           contentContainerStyle={[
             styles.list,
             currentChats.length === 0 && styles.listEmpty,
@@ -321,6 +337,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 18,
     backgroundColor: COLORS.white,
+  },
+  chatRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.12)',
   },
   chatRowUnread: {
     backgroundColor: '#f8faff',
