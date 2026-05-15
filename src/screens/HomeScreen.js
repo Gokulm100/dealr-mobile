@@ -192,9 +192,9 @@ export default function HomeScreen({ navigation }) {
   const hasActiveFilters = locationQuery.trim() !== '' || minPrice !== '' || maxPrice !== '';
 
   const renderHeader = () => (
-    <View style={{ backgroundColor: COLORS.background, zIndex: 100 }}>
+    <View style={styles.searchSection}>
       {/* Search Bar Row */}
-      <View style={[styles.searchRow, { paddingHorizontal: 16 }]}>
+      <View style={styles.searchRow}>
         <View style={styles.searchBox}>
           <Icon name="search" size={14} color={COLORS.textMuted} style={styles.searchIcon} />
           <View style={{ flex: 1, height: '100%', justifyContent: 'center' }}>
@@ -325,76 +325,129 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
-  const renderStickyFilters = () => (
-    <View style={styles.stickyContainer}>
-      {/* Category Pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryScroll}
-        contentContainerStyle={[styles.categoryContent, { paddingHorizontal: 16 }]}
-      >
-        {categories.map(cat => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[styles.pill, selectedCategory === cat.name && styles.pillActive]}
-            onPress={() => {
-              if (cat.name === 'All') {
-                // Reset all filters when 'All' is clicked
-                setSearchQuery('');
-                setSearchInput('');
-                setLocationQuery('');
-                setLocationInput('');
-                setMinPrice('');
-                setMinPriceInput('');
-                setMaxPrice('');
-                setMaxPriceInput('');
-                setSelectedSubCategory('');
-              }
-              setSelectedCategory(cat.name);
-            }}
-          >
-            <Text style={[styles.pillText, selectedCategory === cat.name && styles.pillTextActive]}>
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+  const handleCategorySelect = (cat) => {
+    if (cat.name === 'All') {
+      setSearchQuery('');
+      setSearchInput('');
+      setLocationQuery('');
+      setLocationInput('');
+      setMinPrice('');
+      setMinPriceInput('');
+      setMaxPrice('');
+      setMaxPriceInput('');
+      setSelectedSubCategory('');
+    }
+    setSelectedCategory(cat.name);
+  };
 
-      {/* Subcategory Pills */}
-      {subCategories.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.subCategoryScroll}
-          contentContainerStyle={[styles.categoryContent, { paddingHorizontal: 16 }]}
-        >
-          <TouchableOpacity
-            style={[styles.pill, styles.pillSub, selectedSubCategory === '' && styles.pillSubActive]}
-            onPress={() => setSelectedSubCategory('')}
-          >
-            <Text style={[styles.pillText, selectedSubCategory === '' && styles.pillTextActive]}>All</Text>
-          </TouchableOpacity>
-          {subCategories.map((sub, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[styles.pill, styles.pillSub, selectedSubCategory === sub && styles.pillSubActive]}
-              onPress={() => setSelectedSubCategory(sub)}
+  const renderStickyFilters = () => {
+    const showSubcategories = selectedCategory !== 'All' && subCategories.length > 0;
+
+    return (
+      <View style={styles.stickyContainer}>
+        <View style={styles.sectionDivider} />
+        <View style={styles.filterContent}>
+          <View style={styles.filterPanelHeader}>
+            <View style={styles.filterPanelHeaderIcon}>
+              <Icon name="tag" size={13} color={COLORS.primary} />
+            </View>
+            <Text style={styles.filterPanelLabel}>Categories</Text>
+          </View>
+
+          <View style={styles.categoryTrack}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryTrackInner}
             >
-              <Text style={[styles.pillText, selectedSubCategory === sub && styles.pillTextActive]}>
-                {sub}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+              {categories.map((cat) => {
+                const active = selectedCategory === cat.name;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.categoryPill, active && styles.categoryPillActive]}
+                    onPress={() => handleCategorySelect(cat)}
+                    activeOpacity={0.88}
+                  >
+                    {active && <View style={styles.categoryPillDot} />}
+                    <Text
+                      style={[styles.categoryPillText, active && styles.categoryPillTextActive]}
+                      numberOfLines={1}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
 
-      {/* Results count */}
-      {searchQuery ? (
-        <Text style={[styles.resultsLabel, { marginLeft: 16 }]}>Results for "{searchQuery}"</Text>
-      ) : null}
-    </View>
-  );
+          {showSubcategories && (
+            <View style={styles.subBlock}>
+              <View style={styles.subBlockHeader}>
+                <View style={styles.subBlockTitleRow}>
+                  <View style={styles.subBlockDot} />
+                  <Text style={styles.subBlockTitle}>{selectedCategory}</Text>
+                </View>
+                {selectedSubCategory ? (
+                  <TouchableOpacity
+                    style={styles.subResetBtn}
+                    onPress={() => setSelectedSubCategory('')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.subReset}>Clear</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.subTrackInner}
+              >
+                <TouchableOpacity
+                  style={[styles.subPill, selectedSubCategory === '' && styles.subPillActive]}
+                  onPress={() => setSelectedSubCategory('')}
+                  activeOpacity={0.88}
+                >
+                  <Text
+                    style={[
+                      styles.subPillText,
+                      selectedSubCategory === '' && styles.subPillTextActive,
+                    ]}
+                  >
+                    All
+                  </Text>
+                </TouchableOpacity>
+                {subCategories.map((sub, idx) => {
+                  const active = selectedSubCategory === sub;
+                  return (
+                    <TouchableOpacity
+                      key={`${sub}-${idx}`}
+                      style={[styles.subPill, active && styles.subPillActive]}
+                      onPress={() => setSelectedSubCategory(sub)}
+                      activeOpacity={0.88}
+                    >
+                      <Text
+                        style={[styles.subPillText, active && styles.subPillTextActive]}
+                        numberOfLines={1}
+                      >
+                        {sub}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+
+        {searchQuery ? (
+          <Text style={styles.resultsLabel}>Results for "{searchQuery}"</Text>
+        ) : null}
+      </View>
+    );
+  };
 
   const renderFooter = () => {
     if (!loading || listings.length === 0) return null;
@@ -448,8 +501,8 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Sticky Filter Section */}
-      <View style={{ backgroundColor: COLORS.background, ...SHADOW.small, zIndex: 10 }}>
+      {/* Search + categories — one continuous surface */}
+      <View style={styles.stickyShell}>
         {renderHeader()}
         {renderStickyFilters()}
       </View>
@@ -511,11 +564,25 @@ const styles = StyleSheet.create({
   avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
   listContent: { paddingHorizontal: 4, paddingBottom: 20 },
   cardWrapper: { flex: 0.5 },
+  stickyShell: {
+    backgroundColor: COLORS.white,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    zIndex: 10,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.06)',
+    ...SHADOW.small,
+  },
+  searchSection: {
+    zIndex: 100,
+    paddingTop: 14,
+  },
   searchRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 14,
-    marginBottom: 10,
+    marginBottom: 4,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
   searchBox: {
@@ -532,10 +599,9 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 13, color: COLORS.text, height: '100%' },
   locationInput: { flex: 1, fontSize: 13, color: COLORS.text, height: '100%' },
   filterSection: {
-    backgroundColor: COLORS.white,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0, 0, 0, 0.06)',
   },
   filterLabel: {
     fontSize: 12,
@@ -641,30 +707,159 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.white,
   },
-  categoryScroll: { marginBottom: 6 },
-  subCategoryScroll: { marginBottom: 12 },
-  categoryContent: { paddingHorizontal: 0, gap: 10, paddingVertical: 8 },
-  pill: {
+  stickyContainer: {
+    paddingBottom: 14,
+  },
+  sectionDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(0, 0, 0, 0.07)',
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  filterContent: {
     paddingHorizontal: 16,
+  },
+  filterPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  filterPanelHeaderIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterPanelLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: -0.2,
+  },
+  categoryTrack: {
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    padding: 5,
+  },
+  categoryTrackInner: {
+    paddingHorizontal: 2,
+    gap: 5,
+    alignItems: 'center',
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 11,
+    backgroundColor: 'transparent',
+  },
+  categoryPillActive: {
+    backgroundColor: COLORS.white,
+    ...SHADOW.small,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 140, 246, 0.14)',
+  },
+  categoryPillDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.primary,
+  },
+  categoryPillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8b95a5',
+    letterSpacing: -0.15,
+  },
+  categoryPillTextActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  subBlock: {
+    marginTop: 14,
+    paddingTop: 14,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  subBlockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  subBlockTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  subBlockDot: {
+    width: 4,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    opacity: 0.5,
+  },
+  subBlockTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  subResetBtn: {
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#eff6ff',
+  },
+  subReset: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
+    letterSpacing: 0.2,
+  },
+  subTrackInner: {
+    paddingHorizontal: 2,
+    paddingBottom: 4,
+    gap: 8,
+    alignItems: 'center',
+  },
+  subPill: {
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#e5e9ef',
+  },
+  subPillActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
     ...SHADOW.small,
   },
-  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  pillSub: { backgroundColor: '#f0f4ff', borderColor: '#c7d4f0' },
-  pillSubActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  pillText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
-  pillTextActive: { color: COLORS.white },
-  stickyContainer: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.0)',
+  subPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5c6678',
   },
-  resultsLabel: { fontSize: 13, color: COLORS.textMuted, marginBottom: 8, marginLeft: 2 },
+  subPillTextActive: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  resultsLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 10,
+    marginHorizontal: 16,
+    marginBottom: 2,
+  },
   loader: { paddingVertical: 20, alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '700', color: COLORS.textMuted },
