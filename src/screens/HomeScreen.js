@@ -3,8 +3,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, ScrollView, RefreshControl,
-  StatusBar, Image, Animated, Platform,
+  StatusBar, Image, Animated, Platform, LayoutAnimation, UIManager,
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
@@ -20,8 +24,10 @@ export default function HomeScreen({ navigation }) {
   const [listings, setListings] = useState([]);
   const [categories, setCategories] = useState([{ id: 'all', name: 'All' }]);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [categoryInput, setCategoryInput] = useState('All');
   const [subCategories, setSubCategories] = useState([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const [subCategoryInput, setSubCategoryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
@@ -90,12 +96,12 @@ export default function HomeScreen({ navigation }) {
     }).catch(() => {});
   }, []);
 
-  // Update subcategories when category changes
+  // Update subcategories when category input changes
   useEffect(() => {
-    const cat = categories.find(c => c.name === selectedCategory);
+    const cat = categories.find(c => c.name === categoryInput);
     setSubCategories(cat?.subCategories || []);
-    setSelectedSubCategory('');
-  }, [selectedCategory, categories]);
+    setSubCategoryInput('');
+  }, [categoryInput, categories]);
 
   const fetchListings = useCallback(async (pageNum = 1, reset = false) => {
     // If already loading a reset/initial page, don't start another one
@@ -181,6 +187,8 @@ export default function HomeScreen({ navigation }) {
     setLocationQuery(locationInput.trim());
     setMinPrice(minPriceInput);
     setMaxPrice(maxPriceInput);
+    setSelectedCategory(categoryInput);
+    setSelectedSubCategory(subCategoryInput);
     setShowLocationDropdown(false);
     setShowFilters(false);
   };
@@ -189,7 +197,31 @@ export default function HomeScreen({ navigation }) {
     l.name.toLowerCase().includes(locationInput.toLowerCase())
   ).slice(0, 15);
 
-  const hasActiveFilters = locationQuery.trim() !== '' || minPrice !== '' || maxPrice !== '';
+  const hasActiveFilters = locationQuery.trim() !== '' || minPrice !== '' || maxPrice !== '' || selectedCategory !== 'All';
+
+  const clearFilter = (type) => {
+    if (type === 'search') {
+      setSearchQuery('');
+      setSearchInput('');
+    } else if (type === 'location') {
+      setLocationQuery('');
+      setLocationInput('');
+    } else if (type === 'minPrice') {
+      setMinPrice('');
+      setMinPriceInput('');
+    } else if (type === 'maxPrice') {
+      setMaxPrice('');
+      setMaxPriceInput('');
+    } else if (type === 'category') {
+      setSelectedCategory('All');
+      setCategoryInput('All');
+      setSelectedSubCategory('');
+      setSubCategoryInput('');
+    } else if (type === 'subCategory') {
+      setSelectedSubCategory('');
+      setSubCategoryInput('');
+    }
+  };
 
   const renderHeader = () => (
     <View style={styles.searchSection}>
@@ -292,6 +324,94 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
+          <Text style={styles.filterLabel}>Category</Text>
+          <View style={[styles.categoryTrack, { marginBottom: 16 }]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoryTrackInner}
+            >
+              {categories.map((cat) => {
+                const active = categoryInput === cat.name;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.categoryPill, active && styles.categoryPillActive]}
+                    onPress={() => handleCategorySelect(cat)}
+                    activeOpacity={0.88}
+                  >
+                    {active && <View style={styles.categoryPillDot} />}
+                    <Text
+                      style={[styles.categoryPillText, active && styles.categoryPillTextActive]}
+                      numberOfLines={1}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {categoryInput !== 'All' && subCategories.length > 0 && (
+            <View style={[styles.subBlock, { marginTop: 0, borderTopWidth: 0, marginBottom: 16 }]}>
+              <View style={styles.subBlockHeader}>
+                <View style={styles.subBlockTitleRow}>
+                  <View style={styles.subBlockDot} />
+                  <Text style={styles.subBlockTitle}>{categoryInput}</Text>
+                </View>
+                {subCategoryInput ? (
+                  <TouchableOpacity
+                    style={styles.subResetBtn}
+                    onPress={() => setSubCategoryInput('')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.subReset}>Clear</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.subTrackInner}
+              >
+                <TouchableOpacity
+                  style={[styles.subPill, subCategoryInput === '' && styles.subPillActive]}
+                  onPress={() => setSubCategoryInput('')}
+                  activeOpacity={0.88}
+                >
+                  <Text
+                    style={[
+                      styles.subPillText,
+                      subCategoryInput === '' && styles.subPillTextActive,
+                    ]}
+                  >
+                    All
+                  </Text>
+                </TouchableOpacity>
+                {subCategories.map((sub, idx) => {
+                  const active = subCategoryInput === sub;
+                  return (
+                    <TouchableOpacity
+                      key={`${sub}-${idx}`}
+                      style={[styles.subPill, active && styles.subPillActive]}
+                      onPress={() => setSubCategoryInput(sub)}
+                      activeOpacity={0.88}
+                    >
+                      <Text
+                        style={[styles.subPillText, active && styles.subPillTextActive]}
+                        numberOfLines={1}
+                      >
+                        {sub}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.applyBtn} onPress={() => handleSearch()}>
             <Text style={styles.applyBtnText}>Apply Filters</Text>
           </TouchableOpacity>
@@ -327,124 +447,57 @@ export default function HomeScreen({ navigation }) {
 
   const handleCategorySelect = (cat) => {
     if (cat.name === 'All') {
-      setSearchQuery('');
-      setSearchInput('');
-      setLocationQuery('');
-      setLocationInput('');
-      setMinPrice('');
-      setMinPriceInput('');
-      setMaxPrice('');
-      setMaxPriceInput('');
-      setSelectedSubCategory('');
+      setCategoryInput('All');
+      setSubCategoryInput('');
+    } else {
+      setCategoryInput(cat.name);
     }
-    setSelectedCategory(cat.name);
   };
 
   const renderStickyFilters = () => {
-    const showSubcategories = selectedCategory !== 'All' && subCategories.length > 0;
+    const activeFilters = [];
+    if (searchQuery) activeFilters.push({ type: 'search', label: searchQuery });
+    if (locationQuery) activeFilters.push({ type: 'location', label: locationQuery });
+    if (minPrice) activeFilters.push({ type: 'minPrice', label: `Min: ₹${minPrice}` });
+    if (maxPrice) activeFilters.push({ type: 'maxPrice', label: `Max: ₹${maxPrice}` });
+    if (selectedCategory !== 'All') activeFilters.push({ type: 'category', label: selectedCategory });
+    if (selectedSubCategory) activeFilters.push({ type: 'subCategory', label: selectedSubCategory });
+
+    if (activeFilters.length === 0) return null;
 
     return (
       <View style={styles.stickyContainer}>
         <View style={styles.sectionDivider} />
-        <View style={styles.filterContent}>
-          <View style={styles.filterPanelHeader}>
-            <View style={styles.filterPanelHeaderIcon}>
-              <Icon name="tag" size={13} color={COLORS.primary} />
-            </View>
-            <Text style={styles.filterPanelLabel}>Categories</Text>
-          </View>
-
-          <View style={styles.categoryTrack}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryTrackInner}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagsScroll}
+        >
+          {activeFilters.map((f) => (
+            <TouchableOpacity
+              key={f.type}
+              style={styles.filterTag}
+              onPress={() => clearFilter(f.type)}
+              activeOpacity={0.7}
             >
-              {categories.map((cat) => {
-                const active = selectedCategory === cat.name;
-                return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[styles.categoryPill, active && styles.categoryPillActive]}
-                    onPress={() => handleCategorySelect(cat)}
-                    activeOpacity={0.88}
-                  >
-                    {active && <View style={styles.categoryPillDot} />}
-                    <Text
-                      style={[styles.categoryPillText, active && styles.categoryPillTextActive]}
-                      numberOfLines={1}
-                    >
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          {showSubcategories && (
-            <View style={styles.subBlock}>
-              <View style={styles.subBlockHeader}>
-                <View style={styles.subBlockTitleRow}>
-                  <View style={styles.subBlockDot} />
-                  <Text style={styles.subBlockTitle}>{selectedCategory}</Text>
-                </View>
-                {selectedSubCategory ? (
-                  <TouchableOpacity
-                    style={styles.subResetBtn}
-                    onPress={() => setSelectedSubCategory('')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.subReset}>Clear</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.subTrackInner}
-              >
-                <TouchableOpacity
-                  style={[styles.subPill, selectedSubCategory === '' && styles.subPillActive]}
-                  onPress={() => setSelectedSubCategory('')}
-                  activeOpacity={0.88}
-                >
-                  <Text
-                    style={[
-                      styles.subPillText,
-                      selectedSubCategory === '' && styles.subPillTextActive,
-                    ]}
-                  >
-                    All
-                  </Text>
-                </TouchableOpacity>
-                {subCategories.map((sub, idx) => {
-                  const active = selectedSubCategory === sub;
-                  return (
-                    <TouchableOpacity
-                      key={`${sub}-${idx}`}
-                      style={[styles.subPill, active && styles.subPillActive]}
-                      onPress={() => setSelectedSubCategory(sub)}
-                      activeOpacity={0.88}
-                    >
-                      <Text
-                        style={[styles.subPillText, active && styles.subPillTextActive]}
-                        numberOfLines={1}
-                      >
-                        {sub}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
-        </View>
-
-        {searchQuery ? (
-          <Text style={styles.resultsLabel}>Results for "{searchQuery}"</Text>
-        ) : null}
+              <Text style={styles.filterTagText} numberOfLines={1}>{f.label}</Text>
+              <Icon name="x" size={10} color={COLORS.primary} style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            onPress={() => {
+              setSearchQuery(''); setSearchInput('');
+              setLocationQuery(''); setLocationInput('');
+              setMinPrice(''); setMinPriceInput('');
+              setMaxPrice(''); setMaxPriceInput('');
+              setSelectedCategory('All'); setCategoryInput('All');
+              setSelectedSubCategory(''); setSubCategoryInput('');
+            }}
+            style={{ paddingHorizontal: 12, paddingVertical: 6, justifyContent: 'center' }}
+          >
+            <Text style={styles.clearAllText}>Clear All</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     );
   };
@@ -551,14 +604,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
+    paddingTop: 40,
+    paddingBottom: 35,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  logo: { color: 'white', fontSize: 40, fontWeight: '800', letterSpacing: 0.5 },
+  logo: { color: 'white', fontSize: 38, fontWeight: '800', letterSpacing: 0.5 },
   subtext: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
@@ -572,6 +625,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.06)',
+    marginTop: -20,
     ...SHADOW.small,
   },
   searchSection: {
@@ -708,13 +762,38 @@ const styles = StyleSheet.create({
     borderColor: COLORS.white,
   },
   stickyContainer: {
-    paddingBottom: 14,
+    paddingBottom: 10,
   },
   sectionDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: 'rgba(0, 0, 0, 0.07)',
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+  tagsScroll: {
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 140, 246, 0.15)',
+  },
+  filterTagText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  clearAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textMuted,
   },
   filterContent: {
     paddingHorizontal: 16,
@@ -722,8 +801,36 @@ const styles = StyleSheet.create({
   filterPanelHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
     marginBottom: 10,
+    paddingVertical: 2,
+  },
+  filterPanelHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  filterPanelHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    justifyContent: 'flex-end',
+    marginLeft: 12,
+  },
+  categorySummary: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+    textAlign: 'right',
+  },
+  collapseChevron: {
+    color: COLORS.textMuted,
+    width: 30,
+    fontSize:30,
+    textAlign: 'center',
   },
   filterPanelHeaderIcon: {
     width: 26,

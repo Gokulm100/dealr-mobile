@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 const ICONS = {
   'home':          '⌂',
@@ -39,6 +39,98 @@ const ICONS = {
   'award':         '🏆',
   'dolar-sign':    '💲',
 };
+
+const XSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const CheckSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M20 6L9 17L4 12" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const EditSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M18.5 2.5C19.3284 1.67157 20.6716 1.67157 21.5 2.5C22.3284 3.32843 22.3284 4.67157 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const TrashSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 6H21M19 6V20C19 21 18 22 17 22H7C6 22 5 21 5 20V6M8 6V4C8 3 9 2 10 2H14C15 2 16 3 16 4V6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const MenuSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 12H21M3 6H21M3 18H21" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const ChevronUpSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M18 15L12 9L6 15" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const EyeOffSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M1 1L23 23" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const RefreshSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M23 4V10H17M1 20V14H7M3.51 9A9 9 0 0118.36 5.64L23 10M1 14L5.64 18.36A9 9 0 0020.49 15" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const TrendingUpSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M23 6L13.5 15.5L8.5 10.5L1 18M17 6H23V12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const AwardSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="7" stroke={color} strokeWidth="2" />
+    <Path d="M8.21 13.89L7 23L12 20L17 23L15.79 13.88" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const TagSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M20.59 13.41L13.42 20.58C12.64 21.36 11.37 21.36 10.59 20.58L2 12V2H12L20.59 10.59C21.37 11.37 21.37 12.64 20.59 13.41Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Circle cx="7" cy="7" r="1" fill={color} />
+  </Svg>
+);
+
+const AISvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 3L14.5 9L21 12L14.5 15L12 21L9.5 15L3 12L9.5 9L12 3Z" fill={color} />
+    <Path d="M5 5L6 7L8 8L6 9L5 11L4 9L2 8L4 7L5 5Z" fill={color} opacity="0.6" />
+    <Path d="M19 16L20 18L22 19L20 20L19 22L18 20L16 19L18 18L19 16Z" fill={color} opacity="0.6" />
+  </Svg>
+);
+
+const InboxSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M22 12H16L14 15H10L8 12H2V18C2 19.1046 2.89543 20 4 20H20C21.1046 20 22 19.1046 22 18V12Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M5.45 5.11L2 12V18H22V12L18.55 5.11C18.21 4.43 17.52 4 16.76 4H7.24C6.48 4 5.79 4.43 5.45 5.11Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const CheckCircleSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M22 11.08V12C21.9981 14.1564 21.3005 16.2547 20.0093 17.9882C18.7182 19.7217 16.9033 20.9931 14.8363 21.6116C12.7693 22.2302 10.556 22.1633 8.52723 21.421C6.49845 20.6788 4.76185 19.3001 3.57357 17.4876C2.38529 15.6751 1.80523 13.5251 1.91891 11.3533C2.03259 9.18146 2.83391 7.10656 4.20454 5.43577C5.57518 3.76497 7.43777 2.59014 9.51347 2.08502C11.5892 1.57991 13.7661 1.77197 15.73 2.63001" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M22 4L12 14.01L9 11.01" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
 
 const ChatSvg = ({ size, color }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -279,6 +371,30 @@ const EyeSvg = ({ size, color }) => (
   </Svg>
 );
 
+const ChevronDownSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6 10L12 16L18 10"
+      stroke={color}
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ChevronRightSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M10 6L16 12L10 18"
+      stroke={color}
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const SearchSvg = ({ size, color }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -298,7 +414,172 @@ const SearchSvg = ({ size, color }) => (
   </Svg>
 );
 
+const HeartSvg = ({ size, color, filled }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"}>
+    <Path
+      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ClockSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
+    <Path d="M12 6V12L16 14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const CameraSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Circle cx="12" cy="13" r="4" stroke={color} strokeWidth="2" />
+  </Svg>
+);
+
+const StarSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
 export default function Icon({ name, size = 16, color = '#000', style }) {
+  if (name === 'heart') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <HeartSvg size={size} color={color} filled={false} />
+      </View>
+    );
+  }
+  if (name === 'heart-filled') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <HeartSvg size={size} color={color} filled={true} />
+      </View>
+    );
+  }
+  if (name === 'clock') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <ClockSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'camera') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <CameraSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'star') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <StarSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'check') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <CheckSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'eye-off') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <EyeOffSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'chevron-up') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <ChevronUpSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'x') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <XSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'edit') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <EditSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'trash-2') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <TrashSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'menu') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <MenuSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'refresh') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <RefreshSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'trending-up') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <TrendingUpSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'award') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <AwardSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'tag') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <TagSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'AI') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <AISvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'inbox') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <InboxSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'check-circle') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <CheckCircleSvg size={size} color={color} />
+      </View>
+    );
+  }
   if (name === 'flag') {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
@@ -390,6 +671,20 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <EyeSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'chevron-down') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <ChevronDownSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'chevron-right') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <ChevronRightSvg size={size} color={color} />
       </View>
     );
   }

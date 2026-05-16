@@ -164,73 +164,85 @@ export default function MyAdsScreen({ navigation }) {
     const isSold = item.isSold === true || item.status === 'sold';
 
     return (
-      <View style={{ marginBottom: 16 }}>
-        <View style={[styles.card, isSold && { backgroundColor: '#fcfcfc', opacity: 0.9 }]}>
-          <TouchableOpacity
-            style={styles.cardInner}
-            onPress={() => navigation.navigate('AdDetail', { listing: item })}
-            activeOpacity={0.85}
-          >
-            <View>
-              <Image source={{ uri: item.images?.[0] }} style={[styles.thumbnail, isSold && { opacity: 0.6 }]} />
-              {isSold && (
-                <View style={styles.soldTagOverlay}>
-                  <Text style={styles.soldTagText}>SOLD</Text>
+      <View style={styles.cardContainer}>
+        <TouchableOpacity
+          style={[styles.card, isSold && styles.cardSold]}
+          onPress={() => navigation.navigate('AdDetail', { listing: item })}
+          activeOpacity={0.9}
+        >
+          <View style={styles.imageSection}>
+            <Image source={{ uri: item.images?.[0] }} style={styles.thumbnail} />
+            {isSold && (
+              <View style={styles.soldBadgeOverlay}>
+                <Text style={styles.soldBadgeText}>SOLD</Text>
+              </View>
+            )}
+            <View style={styles.viewCountBadge}>
+              <Icon name="eye" size={10} color={COLORS.white} />
+              <Text style={styles.viewCountText}>{item.views}</Text>
+            </View>
+          </View>
+
+          <View style={styles.contentSection}>
+            <View style={styles.topInfo}>
+              <Text style={styles.categoryText}>{item.category}</Text>
+              <Text style={styles.dateText}>{item.posted}</Text>
+            </View>
+
+            <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>₹{Number(item.price).toLocaleString('en-IN')}</Text>
+              <View style={styles.locationInfo}>
+                <Icon name="map-pin" size={10} color={COLORS.textMuted} />
+                <Text style={styles.locationText} numberOfLines={1}>{formatLocation(item.location)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.actionRow}>
+              {!isSold ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.editBtn]}
+                    onPress={() => navigation.navigate('Post', { ad: item })}
+                  >
+                    <Icon name="edit" size={14} color={COLORS.primary} />
+                    <Text style={[styles.actionBtnText, { color: COLORS.primary }]}>Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, item.disabled ? styles.enableBtn : styles.disableBtn]}
+                    onPress={() => handleToggleStatus(item)}
+                  >
+                    <Icon
+                      name={item.disabled ? "eye" : "eye-off"}
+                      size={14}
+                      color={item.disabled ? COLORS.success : COLORS.error}
+                    />
+                    <Text style={[styles.actionBtnText, { color: item.disabled ? COLORS.success : COLORS.error }]}>
+                      {item.disabled ? 'Enable' : 'Disable'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.soldBtn]}
+                    onPress={() => handleMarkAsSold(item)}
+                  >
+                    <Icon name="check-circle" size={14} color={COLORS.white} />
+                    <Text style={[styles.actionBtnText, { color: COLORS.white }]}>Sold</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <View style={styles.soldSummary}>
+                  <View style={styles.soldSuccessIcon}>
+                    <Icon name="check" size={12} color={COLORS.success} />
+                  </View>
+                  <Text style={styles.soldSuccessText}>Marked as Sold</Text>
                 </View>
               )}
             </View>
-            <View style={styles.info}>
-              <Text style={[styles.title, isSold && { color: COLORS.textMuted }]} numberOfLines={2}>{item.title}</Text>
-              <Text style={[styles.price, isSold && { color: COLORS.success, fontSize: 13, fontWeight: '700' }]}>
-                {isSold ? 'Sold' : ''} ₹{Number(item.price).toLocaleString('en-IN')}
-              </Text>
-              <View style={styles.metaRow}>
-                <Icon name="map-pin" size={12} color={COLORS.textMuted} />
-                <Text style={styles.metaText}>{formatLocation(item.location)}</Text>
-                <Icon name="eye" size={12} color={COLORS.textMuted} style={{ marginLeft: 8 }} />
-                <Text style={styles.metaText}>{item.views}</Text>
-              </View>
-              <Text style={styles.posted}>{item.posted} • {item.category}</Text>
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.actions}>
-            {!isSold && (
-              <>
-                <TouchableOpacity
-                  style={[styles.statusBtn, { backgroundColor: '#f0f4ff' }]}
-                  onPress={() => navigation.navigate('Post', { ad: item })}
-                >
-                  <Text style={[styles.statusBtnText, { color: COLORS.accent }]}>Edit</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.statusBtn, { backgroundColor: item.disabled ? '#e6fcf5' : '#fff5f5' }]}
-                  onPress={() => handleToggleStatus(item)}
-                >
-                  <Text style={[styles.statusBtnText, { color: item.disabled ? COLORS.success : COLORS.error }]}>
-                    {item.disabled ? 'Enable' : 'Disable'}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            <TouchableOpacity
-              style={[
-                styles.statusBtn,
-                { backgroundColor: isSold ? COLORS.success + '15' : '#f0f7ff' }
-              ]}
-              onPress={() => !isSold && handleMarkAsSold(item)}
-              disabled={isSold}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Text style={[styles.statusBtnText, { color: isSold ? COLORS.success : COLORS.primary }]}>
-                  {isSold ? 'Sold' : 'Mark Sold'}
-                </Text>
-              </View>
-            </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -346,13 +358,18 @@ export default function MyAdsScreen({ navigation }) {
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); fetchMyAds(); }}
               colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
             />
           }
           ListEmptyComponent={
             <View style={styles.center}>
-              <Icon name="speaker" size={48} color={COLORS.border} />
+              <View style={styles.iconCircle}>
+                <Icon name="inbox" size={40} color={COLORS.border} />
+              </View>
               <Text style={styles.emptyTitle}>No ads yet</Text>
-              <Text style={styles.emptySubText}>Tap "Post Ad" to list something for sale.</Text>
+              <Text style={styles.emptySubText}>
+                You haven't posted any ads yet.{"\n"}Tap the button above to start selling!
+              </Text>
             </View>
           }
         />
@@ -362,92 +379,217 @@ export default function MyAdsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
+    paddingTop: 54,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    ...SHADOW.medium,
+    zIndex: 10,
   },
   headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
   postBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   postBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
-  list: { padding: 14 },
+  list: { padding: 16, paddingBottom: 100 },
+  cardContainer: {
+    marginBottom: 16,
+    ...SHADOW.small,
+  },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    ...SHADOW.small,
+    borderRadius: 20,
     overflow: 'hidden',
+    flexDirection: 'row',
+    height: 140,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
   },
-  cardInner: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  thumbnail: { width: 60, height: 60, backgroundColor: COLORS.border, marginLeft: 20, borderRadius: RADIUS.sm },
-  soldTagOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 20,
-    backgroundColor: 'rgba(34, 197, 94, 0.9)',
-    paddingVertical: 2,
-    alignItems: 'center',
-    borderBottomLeftRadius: RADIUS.sm,
-    borderBottomRightRadius: RADIUS.sm,
-    width: 60,
+  cardSold: {
+    opacity: 0.8,
+    backgroundColor: '#F1F5F9',
   },
-  soldTagText: {
-    color: COLORS.white,
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+  imageSection: {
+    width: 120,
+    height: '100%',
+    position: 'relative',
   },
-  info: { flex: 1, padding: 12 },
-  title: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 3 },
-  price: { fontSize: 15, fontWeight: '800', color: COLORS.primary, marginBottom: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-  metaText: { fontSize: 12, color: COLORS.textMuted, marginLeft: 3 },
-  posted: { fontSize: 11, color: COLORS.textMuted },
-  actions: { paddingHorizontal: 10, justifyContent: 'center', gap: 8, paddingVertical: 10 },
-  statusBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.border,
+  },
+  soldBadgeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
-    minWidth: 85,
-    borderRadius: RADIUS.md,
+    alignItems: 'center',
   },
-  statusBtnText: { fontSize: 12, fontWeight: '700' },
-  soldBadge: {
+  soldBadgeText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 1,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  viewCountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  soldBadgeTextAction: {
-    fontSize: 13,
+  viewCountText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  contentSection: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  topInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dateText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    fontWeight: '500',
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    flex: 1,
+    marginLeft: 10,
+    justifyContent: 'flex-end',
+  },
+  locationText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    maxWidth: 80,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  actionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  editBtn: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#E0E7FF',
+  },
+  disableBtn: {
+    backgroundColor: '#FFF1F2',
+    borderColor: '#FFE4E6',
+  },
+  enableBtn: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#DCFCE7',
+  },
+  soldBtn: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  soldSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  soldSuccessIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soldSuccessText: {
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.success,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMuted },
-  emptySubText: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center' },
-
-  // Modal Styles
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  emptySubText: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  // ... rest of modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -456,7 +598,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     width: '100%',
     maxWidth: 400,
-    borderRadius: RADIUS.lg,
+    borderRadius: 24,
     padding: 24,
     ...SHADOW.medium,
   },
@@ -467,27 +609,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: COLORS.text,
   },
   modalLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.textMuted,
     marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   modalInput: {
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.md,
-    padding: 14,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
     color: COLORS.text,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E2E8F0',
   },
   dropdownContainer: {
     marginBottom: 24,
@@ -497,67 +639,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.md,
-    padding: 14,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E2E8F0',
   },
   selectedBuyerText: {
     fontSize: 15,
     color: COLORS.text,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   dropdownList: {
-    marginTop: 4,
+    marginTop: 8,
     backgroundColor: COLORS.white,
-    borderRadius: RADIUS.md,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    maxHeight: 180,
+    borderColor: '#E2E8F0',
+    maxHeight: 200,
     overflow: 'hidden',
-    ...SHADOW.small,
+    ...SHADOW.medium,
   },
   buyerItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: '#F1F5F9',
   },
   buyerItemSelected: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#F0F9FF',
   },
   buyerInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   buyerName: {
     fontSize: 15,
     color: COLORS.text,
+    fontWeight: '500',
   },
   buyerNameSelected: {
     fontWeight: '700',
     color: COLORS.primary,
   },
   noOffersText: {
-    padding: 20,
+    padding: 24,
     fontSize: 14,
     color: COLORS.textMuted,
     textAlign: 'center',
   },
   modalSubmit: {
     backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    padding: 16,
+    borderRadius: 12,
+    padding: 18,
     alignItems: 'center',
     ...SHADOW.small,
   },
   modalSubmitDisabled: {
     opacity: 0.5,
-    backgroundColor: COLORS.textMuted,
+    backgroundColor: '#94A3B8',
   },
   modalSubmitText: {
     color: COLORS.white,

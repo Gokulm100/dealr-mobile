@@ -234,9 +234,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
+    paddingTop: 54,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    ...SHADOW.medium,
   },
   headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
