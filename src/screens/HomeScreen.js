@@ -10,6 +10,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
 import { apiFetch, mapListing, API_BASE_URL } from '../utils/api';
@@ -44,8 +45,26 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [recentAds, setRecentAds] = useState([]);
   const isFirstLoad = useRef(true);
   const listRef = useRef(null);
+
+  useEffect(() => {
+    loadRecentlyViewed();
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadRecentlyViewed();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const loadRecentlyViewed = async () => {
+    try {
+      const raw = await AsyncStorage.getItem('recently_viewed_ads');
+      if (raw) setRecentAds(JSON.parse(raw));
+    } catch (err) {
+      console.log('Error loading recent ads:', err);
+    }
+  };
 
   const categoriesToSearch = ["Electronics", "Furniture", "Vehicles", "Real Estate"];
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -581,7 +600,52 @@ export default function HomeScreen({ navigation }) {
             </View>
           );
         }}
-        ListHeaderComponent={null}
+        ListHeaderComponent={
+          <View>
+            {recentAds.length > 0 && (
+              <View style={styles.recentSection}>
+                <View style={styles.recentHeader}>
+                  <Text style={styles.recentTitle}>Recently Viewed</Text>
+                  <TouchableOpacity onPress={async () => {
+                    await AsyncStorage.removeItem('recently_viewed_ads');
+                    setRecentAds([]);
+                  }}>
+                    <Text style={styles.clearRecentText}>Clear</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.recentScroll}
+                >
+                  {recentAds.map((item) => (
+                    <TouchableOpacity
+                      key={item.id || item._id}
+                      style={styles.recentItem}
+                      onPress={() => navigation.navigate('AdDetail', { listing: item })}
+                    >
+                      <Image
+                        source={{ uri: item.images?.[0] }}
+                        style={styles.recentImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.recentInfo}>
+                        <Text style={styles.recentPrice} numberOfLines={1}>₹{Number(item.price).toLocaleString('en-IN')}</Text>
+                        <Text style={styles.recentItemTitle} numberOfLines={1}>{item.title}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            {listings.length > 0 && (
+              <View style={styles.recommendationHeader}>
+                <Text style={styles.recommendationTitle}>Fresh Recommendations</Text>
+                <View style={styles.recommendationLine} />
+              </View>
+            )}
+          </View>
+        }
         ListFooterComponent={renderFooter()}
         ListEmptyComponent={renderEmpty()}
         contentContainerStyle={styles.listContent}
@@ -619,10 +683,10 @@ const styles = StyleSheet.create({
   cardWrapper: { flex: 0.5 },
   stickyShell: {
     backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
     zIndex: 10,
-    paddingBottom: 4,
+    paddingBottom: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.06)',
     marginTop: -20,
@@ -971,4 +1035,77 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '700', color: COLORS.textMuted },
   emptySubText: { fontSize: 13, color: COLORS.textMuted },
+  recentSection: {
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    marginTop: 4,
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  recentTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.3,
+  },
+  clearRecentText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  recentScroll: {
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  recentItem: {
+    width: 100,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  recentImage: {
+    width: '100%',
+    height: 65,
+    backgroundColor: COLORS.border,
+  },
+  recentInfo: {
+    padding: 6,
+  },
+  recentPrice: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  recentItemTitle: {
+    fontSize: 10,
+    color: COLORS.text,
+    marginTop: 1,
+  },
+  recommendationHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  recommendationTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.4,
+  },
+  recommendationLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+    opacity: 0.6,
+  },
 });

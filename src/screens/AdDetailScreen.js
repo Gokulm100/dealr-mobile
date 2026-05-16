@@ -5,6 +5,7 @@ import {
   StyleSheet, Alert, Platform,
   ActivityIndicator, LayoutAnimation, UIManager,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -30,21 +31,36 @@ export default function AdDetailScreen({ route, navigation }) {
   const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
   const scrollRef = useRef(null);
 
-  // Price Insights State
-  const [priceInsights, setPriceInsights] = useState([]);
-  const [loadingPrice, setLoadingPrice] = useState(false);
-  const [expandedOffer, setExpandedOffer] = useState(null);
-
-  const toggleExpand = (type) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedOffer(expandedOffer === type ? null : type);
-  };
-
   useEffect(() => {
+    addToRecentlyViewed(listing);
     if (isOwner) {
       fetchPriceInsights();
     }
   }, []);
+
+  const addToRecentlyViewed = async (ad) => {
+    try {
+      const RECENT_KEY = 'recently_viewed_ads';
+      const raw = await AsyncStorage.getItem(RECENT_KEY);
+      let list = raw ? JSON.parse(raw) : [];
+
+      const adId = ad.id || ad._id;
+      if (!adId) return;
+
+      // Remove if already exists to move it to the front
+      list = list.filter(item => (item.id || item._id) !== adId);
+
+      // Add to front
+      list.unshift(ad);
+
+      // Keep only last 10
+      if (list.length > 10) list = list.slice(0, 10);
+
+      await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(list));
+    } catch (err) {
+      console.error('Error saving recently viewed:', err);
+    }
+  };
 
   const fetchPriceInsights = async () => {
     setLoadingPrice(true);
