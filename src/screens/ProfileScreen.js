@@ -1,8 +1,8 @@
 // src/screens/ProfileScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Image, Alert, ActivityIndicator, ScrollView,
+  Image, Alert, ActivityIndicator, ScrollView, RefreshControl,
 } from 'react-native';
 import Icon from '../components/Icon';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
@@ -22,6 +22,13 @@ export default function ProfileScreen({ navigation }) {
   const { user, loginWithGoogle, logout } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    // Add any refresh logic here if needed, otherwise just stop the spinner
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
@@ -127,7 +134,12 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
+      >
         {/* User card */}
         <View style={styles.userCard}>
           <Image source={{ uri: user.profilePic }} style={styles.avatar} />
@@ -153,6 +165,19 @@ export default function ProfileScreen({ navigation }) {
               <Icon name="speaker" size={18} color={COLORS.accent} />
             </View>
             <Text style={styles.actionText}>My Ads</Text>
+            <Icon name="chevron-right" size={16} color={COLORS.border} />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('Favorites')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#fff1f2' }]}>
+              <Icon name="heart" size={18} color={COLORS.error} />
+            </View>
+            <Text style={styles.actionText}>My Favorites</Text>
             <Icon name="chevron-right" size={16} color={COLORS.border} />
           </TouchableOpacity>
 

@@ -97,7 +97,7 @@ function MetricExplorer({ insights }) {
         <View style={styles.detailPanel}>
           <View style={[styles.detailHeader, { backgroundColor: accent + '10' }]}>
             <View style={[styles.detailIcon, { backgroundColor: accent }]}>
-              <Icon name="trending-up" size={14} color={COLORS.white} />
+              <Icon name="trending-up" size={16} color={COLORS.white} />
             </View>
             <Text style={[styles.detailTitle, { color: accent }]}>{selected.title}</Text>
           </View>
@@ -139,7 +139,7 @@ function TipsAccordion({ suggestions }) {
                 </View>
                 <Text style={styles.tipRowTitle}>{tip.title}</Text>
               </View>
-              <Icon name={open ? 'chevron-down' : 'chevron-right'} size={18} color={COLORS.textMuted} />
+              <Icon name={open ? 'chevron-down' : 'chevron-right'} size={20} color={COLORS.textMuted} />
             </View>
             {open && !!tip.description && (
               <View style={styles.tipContent}>
@@ -191,7 +191,7 @@ export default function AiAnalytics({ ad }) {
       <View style={styles.card}>
         <View style={styles.promptHero}>
           <View style={styles.promptIconWrap}>
-            <Icon name="AI" size={22} color="#7f5af0" />
+            <Icon name="AI" size={32} color="#7f5af0" />
           </View>
           <View style={styles.promptCopy}>
             <View style={styles.badge}>
@@ -208,7 +208,7 @@ export default function AiAnalytics({ ad }) {
           {FEATURES.map((f) => (
             <View key={f.label} style={styles.featureRow}>
               <View style={[styles.featureIconWrap, { backgroundColor: f.color + '15' }]}>
-                <Icon name={f.icon} size={14} color={f.color} />
+                <Icon name={f.icon} size={18} color={f.color} />
               </View>
               <Text style={styles.featureLabel}>{f.label}</Text>
             </View>
@@ -216,7 +216,7 @@ export default function AiAnalytics({ ad }) {
         </View>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={handleGenerate} activeOpacity={0.88}>
-          <Icon name="AI" size={16} color={COLORS.white} />
+          <Icon name="AI" size={18} color={COLORS.white} />
           <Text style={styles.primaryBtnText}>Generate insights</Text>
         </TouchableOpacity>
       </View>
@@ -272,7 +272,7 @@ export default function AiAnalytics({ ad }) {
       <View style={styles.resultsHeader}>
         <View style={styles.resultsHeaderLeft}>
           <View style={styles.headerIcon}>
-            <Icon name="AI" size={16} color="#7f5af0" />
+            <Icon name="AI" size={20} color="#7f5af0" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.resultsTitle}>Ad analytics</Text>
@@ -285,7 +285,7 @@ export default function AiAnalytics({ ad }) {
           activeOpacity={0.8}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Icon name="refresh" size={16} color={COLORS.primary} />
+          <Icon name="refresh" size={18} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
@@ -318,25 +318,20 @@ export default function AiAnalytics({ ad }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-    ...SHADOW.medium,
+    marginBottom: 32,
   },
 
   promptHero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    marginBottom: 20,
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
   promptIconWrap: {
     width: 56,
     height: 56,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -345,133 +340,135 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: RADIUS.full,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: COLORS.primary,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   promptTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: COLORS.text,
-    lineHeight: 24,
+    lineHeight: 26,
     marginBottom: 4,
   },
   promptSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textMuted,
-    lineHeight: 18,
+    lineHeight: 22,
   },
   featureList: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     gap: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   featureIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featureLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  featureLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text },
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: 12,
+    paddingVertical: 14,
     ...SHADOW.small,
   },
   primaryBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.white },
 
-  loadingWrap: { alignItems: 'center', paddingVertical: 40 },
+  loadingWrap: { alignItems: 'center', paddingVertical: 48 },
   loadingRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F0F9FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  loadingTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
+  loadingSubtitle: {
+    fontSize: 15,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  loadingDots: { flexDirection: 'row', gap: 10, marginTop: 32 },
+  loadingDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#E2E8F0' },
+  loadingDotMid: { backgroundColor: COLORS.primary, width: 28 },
+
+  errorWrap: { alignItems: 'center', paddingVertical: 32 },
+  errorIconWrap: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
-  loadingTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
-  loadingSubtitle: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 20,
-  },
-  loadingDots: { flexDirection: 'row', gap: 8, marginTop: 24 },
-  loadingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#E2E8F0' },
-  loadingDotMid: { backgroundColor: COLORS.primary, width: 24 },
-
-  errorWrap: { alignItems: 'center', paddingVertical: 24 },
-  errorIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FEF2F2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
   errorTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
   errorText: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textMuted,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
+    lineHeight: 22,
+    marginBottom: 32,
   },
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    gap: 10,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 14,
     backgroundColor: '#F1F5F9',
   },
-  secondaryBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  secondaryBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.text },
 
   resultsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  resultsHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  resultsHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 },
   headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: '#F5F3FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   resultsTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
-  resultsSubtitle: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600', marginTop: 2 },
+  resultsSubtitle: { fontSize: 14, color: COLORS.textMuted, fontWeight: '600', marginTop: 2 },
   refreshBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
@@ -479,83 +476,83 @@ const styles = StyleSheet.create({
 
   snapshot: {
     backgroundColor: '#F5F3FF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#EDE9FE',
   },
   snapshotLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
     color: '#8B5CF6',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 6,
+    letterSpacing: 1.2,
+    marginBottom: 8,
   },
   snapshotValue: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
     color: COLORS.text,
     marginBottom: 6,
   },
   snapshotMeta: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.textMuted,
-    lineHeight: 18,
+    lineHeight: 20,
     fontWeight: '500',
   },
 
   segmentBar: {
     flexDirection: 'row',
     backgroundColor: '#F1F5F9',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 4,
-    marginBottom: 18,
+    marginBottom: 24,
   },
   segment: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
     paddingVertical: 12,
-    borderRadius: 11,
+    borderRadius: 10,
   },
   segmentActive: {
     backgroundColor: COLORS.white,
     ...SHADOW.small,
   },
-  segmentText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  segmentText: { fontSize: 15, fontWeight: '600', color: '#64748B' },
   segmentTextActive: { color: COLORS.primary, fontWeight: '700' },
   segmentCount: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   segmentCountActive: { backgroundColor: COLORS.primary },
-  segmentCountText: { fontSize: 11, fontWeight: '800', color: '#64748B' },
+  segmentCountText: { fontSize: 13, fontWeight: '800', color: '#64748B' },
   segmentCountTextActive: { color: COLORS.white },
 
-  statStrip: { gap: 12, paddingBottom: 4 },
+  statStrip: { gap: 16, paddingBottom: 8 },
   statChip: {
-    width: 140,
+    width: 130,
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   statChipLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     marginBottom: 8,
   },
   statChipValue: {
@@ -564,53 +561,53 @@ const styles = StyleSheet.create({
   },
 
   detailPanel: {
-    marginTop: 18,
+    marginTop: 24,
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    ...SHADOW.small,
+    ...SHADOW.medium,
   },
   detailHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   detailIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   detailTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   detailBody: {
-    padding: 16,
+    padding: 20,
   },
   detailValueText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
     color: COLORS.text,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   detailDesc: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#475569',
     lineHeight: 22,
   },
 
-  tipsContainer: { gap: 12 },
+  tipsContainer: { gap: 16 },
   tipRow: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -626,45 +623,45 @@ const styles = StyleSheet.create({
   },
   tipTitleGroup: {
     flex: 1,
-    gap: 6,
-    marginRight: 10,
+    gap: 8,
+    marginRight: 12,
   },
   impactBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   impactText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   tipRowTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   tipContent: {
-    marginTop: 16,
+    marginTop: 20,
   },
   tipDivider: {
     height: 1,
     backgroundColor: '#E2E8F0',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   tipRowDesc: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#475569',
     lineHeight: 22,
   },
 
   emptyBlock: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 32,
     alignItems: 'center',
   },
-  emptyBlockText: { fontSize: 14, color: COLORS.textMuted, fontWeight: '500' },
+  emptyBlockText: { fontSize: 16, color: COLORS.textMuted, fontWeight: '500' },
 });

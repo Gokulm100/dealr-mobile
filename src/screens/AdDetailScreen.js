@@ -4,6 +4,7 @@ import {
   View, Text, ScrollView, Image, TouchableOpacity,
   StyleSheet, Alert, Platform,
   ActivityIndicator, LayoutAnimation, UIManager,
+  Share,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -12,11 +13,12 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
-import { apiFetch, API_BASE_URL } from '../utils/api';
+import { apiFetch, API_BASE_URL, incrementAdViews, addAdToFavorite, removeAdFromFavorite } from '../utils/api';
 import AiSummary from '../components/AiSummary';
 import { useAuth } from '../context/AuthContext';
 import AiAnalytics from '../components/AiAnalytics';
 import AdImageGallery from '../components/AdImageGallery';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SAFETY_TIPS = [
   'Meet the seller in a public place',
@@ -27,16 +29,85 @@ const SAFETY_TIPS = [
 export default function AdDetailScreen({ route, navigation }) {
   const { listing } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const isOwner = user && (user._id === listing.sellerId || user._id === listing.seller?._id);
   const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
   const scrollRef = useRef(null);
 
+  const [loadingPrice, setLoadingPrice] = useState(false);
+  const [priceInsights, setPriceInsights] = useState([]);
+  const [expandedOffer, setExpandedOffer] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+
   useEffect(() => {
     addToRecentlyViewed(listing);
+    incrementViews();
+    checkFavoriteStatus();
     if (isOwner) {
       fetchPriceInsights();
     }
   }, []);
+
+  const checkFavoriteStatus = async () => {
+    try {
+      const raw = await AsyncStorage.getItem('favorites');
+      const favs = raw ? JSON.parse(raw) : [];
+      setIsFavorite(favs.includes(listing.id || listing._id));
+    } catch (err) {
+      console.error('Error checking favorite status:', err);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please login to add ads to your favorites.');
+      return;
+    }
+
+    const adId = listing.id || listing._id;
+    const newStatus = !isFavorite;
+
+    // Optimistic UI update
+    setIsFavorite(newStatus);
+
+    try {
+      const raw = await AsyncStorage.getItem('favorites');
+      let favs = raw ? JSON.parse(raw) : [];
+
+      if (newStatus) {
+        if (!favs.includes(adId)) favs.push(adId);
+        await addAdToFavorite(adId);
+      } else {
+        favs = favs.filter(id => id !== adId);
+        await removeAdFromFavorite(adId);
+      }
+
+      await AsyncStorage.setItem('favorites', JSON.stringify(favs));
+    } catch (err) {
+      console.error('Error toggling favorite in detail screen:', err);
+      // Revert on failure
+      setIsFavorite(!newStatus);
+      Alert.alert('Error', 'Could not update favorites. Please try again.');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Check out this ${listing.title} on Dealr for ₹${listing.price}!`,
+        url: `${API_BASE_URL}/ads/${listing.id || listing._id}`,
+      });
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  const incrementViews = async () => {
+    const adId = listing.id || listing._id;
+    if (adId) {
+      await incrementAdViews(adId);
+    }
+  };
 
   const addToRecentlyViewed = async (ad) => {
     try {
@@ -138,10 +209,38 @@ export default function AdDetailScreen({ route, navigation }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <AdImageGallery
-          images={listing.images || []}
-          onBack={() => navigation.goBack()}
-        />
+        <View style={styles.galleryContainer}>
+          <AdImageGallery
+            images={listing.images || []}
+            onBack={() => navigation.goBack()}
+          />
+
+          {/* Floating Actions Over Gallery */}
+          <View style={[styles.floatingHeaderActions, { top: insets.top + 8 }]}>
+            <TouchableOpacity
+              style={styles.floatingActionBtn}
+              onPress={handleShare}
+              activeOpacity={0.8}
+            >
+              <Icon name="share-2" size={18} color={COLORS.text} />
+            </TouchableOpacity>
+
+            {!isOwner && (
+              <TouchableOpacity
+                style={styles.floatingActionBtn}
+                onPress={toggleFavorite}
+                activeOpacity={0.8}
+              >
+                <Icon
+                  name="heart"
+                  size={18}
+                  color={isFavorite ? COLORS.error : COLORS.text}
+                  fill={isFavorite ? COLORS.error : 'transparent'}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         <View style={styles.contentSheet}>
           {/* Price + Title */}
@@ -150,12 +249,20 @@ export default function AdDetailScreen({ route, navigation }) {
               <Text style={styles.priceLabel}>Price</Text>
               <Text style={styles.price}>₹{Number(listing.price).toLocaleString('en-IN')}</Text>
             </View>
-            {isNew && (
-              <View style={[styles.tag, { backgroundColor: COLORS.success + '15' }]}>
-                <View style={[styles.dotSmall, { backgroundColor: COLORS.success }]} />
-                <Text style={[styles.tagText, { color: COLORS.success }]}>NEW LISTING</Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {isNew && (
+                <View style={[styles.tag, { backgroundColor: COLORS.success + '15' }]}>
+                  <View style={[styles.dotSmall, { backgroundColor: COLORS.success }]} />
+                  <Text style={[styles.tagText, { color: COLORS.success }]}>NEW LISTING</Text>
+                </View>
+              )}
+              {route.params?.isTrending && (
+                <View style={[styles.tag, { backgroundColor: '#fff7ed' }]}>
+                  <Text style={{ fontSize: 10 }}>🔥</Text>
+                  <Text style={[styles.tagText, { color: '#f97316' }]}>TRENDING</Text>
+                </View>
+              )}
+            </View>
           </View>
 
           <Text style={styles.title}>{listing.title}</Text>
@@ -334,6 +441,22 @@ export default function AdDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
+  galleryContainer: { position: 'relative' },
+  floatingHeaderActions: {
+    position: 'absolute',
+    right: 16,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  floatingActionBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOW.small,
+  },
   contentSheet: {
     marginTop: -20,
     backgroundColor: COLORS.white,

@@ -4,6 +4,7 @@ import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, ScrollView, RefreshControl,
   StatusBar, Image, Animated, Platform, LayoutAnimation, UIManager,
+  Alert,
 } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -13,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
-import { apiFetch, mapListing, API_BASE_URL } from '../utils/api';
+import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -51,11 +52,22 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     loadRecentlyViewed();
+    loadFavorites();
     const unsubscribe = navigation.addListener('focus', () => {
       loadRecentlyViewed();
+      loadFavorites();
     });
     return unsubscribe;
   }, [navigation]);
+
+  const loadFavorites = async () => {
+    try {
+      const raw = await AsyncStorage.getItem('favorites');
+      if (raw) setFavorites(JSON.parse(raw));
+    } catch (err) {
+      console.log('Error loading favorites:', err);
+    }
+  };
 
   const loadRecentlyViewed = async () => {
     try {
@@ -194,10 +206,33 @@ export default function HomeScreen({ navigation }) {
     fetchListings(1, true);
   };
 
-  const toggleFavorite = id => {
-    setFavorites(prev =>
-      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
-    );
+  const toggleFavorite = async (id) => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please login to add ads to your favorites.');
+      return;
+    }
+
+    try {
+      const isFav = favorites.includes(id);
+      const updated = isFav ? favorites.filter(f => f !== id) : [...favorites, id];
+
+      // Optimistic UI update
+      setFavorites(updated);
+      await AsyncStorage.setItem('favorites', JSON.stringify(updated));
+
+      // Backend update
+      if (isFav) {
+        await removeAdFromFavorite(id);
+      } else {
+        await addAdToFavorite(id);
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+      // Revert on failure
+      const reverted = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
+      setFavorites(reverted);
+      await AsyncStorage.setItem('favorites', JSON.stringify(reverted));
+    }
   };
 
   const handleSearch = () => {

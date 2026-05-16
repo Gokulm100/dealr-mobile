@@ -4,6 +4,65 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ⚠️ CHANGE THIS to your backend URL
 export const API_BASE_URL = 'https://e4u-backend.onrender.com';
 
+/**
+ * Fetch all favorite ads for the current user
+ */
+export async function getFavoriteAds() {
+  try {
+    return await apiFetch('/api/users/favorite-ads');
+  } catch (error) {
+    console.error('[API] Failed to fetch favorite ads:', error);
+    throw error;
+  }
+}
+
+/**
+ * Add an ad to user's favorites
+ * @param {string} adId
+ */
+export async function addAdToFavorite(adId) {
+  try {
+    return await apiFetch('/api/users/add-to-favorites', {
+      method: 'POST',
+      body: JSON.stringify({ adId }),
+    });
+  } catch (error) {
+    console.error('[API] Failed to add favorite:', error);
+    throw error;
+  }
+}
+
+/**
+ * Remove an ad from user's favorites
+ * @param {string} adId
+ */
+export async function removeAdFromFavorite(adId) {
+  try {
+    return await apiFetch('/api/users/remove-from-favorites', {
+      method: 'POST',
+      body: JSON.stringify({ adId }),
+    });
+  } catch (error) {
+    console.error('[API] Failed to remove favorite:', error);
+    throw error;
+  }
+}
+
+/**
+ * Increment view count for an advertisement
+ * @param {string} adId
+ */
+export async function incrementAdViews(adId) {
+  try {
+    return await apiFetch('/api/ads/incrementViews', {
+      method: 'POST',
+      body: JSON.stringify({ adId }),
+    });
+  } catch (error) {
+    console.error('[API] Failed to increment ad views:', error);
+  }
+}
+
 // Centralized fetch wrapper with debugging
 export async function apiFetch(path, options = {}) {
   const token = await AsyncStorage.getItem('authToken');

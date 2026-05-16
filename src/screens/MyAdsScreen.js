@@ -404,15 +404,15 @@ const styles = StyleSheet.create({
   postBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
   list: { padding: 16, paddingBottom: 100 },
   cardContainer: {
-    marginBottom: 16,
+    marginBottom: 10,
     ...SHADOW.small,
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: 12,
     overflow: 'hidden',
     flexDirection: 'row',
-    height: 140,
+    height: 115,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.03)',
   },
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   imageSection: {
-    width: 120,
+    width: 90,
     height: '100%',
     position: 'relative',
   },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     flex: 1,
-    padding: 12,
+    padding: 8,
     justifyContent: 'space-between',
   },
   topInfo: {
@@ -488,19 +488,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   title: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   price: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     color: COLORS.text,
   },
@@ -508,9 +507,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    flex: 1,
-    marginLeft: 10,
-    justifyContent: 'flex-end',
+    marginLeft: 4,
   },
   locationText: {
     fontSize: 11,
@@ -527,12 +524,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
   actionBtnText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   editBtn: {

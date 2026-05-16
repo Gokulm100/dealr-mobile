@@ -57,6 +57,22 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
             <Text style={{ fontSize: 14 }}>🔥</Text>
           </View>
         )}
+
+        <TouchableOpacity
+          style={styles.favBtn}
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(item.id);
+          }}
+          activeOpacity={0.7}
+        >
+          <Icon
+            name="heart"
+            size={18}
+            color={isFavorite ? COLORS.error : COLORS.white}
+            fill={isFavorite ? COLORS.error : 'transparent'}
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.body}>
@@ -207,7 +223,7 @@ const styles = StyleSheet.create({
   },
   trendingSymbol: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: RADIUS.full,

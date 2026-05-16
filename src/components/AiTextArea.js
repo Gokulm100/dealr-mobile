@@ -194,7 +194,25 @@ export default function AiTextArea({ value, onChange, category, subcategory, onF
 
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            touched && missing.length > 0 && styles.inputWarn,
+          ]}
+          value={value}
+          onChangeText={v => {
+            setTouched(true);
+            onChange?.({ target: { value: v } });
+          }}
+          onFocus={onFocus}
+          multiline
+          numberOfLines={6}
+          textAlignVertical="top"
+          placeholder={`Describe your ${subcategory || category || 'item'} in detail...\n(${requiredFields.map(f => f.label).join(', ')})`}
+          placeholderTextColor={COLORS.textMuted}
+        />
+
         <TouchableOpacity
           style={styles.aiBtn}
           onPress={handleAiWrite}
@@ -210,24 +228,6 @@ export default function AiTextArea({ value, onChange, category, subcategory, onF
           )}
         </TouchableOpacity>
       </View>
-
-      <TextInput
-        style={[
-          styles.input,
-          touched && missing.length > 0 && styles.inputWarn,
-        ]}
-        value={value}
-        onChangeText={v => {
-          setTouched(true);
-          onChange?.({ target: { value: v } });
-        }}
-        onFocus={onFocus}
-        multiline
-        numberOfLines={6}
-        textAlignVertical="top"
-        placeholder={`Describe your ${subcategory || category || 'item'} in detail...\n(${requiredFields.map(f => f.label).join(', ')})`}
-        placeholderTextColor={COLORS.textMuted}
-      />
 
       {/* Missing fields hint */}
       {touched && missing.length > 0 && (
@@ -292,22 +292,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  inputWrapper: {
+    position: 'relative',
+    marginBottom: 8,
   },
   aiBtn: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: '#eff6ff',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: RADIUS.full,
     borderWidth: 1,
     borderColor: '#bfdbfe',
+    zIndex: 10,
   },
   aiBtnText: {
     fontSize: 12,
@@ -327,12 +329,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 44, // Space for the AI button
     fontSize: 14,
     color: COLORS.text,
-    minHeight: 110,
+    minHeight: 120,
     lineHeight: 22,
-    marginBottom: 8,
   },
   inputWarn: { borderColor: '#e11d48' },
   hintRow: {

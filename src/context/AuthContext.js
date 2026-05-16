@@ -1,6 +1,7 @@
 // src/context/AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL } from '../utils/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL, mapListing } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,27 @@ export function AuthProvider({ children }) {
 
       // Normalizing the user object to always have hasConsented property
       const normalizedUser = { ...data.user, hasConsented: userHasConsented };
+
+      // Sync lastViewedAds to local recently_viewed_ads if they exist
+      if (data.user.lastViewedAds && Array.isArray(data.user.lastViewedAds)) {
+        try {
+          const mappedAds = data.user.lastViewedAds.map(mapListing);
+          await AsyncStorage.setItem('recently_viewed_ads', JSON.stringify(mappedAds));
+        } catch (e) {
+          console.error('Error syncing lastViewedAds from login:', e);
+        }
+      }
+
+      // Sync favorites from backend if they exist
+      if (data.user.favorites && Array.isArray(data.user.favorites)) {
+        try {
+          // data.user.favorites might be IDs or full objects depending on backend population
+          const favoriteIds = data.user.favorites.map(f => typeof f === 'object' ? f._id : f);
+          await AsyncStorage.setItem('favorites', JSON.stringify(favoriteIds));
+        } catch (e) {
+          console.error('Error syncing favorites from login:', e);
+        }
+      }
 
       await saveAuth(data.token, normalizedUser);
       setToken(data.token);

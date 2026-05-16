@@ -12,6 +12,7 @@ import MyAdsScreen from '../screens/MyAdsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import ConsentScreen from '../screens/ConsentScreen';
 import { COLORS } from '../utils/theme';
 import { useMessages } from '../context/MessagesContext';
@@ -49,6 +50,16 @@ function MyAdsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MyAdsList" component={MyAdsScreen} />
       <Stack.Screen name="AdDetail" component={AdDetailScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// Stack for Profile tab
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen name="Favorites" component={FavoritesScreen} />
     </Stack.Navigator>
   );
 }
@@ -147,7 +158,7 @@ function TabNavigator() {
         component={MyAdsStack}
         options={{ tabBarLabel: 'My Ads' }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }
