@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
-import { COLORS, RADIUS } from '../utils/theme';
+import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const THUMB_SIZE = 52;
@@ -111,7 +111,7 @@ export default function AdImageGallery({ images = [], onBack }) {
         <View style={[styles.galleryControls, { paddingTop: insets.top + 8 }]}>
           {onBack && (
             <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.8}>
-              <Icon name="arrow-left" size={20} color={COLORS.white} />
+              <Icon name="arrow-left" size={20} color={COLORS.text} />
             </TouchableOpacity>
           )}
 
@@ -258,17 +258,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW.small,
   },
   backBtnLight: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    ...SHADOW.small,
   },
   controlsRight: {
     flexDirection: 'row',

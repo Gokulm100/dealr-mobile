@@ -135,9 +135,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    ...SHADOW.small,
   },
   headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800' },
-  headerCount: { color: 'rgba(255,255,255,0.75)', fontSize: 14 },
+  headerCount: { color: COLORS.white, fontSize: 14 },
   list: { padding: 14 },
   card: {
     backgroundColor: COLORS.white,

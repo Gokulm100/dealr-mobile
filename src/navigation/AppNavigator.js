@@ -14,6 +14,7 @@ import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import ConsentScreen from '../screens/ConsentScreen';
+import SellerProfileScreen from '../screens/SellerProfileScreen';
 import { COLORS } from '../utils/theme';
 import { useMessages } from '../context/MessagesContext';
 import { useAuth } from '../context/AuthContext';
@@ -200,7 +201,11 @@ export default function AppNavigator() {
       >
         {!user ? (
           // 1. GUEST: Only main tabs available
-          <RootStack.Screen name="MainTabs" component={TabNavigator} />
+          <>
+            <RootStack.Screen name="MainTabs" component={TabNavigator} />
+            <RootStack.Screen name="SellerProfile" component={SellerProfileScreen} />
+            <RootStack.Screen name="AdDetail" component={AdDetailScreen} />
+          </>
         ) : !hasConsented ? (
           // 2. LOGGED IN, NO CONSENT: Lock to Consent screen ONLY
           // We use "ConsentGuard" name here to avoid React Navigation trying to
@@ -211,6 +216,8 @@ export default function AppNavigator() {
           <>
             <RootStack.Screen name="MainTabs" component={TabNavigator} />
             <RootStack.Screen name="Consent" component={ConsentScreen} />
+            <RootStack.Screen name="SellerProfile" component={SellerProfileScreen} />
+            <RootStack.Screen name="AdDetail" component={AdDetailScreen} />
           </>
         )}
       </RootStack.Navigator>

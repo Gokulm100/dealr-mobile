@@ -5,18 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="92be92c9-3ba0-41de-ac48-f20ac85bda1a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/screens/SellerProfileScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/AdCard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/AdCard.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/AiAnalytics.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/AiAnalytics.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/AiTextArea.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/AiTextArea.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/context/AuthContext.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/context/AuthContext.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/AdImageGallery.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/AdImageGallery.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Icon.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Icon.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/navigation/AppNavigator.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/navigation/AppNavigator.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/AdDetailScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/AdDetailScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/FavoritesScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/FavoritesScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/HomeScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/HomeScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/MyAdsScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/MyAdsScreen.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/ProfileScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/ProfileScreen.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/api.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

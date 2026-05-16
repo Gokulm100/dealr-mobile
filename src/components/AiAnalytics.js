@@ -197,7 +197,7 @@ export default function AiAnalytics({ ad }) {
             <View style={styles.badge}>
               <Text style={styles.badgeText}>AI INSIGHTS</Text>
             </View>
-            <Text style={styles.promptTitle}>Understand how your ad is performing</Text>
+            <Text style={styles.promptTitle}>Unlock your ad's full potential</Text>
             <Text style={styles.promptSubtitle}>
               Get a quick breakdown of views, pricing, and what to improve next.
             </Text>

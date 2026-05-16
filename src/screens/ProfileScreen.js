@@ -258,13 +258,15 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     paddingTop: 54,
-    paddingBottom: 24,
+    paddingBottom: 16,
     paddingHorizontal: 20,
-    ...SHADOW.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    ...SHADOW.small,
   },
-  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  headerTitle: { color: COLORS.text, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
   // Logged out
   centeredContent: {

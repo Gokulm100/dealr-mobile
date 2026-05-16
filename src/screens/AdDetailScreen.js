@@ -4,7 +4,7 @@ import {
   View, Text, ScrollView, Image, TouchableOpacity,
   StyleSheet, Alert, Platform,
   ActivityIndicator, LayoutAnimation, UIManager,
-  Share,
+  Share, Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -33,6 +33,7 @@ export default function AdDetailScreen({ route, navigation }) {
   const isOwner = user && (user._id === listing.sellerId || user._id === listing.seller?._id);
   const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
   const scrollRef = useRef(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [priceInsights, setPriceInsights] = useState([]);
@@ -201,13 +202,70 @@ export default function AdDetailScreen({ route, navigation }) {
     );
   };
 
+  const toggleExpand = (type) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedOffer(expandedOffer === type ? null : type);
+  };
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [100, 200],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [-20, 0],
+    extrapolate: 'clamp',
+  });
+
   return (
     <View style={styles.container}>
-      <ScrollView
+      {/* Opaque Floating Header */}
+      <Animated.View
+        style={[
+          styles.opaqueHeader,
+          {
+            paddingTop: insets.top + 8,
+            opacity: headerOpacity,
+            transform: [{ translateY: headerTranslateY }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.headerBackBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-left" size={20} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>{listing.title}</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handleShare}>
+            <Icon name="share-2" size={18} color={COLORS.text} />
+          </TouchableOpacity>
+          {!isOwner && (
+            <TouchableOpacity onPress={toggleFavorite}>
+              <Icon
+                name="heart"
+                size={18}
+                color={isFavorite ? COLORS.error : COLORS.text}
+                fill={isFavorite ? COLORS.error : 'transparent'}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      </Animated.View>
+
+      <Animated.ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 100 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
       >
         <View style={styles.galleryContainer}>
           <AdImageGallery
@@ -405,16 +463,23 @@ export default function AdDetailScreen({ route, navigation }) {
               <View style={{ flex: 1 }}>
                 <View style={styles.sellerNameRow}>
                   <Text style={styles.sellerName}>{listing.seller}</Text>
-                  <TouchableOpacity style={styles.verifiedBadgeModern} activeOpacity={0.8}>
-                    <Icon name="check-circle" size={10} color={COLORS.white} />
-                    <Text style={styles.verifiedTextModern}>VERIFIED</Text>
-                  </TouchableOpacity>
+                  <View style={styles.verifiedBadgeModern}>
+                    <Icon name="check" size={10} color={COLORS.white} />
+                  </View>
                 </View>
                 {listing.sellerSince && (
                   <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
                 )}
               </View>
-              <TouchableOpacity style={styles.viewProfileBtn}>
+              <TouchableOpacity
+                style={styles.viewProfileBtn}
+                onPress={() => navigation.navigate('SellerProfile', {
+                  sellerId: listing.sellerId || listing.seller?._id,
+                  sellerName: listing.seller,
+                  sellerPic: listing.sellerPic,
+                  sellerSince: listing.sellerSince
+                })}
+              >
                 <Text style={styles.viewProfileText}>View Profile</Text>
                 <Icon name="chevron-right" size={14} color={COLORS.primary} />
               </TouchableOpacity>
@@ -423,7 +488,7 @@ export default function AdDetailScreen({ route, navigation }) {
 
 
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Sticky Bottom Bar */}
       {!isOwner && (
@@ -441,6 +506,40 @@ export default function AdDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
+  opaqueHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    ...SHADOW.small,
+  },
+  headerBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginHorizontal: 12,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginRight: 4,
+  },
   galleryContainer: { position: 'relative' },
   floatingHeaderActions: {
     position: 'absolute',
@@ -452,7 +551,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...SHADOW.small,
@@ -534,16 +633,13 @@ const styles = StyleSheet.create({
   sellerNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sellerName: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   verifiedBadgeModern: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: COLORS.success,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop:2,
-    borderRadius: RADIUS.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  verifiedTextModern: { fontSize: 8, fontWeight: '900', color: COLORS.white, letterSpacing: 0.5 },
   sellerSince: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
   viewProfileBtn: {
     flexDirection: 'row',
