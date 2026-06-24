@@ -13,6 +13,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
+import DealrLogo from '../components/DealrLogo';
 import AdCard from '../components/AdCard';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite } from '../utils/api';
@@ -652,10 +653,7 @@ export default function HomeScreen({ navigation }) {
 
       {/* Top Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.logo}>Dea<Text style={{ color: '#ff6666' }}>l</Text>r</Text>
-          <Text style={styles.subtext}>Deal with the Right App!</Text>
-        </View>
+        <DealrLogo variant="light" size="title" showTagline style={styles.headerBrand} />
         <View style={styles.headerRight}>
           {user && (
             <Image
@@ -762,15 +760,17 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.primary,
     paddingTop: 40,
-    paddingBottom: 35,
+    paddingBottom: 28,
     paddingHorizontal: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
-  logo: { color: 'white', fontSize: 38, fontWeight: '800', letterSpacing: 0.5 },
-  subtext: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerBrand: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingBottom: 2 },
   avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
   listContent: { paddingHorizontal: 4, paddingBottom: 20 },
   cardWrapper: { flex: 0.5 },

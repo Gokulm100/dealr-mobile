@@ -119,12 +119,7 @@ export default function ProfileScreen({ navigation, route }) {
         </View>
 
         <ScrollView contentContainerStyle={styles.centeredContent}>
-          {/* Logo / illustration */}
-          <View style={styles.logoCircle}>
-            <Icon name="user" size={52} color={COLORS.primary} />
-          </View>
-
-          <Text style={styles.welcomeTitle}>Welcome to Dea<Text style={{ color: '#ff6666' }}>l</Text>r</Text>
+          <Text style={styles.welcomeTitle}>Welcome to Dealr</Text>
           <Text style={styles.welcomeSubtitle}>
             Sign in to post ads, chat with sellers, and manage your listings.
           </Text>
@@ -353,15 +348,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     paddingTop: 40,
-  },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
   },
   welcomeTitle: {
     fontSize: 24,

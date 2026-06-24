@@ -169,9 +169,6 @@ export default function ConsentScreen({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.brandRow}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>D</Text>
-            </View>
             <Text style={styles.title}>User Consent</Text>
           </View>
           {navigation?.canGoBack() && (
@@ -267,15 +264,6 @@ const styles = StyleSheet.create({
   },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  logoCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: { color: COLORS.white, fontWeight: '900', fontSize: 18 },
   title: { fontSize: 22, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 13, color: COLORS.textMuted, fontWeight: '500' },
   closeBtn: { padding: 4 },

@@ -1,27 +1,30 @@
 // App.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { MessagesProvider } from './src/context/MessagesContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import BrandSplash from './src/components/BrandSplash';
 import { navigationRef, openFromNotification } from './src/utils/navigation';
 import { getStoredUser, getStoredToken } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-export default function App() {
+function AppContent() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashExiting, setSplashExiting] = useState(false);
+
   useEffect(() => {
     const setupNotifications = async () => {
       try {
         await requestNotificationPermission();
 
-        // Channel must exist before background FCM notifications can display on Android.
         await notifee.createChannel({
           id: 'default',
           name: 'Default Channel',
@@ -41,10 +44,7 @@ export default function App() {
       }
     };
 
-    // Handle incoming messages and notification interactions
     const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-
-      // 1. Skip if message is from the current user
       const currentUser = await getStoredUser();
       const senderId = remoteMessage.data?.senderId || remoteMessage.data?.from;
 
@@ -52,7 +52,6 @@ export default function App() {
         return;
       }
 
-      // 2. SILENT RELOAD IF IN CHAT: Check if the user is already looking at this chat
       if (navigationRef.isReady()) {
         const route = navigationRef.getCurrentRoute();
         if (route?.name === 'ChatDetail' || route?.name === 'Chat') {
@@ -60,27 +59,23 @@ export default function App() {
           const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
 
           if (activeAdId?.toString() === incomingAdId?.toString()) {
-            // We return early so NO notification popup is shown, as ChatScreen is handling the reload
             return;
           }
         }
       }
 
-      // 3. Request permission (required for iOS/Android 13+)
       await notifee.requestPermission();
 
-      // Create a channel (required for Android)
       const channelId = await notifee.createChannel({
         id: 'default',
         name: 'Default Channel',
         importance: AndroidImportance.HIGH,
       });
 
-      // Display a notification (use the real sender/message when available)
       await notifee.displayNotification({
         title: remoteMessage.notification?.title || remoteMessage.data?.senderName || 'Dealr',
         body: remoteMessage.notification?.body || remoteMessage.data?.messageText || 'You have a new message!',
-        data: remoteMessage.data, // Pass the data to Notifee
+        data: remoteMessage.data,
         android: {
           channelId,
           pressAction: {
@@ -90,19 +85,16 @@ export default function App() {
       });
     });
 
-    // Handle Notifee foreground events (clicks) — open the chat that was tapped.
     const unsubscribeNotifee = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS) {
         openFromNotification(detail.notification?.data);
       }
     });
 
-    // App in background → tapping the system notification brings it to foreground.
     messaging().onNotificationOpenedApp(remoteMessage => {
       openFromNotification(remoteMessage?.data);
     });
 
-    // App launched from a quit state by tapping a notification.
     messaging().getInitialNotification().then(remoteMessage => {
       if (remoteMessage) {
         openFromNotification(remoteMessage.data);
@@ -111,13 +103,12 @@ export default function App() {
 
     const prepare = async () => {
       try {
-        // Wait for 3 seconds
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await SplashScreen.hideAsync();
+        await new Promise(resolve => setTimeout(resolve, 1600));
+        setSplashExiting(true);
       } catch (e) {
         console.warn(e);
-      } finally {
-        // Hide splash screen
-        await SplashScreen.hideAsync();
+        setShowSplash(false);
       }
     };
 
@@ -137,6 +128,22 @@ export default function App() {
           <AppNavigator />
         </MessagesProvider>
       </AuthProvider>
+      {showSplash && (
+        <BrandSplash
+          exiting={splashExiting}
+          onExitComplete={() => setShowSplash(false)}
+        />
+      )}
     </SafeAreaProvider>
   );
+}
+
+export default function App() {
+  const [fontsLoaded] = useFonts({ Sora_800ExtraBold });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return <AppContent />;
 }
