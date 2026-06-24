@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.anonymous.e4youfresh</string>
+          <string>com.dealr.app</string>
         </array>
       </dict>
     </array>
@@ -37,6 +37,10 @@
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow access to your camera so you can take photos for your ads.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow access to your photos so you can add images to your ads.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>

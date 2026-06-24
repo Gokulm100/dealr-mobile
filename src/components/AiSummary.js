@@ -6,23 +6,29 @@ import {
 import { apiFetch } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 
-export default function AiSummary({ adTitle, category, subCategory, description }) {
+export default function AiSummary({ adId, adTitle, category, subCategory, description, cachedSummary }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!adTitle || !category || !description) return;
+    // Use the stored summary directly when the ad already carries one.
+    if (cachedSummary && Object.keys(cachedSummary).length > 0) {
+      setSummary(cachedSummary);
+      setLoading(false);
+      return;
+    }
+    if (!adId && (!adTitle || !category || !description)) return;
     setLoading(true);
     setError(null);
     apiFetch('/api/ads/summarizeAdUsingAi', {
       method: 'POST',
-      body: JSON.stringify({ adTitle, category, subCategory, description }),
+      body: JSON.stringify({ adId, adTitle, category, subCategory, description }),
     })
       .then(result => setSummary(result.data))
       .catch(() => setError('Failed to load AI summary.'))
       .finally(() => setLoading(false));
-  }, [adTitle, category, subCategory, description]);
+  }, [adId, adTitle, category, subCategory, description, cachedSummary]);
 
   return (
     <View style={styles.card}>

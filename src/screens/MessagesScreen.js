@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Image, ActivityIndicator, RefreshControl, Platform,
+  Image, RefreshControl, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
@@ -11,6 +11,7 @@ import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, formatPostedTime } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useMessages } from '../context/MessagesContext';
+import SkeletonCard from '../components/SkeletonCard';
 
 const TABS = ['Buying', 'Selling'];
 
@@ -115,7 +116,6 @@ export default function MessagesScreen({ navigation }) {
         : ''));
 
     const adTitle = item.item || item.adTitle || item.adId?.title || item.ad?.title || item.adName || '';
-    const adImage = item.adId?.images?.[0] || item.ad?.images?.[0] || item.images?.[0] || null;
 
     const lastMsgTime = item.time
       || item.updatedAt
@@ -183,10 +183,6 @@ export default function MessagesScreen({ navigation }) {
             {truncate(lastMsg || 'Sent an attachment', 40)}
           </Text>
         </View>
-
-        {adImage && (
-          <Image source={{ uri: adImage }} style={styles.adThumbnail} />
-        )}
       </TouchableOpacity>
     );
   };
@@ -240,8 +236,10 @@ export default function MessagesScreen({ navigation }) {
         </View>
 
       {loading && currentChats.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+        <View>
+          {Array.from({ length: 7 }).map((_, idx) => (
+            <SkeletonCard key={`skeleton-${idx}`} chat />
+          ))}
         </View>
       ) : (
         <FlatList
@@ -401,15 +399,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   meLabel: { color: COLORS.textMuted, fontWeight: '500' },
-  adThumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.md,
-    marginLeft: 14,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyIconCircle: {
     width: 80,

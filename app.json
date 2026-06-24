@@ -10,14 +10,18 @@
       "backgroundColor": "#ffffff"
     },
     "android": {
-      "package": "com.anonymous.e4youfresh",
+      "package": "com.dealr.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "ios": {
-      "bundleIdentifier": "com.anonymous.e4youfresh"
+      "bundleIdentifier": "com.dealr.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow access to your camera so you can take photos for your ads.",
+        "NSPhotoLibraryUsageDescription": "Allow access to your photos so you can add images to your ads."
+      }
     }
   }
 }

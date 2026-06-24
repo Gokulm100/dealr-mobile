@@ -8,8 +8,9 @@ import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { MessagesProvider } from './src/context/MessagesContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { navigationRef } from './src/utils/navigation';
-import { updateFcmToken, getStoredUser } from './src/utils/api';
+import { navigationRef, openFromNotification } from './src/utils/navigation';
+import { getStoredUser, getStoredToken } from './src/utils/api';
+import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -18,22 +19,23 @@ export default function App() {
   useEffect(() => {
     const setupNotifications = async () => {
       try {
-        // Request permission
-        const authStatus = await messaging().requestPermission();
-        const enabled =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        await requestNotificationPermission();
 
-        if (enabled) {
-          const token = await messaging().getToken();
+        // Channel must exist before background FCM notifications can display on Android.
+        await notifee.createChannel({
+          id: 'default',
+          name: 'Default Channel',
+          importance: AndroidImportance.HIGH,
+        });
 
-          // Send token to backend
-          await updateFcmToken(token);
+        await registerPushToken();
 
-          messaging().onTokenRefresh(async newToken => {
-            await updateFcmToken(newToken);
-          });
-        }
+        messaging().onTokenRefresh(async () => {
+          const authToken = await getStoredToken();
+          if (authToken) {
+            await registerPushToken();
+          }
+        });
       } catch (error) {
         console.error('Error setting up notifications:', error);
       }
@@ -53,7 +55,7 @@ export default function App() {
       // 2. SILENT RELOAD IF IN CHAT: Check if the user is already looking at this chat
       if (navigationRef.isReady()) {
         const route = navigationRef.getCurrentRoute();
-        if (route?.name === 'Chat') {
+        if (route?.name === 'ChatDetail' || route?.name === 'Chat') {
           const activeAdId = route.params?.chat?.adId || route.params?.chat?.ad?._id || route.params?.chat?._id;
           const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
 
@@ -74,10 +76,10 @@ export default function App() {
         importance: AndroidImportance.HIGH,
       });
 
-      // Display a notification
+      // Display a notification (use the real sender/message when available)
       await notifee.displayNotification({
-        title: 'Dealr',
-        body: 'You have a new message!',
+        title: remoteMessage.notification?.title || remoteMessage.data?.senderName || 'Dealr',
+        body: remoteMessage.notification?.body || remoteMessage.data?.messageText || 'You have a new message!',
         data: remoteMessage.data, // Pass the data to Notifee
         android: {
           channelId,
@@ -88,19 +90,22 @@ export default function App() {
       });
     });
 
-    // Handle Notifee foreground events (clicks)
+    // Handle Notifee foreground events (clicks) — open the chat that was tapped.
     const unsubscribeNotifee = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS) {
-        // Just opening the app
+        openFromNotification(detail.notification?.data);
       }
     });
 
+    // App in background → tapping the system notification brings it to foreground.
     messaging().onNotificationOpenedApp(remoteMessage => {
-      // Default behavior is to open the app
+      openFromNotification(remoteMessage?.data);
     });
 
+    // App launched from a quit state by tapping a notification.
     messaging().getInitialNotification().then(remoteMessage => {
       if (remoteMessage) {
+        openFromNotification(remoteMessage.data);
       }
     });
 

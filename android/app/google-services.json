@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "782257434604",
-    "project_id": "e4you-dad72",
-    "storage_bucket": "e4you-dad72.firebasestorage.app"
+    "project_number": "281405583072",
+    "project_id": "dealr-app-494db",
+    "storage_bucket": "dealr-app-494db.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:782257434604:android:eccd1bffcd8440537a5ac9",
+        "mobilesdk_app_id": "1:281405583072:android:97734f09c5e4e7799f2a85",
         "android_client_info": {
-          "package_name": "com.anonymous.e4youfresh"
+          "package_name": "com.dealr.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "281405583072-6v7h5oeba755abpdgn1njlv1fih8gam7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dealr.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "281405583072-n7rkibd2qc0afs76dve0kgbsi9p15jfk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBpJEun5rMCnpmk7TQDey-OCU92pMgwWBc"
+          "current_key": "AIzaSyAu63Bq-JgfGvCCAl_zvGhc6AZ9zjQI3qk"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "281405583072-n7rkibd2qc0afs76dve0kgbsi9p15jfk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

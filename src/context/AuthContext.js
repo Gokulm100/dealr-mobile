@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL, mapListing } from '../utils/api';
+import { registerPushToken, unregisterPushToken } from '../utils/pushNotifications';
+import { initSocket, disconnectSocket } from '../utils/socket';
 
 const AuthContext = createContext(null);
 
@@ -18,8 +20,9 @@ export function AuthProvider({ children }) {
       if (storedUser && storedToken) {
         setUser(storedUser);
         setToken(storedToken);
-        // Check if user has consented
         setHasConsented(storedUser.hasConsented || false);
+        registerPushToken();
+        initSocket(storedUser._id, storedToken);
       }
       setLoading(false);
     })();
@@ -31,8 +34,13 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: idToken }),
     });
-    const data = await response.json();
-    if (data.token && data.user) {
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      // non-JSON error body
+    }
+    if (response.ok && data.token && data.user) {
       // Check for consent status using multiple possible field names
       // Specifically checking 'hasConsented' as mentioned in requirements
       const userHasConsented = !!(data.user.hasConsented || data.user.isConsented || data.user.consentAccepted);
@@ -65,12 +73,16 @@ export function AuthProvider({ children }) {
       setToken(data.token);
       setUser(normalizedUser);
       setHasConsented(userHasConsented);
+      await registerPushToken();
+      initSocket(normalizedUser._id, data.token);
       return data;
     }
-    throw new Error('Login failed');
+    throw new Error(data.message || 'Login failed');
   };
 
   const logout = async () => {
+    await unregisterPushToken();
+    disconnectSocket();
     await clearAuth();
     setUser(null);
     setToken(null);

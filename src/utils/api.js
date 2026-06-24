@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ⚠️ CHANGE THIS to your backend URL
 export const API_BASE_URL = 'https://e4u-backend.onrender.com';
+export const WEB_URL = 'https://your-website.com'; // TODO: Update this to your frontend URL
 
 /**
  * Fetch all favorite ads for the current user
@@ -61,6 +62,25 @@ export async function incrementAdViews(adId) {
   } catch (error) {
     console.error('[API] Failed to increment ad views:', error);
   }
+}
+
+/**
+ * Fetch the list of active report reasons
+ */
+export async function getReportReasons() {
+  return apiFetch('/api/ads/reportReasons');
+}
+
+/**
+ * Report an ad for a given reason
+ * @param {string} adId
+ * @param {string} reasonId
+ */
+export async function reportAd(adId, reasonId) {
+  return apiFetch('/api/ads/reportAd', {
+    method: 'POST',
+    body: JSON.stringify({ adId, reasonId }),
+  });
 }
 
 // Centralized fetch wrapper with debugging
@@ -131,7 +151,7 @@ export async function clearAuth() {
   await AsyncStorage.removeItem('user');
 }
 
-// FCM Token Update
+// FCM token — associate device with logged-in user
 export async function updateFcmToken(fcmToken) {
   try {
     return await apiFetch('/api/users/save-fcm-token', {
@@ -141,6 +161,14 @@ export async function updateFcmToken(fcmToken) {
   } catch (error) {
     console.error('Failed to update FCM token on backend:', error);
   }
+}
+
+/** Remove FCM token from current user (call before logout). */
+export async function clearFcmTokenOnBackend() {
+  return apiFetch('/api/users/save-fcm-token', {
+    method: 'POST',
+    body: JSON.stringify({ fcmToken: null }),
+  });
 }
 
 // Consent APIs
@@ -199,9 +227,15 @@ export function mapListing(listing) {
     sellerPic: listing.seller?.profilePic || null,
     views: listing.views || 0,
     subCategory: subCatName || 'General',
+    reports: listing.reportCounter || 0,
     posted: formatPostedTime(listing.createdAt),
     createdAt: listing.createdAt,
     sellerSince: listing.seller?.createdAt ? new Date(listing.seller.createdAt).getFullYear() : null,
+    sellerRatingAvg: listing.seller?.ratingAvg || 0,
+    sellerReviewCount: listing.seller?.reviewCount || 0,
+    sellerCompletedSales: listing.seller?.completedSales || 0,
+    sellerTrustScore: listing.seller?.trustScore ?? 50,
+    sellerBadges: listing.seller?.badges || [],
     disabled: listing.disabled || false,
     status: listing.status || 'active',
     isSold: listing.isSold || false,

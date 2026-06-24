@@ -1,5 +1,5 @@
 import messaging from '@react-native-firebase/messaging';
-import { updateFcmToken } from './api';
+import { registerPushToken } from './pushNotifications';
 import { Alert, Linking, Platform } from 'react-native';
 
 export async function checkAndPromptNotifications() {
@@ -37,8 +37,7 @@ export async function checkAndPromptNotifications() {
             const newStatus = await messaging().requestPermission();
             if (newStatus === messaging.AuthorizationStatus.AUTHORIZED ||
                 newStatus === messaging.AuthorizationStatus.PROVISIONAL) {
-              const token = await messaging().getToken();
-              await updateFcmToken(token);
+              await registerPushToken();
             } else {
               // User denied the system prompt
               Alert.alert(

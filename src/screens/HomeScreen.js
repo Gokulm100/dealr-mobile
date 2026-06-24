@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, ScrollView, RefreshControl,
+  StyleSheet, ScrollView, RefreshControl,
   StatusBar, Image, Animated, Platform, LayoutAnimation, UIManager,
   Alert,
 } from 'react-native';
@@ -14,11 +14,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
+import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
 const LIMIT = 8;
+
+const PRICE_RANGES = [
+  { id: 'under5k', label: 'Under ₹5K', min: '', max: '5000' },
+  { id: '5k-20k', label: '₹5K – ₹20K', min: '5000', max: '20000' },
+  { id: '20k-1l', label: '₹20K – ₹1L', min: '20000', max: '100000' },
+  { id: '1l+', label: '₹1L+', min: '100000', max: '' },
+];
 
 export default function HomeScreen({ navigation }) {
   const { user } = useAuth();
@@ -56,6 +64,7 @@ export default function HomeScreen({ navigation }) {
     const unsubscribe = navigation.addListener('focus', () => {
       loadRecentlyViewed();
       loadFavorites();
+      loadLocations();
     });
     return unsubscribe;
   }, [navigation]);
@@ -100,6 +109,18 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, [fadeAnim]);
 
+  const loadLocations = () => {
+    apiFetch('/api/users/locations').then(res => {
+      let data = res.data;
+      if (Array.isArray(data)) {
+        setLocations(data.map((c, idx) => ({
+          id: c._id || c.id || `loc-${idx}`,
+          name: c.locality + ',' + c.city
+        })));
+      }
+    }).catch(() => {});
+  };
+
   // Fetch categories once
   useEffect(() => {
     apiFetch('/api/ads/listCategories')
@@ -115,17 +136,8 @@ export default function HomeScreen({ navigation }) {
       })
       .catch(() => {});
 
-    // Fetch locations
-    apiFetch('/api/users/locations').then(res => {
-      let data = res.data;
-      if (Array.isArray(data)) {
-        setLocations(data.map((c, idx) => ({
-          id: c._id || c.id || `loc-${idx}`,
-          name: c.locality + ',' + c.city
-        })));
-      }
-    }).catch(() => {});
-  }, []);
+    loadLocations();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update subcategories when category input changes
   useEffect(() => {
@@ -150,8 +162,8 @@ export default function HomeScreen({ navigation }) {
         limit: LIMIT,
         search: searchQuery.trim() || undefined,
         location: locationQuery.trim() || undefined,
-        minPrice: minPrice || undefined,
-        maxPrice: maxPrice || undefined,
+        priceMin: minPrice !== '' ? Number(minPrice) : undefined,
+        priceMax: maxPrice !== '' ? Number(maxPrice) : undefined,
         category: catId,
         subCategory: selectedSubCategory || undefined,
         userId: user?._id || undefined,
@@ -177,7 +189,7 @@ export default function HomeScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [searchQuery, locationQuery, selectedCategory, selectedSubCategory, categories, user, loading]);
+  }, [searchQuery, locationQuery, selectedCategory, selectedSubCategory, minPrice, maxPrice, categories, user, loading]);
 
   // Re-fetch when filters change
   useEffect(() => {
@@ -355,6 +367,30 @@ export default function HomeScreen({ navigation }) {
           </View>
 
           <Text style={styles.filterLabel}>Price Range</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.subTrackInner, { marginBottom: 10 }]}
+          >
+            {PRICE_RANGES.map((range) => {
+              const active = isPriceRangeActive(range);
+              return (
+                <TouchableOpacity
+                  key={range.id}
+                  style={[styles.subPill, active && styles.subPillActive]}
+                  onPress={() => handlePriceRangeSelect(range)}
+                  activeOpacity={0.88}
+                >
+                  <Text
+                    style={[styles.subPillText, active && styles.subPillTextActive]}
+                    numberOfLines={1}
+                  >
+                    {range.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
           <View style={styles.filterRow}>
             <View style={[styles.filterInputWrapper, { flex: 1 }]}>
               <Text style={{ color: COLORS.textMuted, fontSize: 12, marginRight: 6 }}>Min:</Text>
@@ -508,6 +544,19 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const isPriceRangeActive = (range) =>
+    minPriceInput === range.min && maxPriceInput === range.max;
+
+  const handlePriceRangeSelect = (range) => {
+    if (isPriceRangeActive(range)) {
+      setMinPriceInput('');
+      setMaxPriceInput('');
+    } else {
+      setMinPriceInput(range.min);
+      setMaxPriceInput(range.max);
+    }
+  };
+
   const renderStickyFilters = () => {
     const activeFilters = [];
     if (searchQuery) activeFilters.push({ type: 'search', label: searchQuery });
@@ -558,19 +607,28 @@ export default function HomeScreen({ navigation }) {
 
   const renderFooter = () => {
     if (!loading || listings.length === 0) return null;
+    // Skeleton row keeps the loading affordance consistent with the initial load.
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="small" color={COLORS.primary} />
+      <View style={styles.skeletonGrid}>
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <View key={`skeleton-more-${idx}`} style={styles.skeletonItem}>
+            <SkeletonCard />
+          </View>
+        ))}
       </View>
     );
   };
 
   const renderEmpty = () => {
     if (loading) {
+      // Skeleton grid mirrors the 2-column ad layout while the first page loads.
       return (
-        <View style={styles.empty}>
-          <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={styles.emptySubText}>Loading ads...</Text>
+        <View style={styles.skeletonGrid}>
+          {Array.from({ length: LIMIT }).map((_, idx) => (
+            <View key={`skeleton-${idx}`} style={styles.skeletonItem}>
+              <SkeletonCard />
+            </View>
+          ))}
         </View>
       );
     }
@@ -1067,6 +1125,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   loader: { paddingVertical: 20, alignItems: 'center' },
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingTop: 8,
+  },
+  skeletonItem: {
+    width: '50%',
+  },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 16, fontWeight: '700', color: COLORS.textMuted },
   emptySubText: { fontSize: 13, color: COLORS.textMuted },

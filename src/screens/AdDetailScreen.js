@@ -4,7 +4,7 @@ import {
   View, Text, ScrollView, Image, TouchableOpacity,
   StyleSheet, Alert, Platform,
   ActivityIndicator, LayoutAnimation, UIManager,
-  Share, Animated,
+  Share, StatusBar, Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -13,11 +13,15 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
-import { apiFetch, API_BASE_URL, incrementAdViews, addAdToFavorite, removeAdFromFavorite } from '../utils/api';
+import { apiFetch, API_BASE_URL, WEB_URL, incrementAdViews, addAdToFavorite, removeAdFromFavorite, getReportReasons, reportAd } from '../utils/api';
 import AiSummary from '../components/AiSummary';
 import { useAuth } from '../context/AuthContext';
 import AiAnalytics from '../components/AiAnalytics';
+import SimilarAds from '../components/SimilarAds';
 import AdImageGallery from '../components/AdImageGallery';
+import GenuinityMeter from '../components/GenuinityMeter';
+import SellerTrustLine from '../components/SellerTrustLine';
+import ReviewModal from '../components/ReviewModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SAFETY_TIPS = [
@@ -33,12 +37,21 @@ export default function AdDetailScreen({ route, navigation }) {
   const isOwner = user && (user._id === listing.sellerId || user._id === listing.seller?._id);
   const isNew = listing.createdAt && (new Date() - new Date(listing.createdAt)) < 5 * 24 * 60 * 60 * 1000;
   const scrollRef = useRef(null);
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   const [loadingPrice, setLoadingPrice] = useState(false);
   const [priceInsights, setPriceInsights] = useState([]);
   const [expandedOffer, setExpandedOffer] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reasons, setReasons] = useState([]);
+  const [loadingReasons, setLoadingReasons] = useState(false);
+  const [reasonsError, setReasonsError] = useState(false);
+  const [selectedReason, setSelectedReason] = useState(null);
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   useEffect(() => {
     addToRecentlyViewed(listing);
@@ -48,6 +61,32 @@ export default function AdDetailScreen({ route, navigation }) {
       fetchPriceInsights();
     }
   }, []);
+
+  useEffect(() => {
+    if (!user || !(listing.id || listing._id)) return;
+    let cancelled = false;
+    apiFetch(`/api/reviews/status/${listing.id || listing._id}`)
+      .then((data) => {
+        if (!cancelled) setReviewStatus(data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, listing.id, listing._id]);
+
+  useEffect(() => {
+    if (route.params?.openReview && reviewStatus?.canReview) {
+      setReviewOpen(true);
+    }
+  }, [route.params?.openReview, reviewStatus?.canReview]);
+
+  const handleScroll = (event) => {
+    setScrollOffset(event.nativeEvent.contentOffset.y);
+  };
+
+  const opaqueHeader = scrollOffset > 40;
+  const headerBgOpacity = Math.min(1, scrollOffset / 88);
+  const titleOpacity = Math.min(1, Math.max(0, (scrollOffset - 48) / 56));
+  const headerBorderOpacity = Math.min(1, Math.max(0, (scrollOffset - 72) / 40));
 
   const checkFavoriteStatus = async () => {
     try {
@@ -94,9 +133,10 @@ export default function AdDetailScreen({ route, navigation }) {
 
   const handleShare = async () => {
     try {
+      const shareUrl = `${WEB_URL}/ads/${listing.id || listing._id}`;
       await Share.share({
-        message: `Check out this ${listing.title} on Dealr for ₹${listing.price}!`,
-        url: `${API_BASE_URL}/ads/${listing.id || listing._id}`,
+        message: `Check out this ${listing.title} on Dealr for ₹${listing.price}!\n\nView more details here: ${shareUrl}`,
+        url: shareUrl,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -187,19 +227,47 @@ export default function AdDetailScreen({ route, navigation }) {
     });
   };
 
+  const loadReportReasons = async () => {
+    setLoadingReasons(true);
+    setReasonsError(false);
+    try {
+      const res = await getReportReasons();
+      setReasons(Array.isArray(res) ? res : (res?.data || []));
+    } catch (err) {
+      console.error('Error fetching report reasons:', err);
+      setReasonsError(true);
+    } finally {
+      setLoadingReasons(false);
+    }
+  };
+
   const handleReport = () => {
-    Alert.alert(
-      "Report Ad",
-      "Are you sure you want to report this advertisement for suspicious activity?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Report",
-          style: "destructive",
-          onPress: () => Alert.alert("Success", "The ad has been reported. Our team will review it shortly.")
-        }
-      ]
-    );
+    if (!user) {
+      Alert.alert('Login required', 'Please login to report this ad.');
+      return;
+    }
+    setSelectedReason(null);
+    setReportModalVisible(true);
+    loadReportReasons();
+  };
+
+  const closeReportModal = () => {
+    if (submittingReport) return;
+    setReportModalVisible(false);
+  };
+
+  const submitReport = async () => {
+    if (!selectedReason || submittingReport) return;
+    setSubmittingReport(true);
+    try {
+      await reportAd(listing.id || listing._id, selectedReason);
+      setReportModalVisible(false);
+      Alert.alert('Success', 'The ad has been reported. Our team will review it shortly.');
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Could not submit report. Please try again.');
+    } finally {
+      setSubmittingReport(false);
+    }
   };
 
   const toggleExpand = (type) => {
@@ -207,85 +275,54 @@ export default function AdDetailScreen({ route, navigation }) {
     setExpandedOffer(expandedOffer === type ? null : type);
   };
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [100, 200],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [-20, 0],
-    extrapolate: 'clamp',
-  });
-
   return (
     <View style={styles.container}>
-      {/* Opaque Floating Header */}
-      <Animated.View
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={opaqueHeader ? 'dark-content' : 'light-content'}
+      />
+
+      <View
         style={[
-          styles.opaqueHeader,
-          {
-            paddingTop: insets.top + 8,
-            opacity: headerOpacity,
-            transform: [{ translateY: headerTranslateY }],
-          },
+          styles.fixedHeader,
+          { paddingTop: insets.top + 8 },
+          opaqueHeader && styles.fixedHeaderOpaque,
         ]}
       >
-        <TouchableOpacity
-          style={styles.headerBackBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="arrow-left" size={20} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{listing.title}</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handleShare}>
-            <Icon name="share-2" size={18} color={COLORS.text} />
+        <View
+          pointerEvents="none"
+          style={[styles.fixedHeaderBg, { opacity: headerBgOpacity }]}
+        />
+        <View
+          pointerEvents="none"
+          style={[styles.fixedHeaderBorder, { opacity: headerBorderOpacity }]}
+        />
+        <View style={styles.fixedHeaderRow}>
+          <TouchableOpacity
+            style={opaqueHeader ? styles.fixedHeaderBtn : styles.fixedHeaderBtnOverlay}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Icon name="arrow-left" size={20} color={COLORS.text} />
           </TouchableOpacity>
-          {!isOwner && (
-            <TouchableOpacity onPress={toggleFavorite}>
-              <Icon
-                name="heart"
-                size={18}
-                color={isFavorite ? COLORS.error : COLORS.text}
-                fill={isFavorite ? COLORS.error : 'transparent'}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-      </Animated.View>
-
-      <Animated.ScrollView
-        ref={scrollRef}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 100 }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.galleryContainer}>
-          <AdImageGallery
-            images={listing.images || []}
-            onBack={() => navigation.goBack()}
-          />
-
-          {/* Floating Actions Over Gallery */}
-          <View style={[styles.floatingHeaderActions, { top: insets.top + 8 }]}>
+          <Text
+            style={[styles.fixedHeaderTitle, { opacity: titleOpacity }]}
+            numberOfLines={1}
+          >
+            {listing.title}
+          </Text>
+          <View style={styles.fixedHeaderActions}>
             <TouchableOpacity
-              style={styles.floatingActionBtn}
+              style={opaqueHeader ? styles.fixedHeaderBtn : styles.fixedHeaderBtnOverlay}
               onPress={handleShare}
               activeOpacity={0.8}
             >
               <Icon name="share-2" size={18} color={COLORS.text} />
             </TouchableOpacity>
-
             {!isOwner && (
               <TouchableOpacity
-                style={styles.floatingActionBtn}
+                style={opaqueHeader ? styles.fixedHeaderBtn : styles.fixedHeaderBtnOverlay}
                 onPress={toggleFavorite}
                 activeOpacity={0.8}
               >
@@ -298,6 +335,23 @@ export default function AdDetailScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
           </View>
+        </View>
+      </View>
+
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: 100 }}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+      >
+        <View style={styles.galleryContainer}>
+          <AdImageGallery
+            images={listing.images || []}
+            controlsRightInset={isOwner ? 0 : 96}
+            showExpandIcon={false}
+          />
         </View>
 
         <View style={styles.contentSheet}>
@@ -341,6 +395,28 @@ export default function AdDetailScreen({ route, navigation }) {
             </View>
           </View>
 
+          {/* Genuineness Meter */}
+          <GenuinityMeter views={listing.views} reports={listing.reports} embedded />
+
+          {user && reviewStatus?.canReview && (
+            <TouchableOpacity
+              style={[styles.reviewPrompt, isOwner && styles.reviewPromptOwner]}
+              onPress={() => setReviewOpen(true)}
+              activeOpacity={0.85}
+            >
+              <Icon name="star" size={16} color={isOwner ? COLORS.primary : '#b45309'} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.reviewPromptTitle, isOwner && styles.reviewPromptTitleOwner]}>
+                  Rate your experience
+                </Text>
+                <Text style={styles.reviewPromptSub}>
+                  Share feedback about {reviewStatus.reviewee?.name || 'this transaction'}
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
+
           {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
@@ -350,10 +426,12 @@ export default function AdDetailScreen({ route, navigation }) {
           {/* AI Summary */}
           <View style={styles.aiSection}>
             <AiSummary
+              adId={listing.id || listing._id}
               adTitle={listing.title}
               category={listing.category}
               subCategory={listing.subCategory}
               description={listing.description}
+              cachedSummary={listing.aiSummary}
             />
           </View>
 
@@ -375,8 +453,60 @@ export default function AdDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
               </View>
               {SAFETY_TIPS.map((tip, idx) => (
-                <Text key={idx} style={styles.safetyText}>• {tip}</Text>
+                <Text
+                  key={idx}
+                  style={[
+                    styles.safetyText,
+                    idx === SAFETY_TIPS.length - 1 && styles.safetyTextLast,
+                  ]}
+                >
+                  • {tip}
+                </Text>
               ))}
+
+              <View style={styles.safetySellerBlock}>
+                <Text style={styles.safetySellerEyebrow}>Posted by</Text>
+                <View style={styles.safetySellerRow}>
+                  {listing.sellerPic ? (
+                    <Image source={{ uri: listing.sellerPic }} style={styles.safetySellerAvatar} />
+                  ) : (
+                    <View style={styles.safetySellerAvatarFallback}>
+                      <Icon name="user" size={22} color={COLORS.white} />
+                    </View>
+                  )}
+                  <View style={styles.safetySellerInfo}>
+                    <View style={styles.sellerNameRow}>
+                      <Text style={styles.safetySellerName}>{listing.seller}</Text>
+                      <View style={styles.verifiedBadgeModern}>
+                        <Icon name="check" size={10} color={COLORS.white} />
+                      </View>
+                    </View>
+                    {listing.sellerSince && (
+                      <Text style={styles.safetySellerSince}>Member since {listing.sellerSince}</Text>
+                    )}
+                    <SellerTrustLine
+                      ratingAvg={listing.sellerRatingAvg}
+                      reviewCount={listing.sellerReviewCount}
+                      completedSales={listing.sellerCompletedSales}
+                      badges={listing.sellerBadges}
+                      trustScore={listing.sellerTrustScore}
+                      size="sm"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={styles.safetyViewProfileBtn}
+                    onPress={() => navigation.navigate('SellerProfile', {
+                      sellerId: listing.sellerId || listing.seller?._id,
+                      sellerName: listing.seller,
+                      sellerPic: listing.sellerPic,
+                      sellerSince: listing.sellerSince,
+                    })}
+                  >
+                    <Text style={styles.safetyViewProfileText}>Profile</Text>
+                    <Icon name="chevron-right" size={13} color="#0369a1" />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           )}
 
@@ -450,45 +580,40 @@ export default function AdDetailScreen({ route, navigation }) {
             </>
           )}
 
-          {/* Seller */}
-          <View style={styles.sellerCard}>
-            <View style={styles.sellerInfoRow}>
-              {listing.sellerPic ? (
-                <Image source={{ uri: listing.sellerPic }} style={styles.sellerAvatar} />
-              ) : (
-                <View style={styles.sellerAvatarFallback}>
-                  <Icon name="user" size={24} color={COLORS.white} />
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <View style={styles.sellerNameRow}>
-                  <Text style={styles.sellerName}>{listing.seller}</Text>
-                  <View style={styles.verifiedBadgeModern}>
-                    <Icon name="check" size={10} color={COLORS.white} />
-                  </View>
-                </View>
-                {listing.sellerSince && (
-                  <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.viewProfileBtn}
-                onPress={() => navigation.navigate('SellerProfile', {
-                  sellerId: listing.sellerId || listing.seller?._id,
-                  sellerName: listing.seller,
-                  sellerPic: listing.sellerPic,
-                  sellerSince: listing.sellerSince
-                })}
-              >
-                <Text style={styles.viewProfileText}>View Profile</Text>
-                <Icon name="chevron-right" size={14} color={COLORS.primary} />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <SimilarAds
+            key={listing.id || listing._id}
+            listing={listing}
+            navigation={navigation}
+          />
 
+          {isOwner && (
+            <View style={styles.sellerCard}>
+              <View style={styles.sellerInfoRow}>
+                {listing.sellerPic ? (
+                  <Image source={{ uri: listing.sellerPic }} style={styles.sellerAvatar} />
+                ) : (
+                  <View style={styles.sellerAvatarFallback}>
+                    <Icon name="user" size={24} color={COLORS.white} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sellerLabel}>Posted by</Text>
+                  <View style={styles.sellerNameRow}>
+                    <Text style={styles.sellerName}>{listing.seller}</Text>
+                    <View style={styles.verifiedBadgeModern}>
+                      <Icon name="check" size={10} color={COLORS.white} />
+                    </View>
+                  </View>
+                  {listing.sellerSince && (
+                    <Text style={styles.sellerSince}>Member since {listing.sellerSince}</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
 
         </View>
-      </Animated.ScrollView>
+      </ScrollView>
 
       {/* Sticky Bottom Bar */}
       {!isOwner && (
@@ -500,54 +625,150 @@ export default function AdDetailScreen({ route, navigation }) {
         </View>
       )}
 
+      {/* Report Reason Modal */}
+      <Modal
+        visible={reportModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeReportModal}
+      >
+        <View style={styles.reportOverlay}>
+          <View style={styles.reportSheet}>
+            <View style={styles.reportHeader}>
+              <View style={styles.reportIconCircle}>
+                <Icon name="flag" size={18} color={COLORS.error} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.reportTitle}>Report this ad</Text>
+                <Text style={styles.reportSubtitle}>Tell us why you're reporting this listing.</Text>
+              </View>
+              <TouchableOpacity onPress={closeReportModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Icon name="x" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingReasons ? (
+              <View style={styles.reportStateBox}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              </View>
+            ) : reasonsError ? (
+              <View style={styles.reportStateBox}>
+                <Text style={styles.reportErrorText}>Couldn't load reasons. Please try again.</Text>
+                <TouchableOpacity onPress={loadReportReasons} style={styles.reportRetryBtn}>
+                  <Text style={styles.reportRetryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : reasons.length === 0 ? (
+              <View style={styles.reportStateBox}>
+                <Text style={styles.reportEmptyText}>No reporting reasons are available right now.</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.reportReasonList} showsVerticalScrollIndicator={false}>
+                {reasons.map((r) => {
+                  const isSelected = selectedReason === r._id;
+                  return (
+                    <TouchableOpacity
+                      key={r._id}
+                      activeOpacity={0.7}
+                      style={[styles.reportReasonItem, isSelected && styles.reportReasonItemSelected]}
+                      onPress={() => setSelectedReason(r._id)}
+                    >
+                      <View style={[styles.reportRadio, isSelected && styles.reportRadioSelected]}>
+                        {isSelected && <View style={styles.reportRadioDot} />}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reportReasonTitle}>{r.reason}</Text>
+                        {!!r.description && <Text style={styles.reportReasonDesc}>{r.description}</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <View style={styles.reportActions}>
+              <TouchableOpacity
+                style={styles.reportCancelBtn}
+                onPress={closeReportModal}
+                disabled={submittingReport}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.reportCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.reportSubmitBtn, (!selectedReason || submittingReport) && styles.reportSubmitBtnDisabled]}
+                onPress={submitReport}
+                disabled={!selectedReason || submittingReport}
+                activeOpacity={0.8}
+              >
+                {submittingReport ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={styles.reportSubmitText}>Submit Report</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <ReviewModal
+        visible={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        adId={listing.id || listing._id}
+        adTitle={listing.title}
+        revieweeName={reviewStatus?.reviewee?.name}
+        revieweePic={reviewStatus?.reviewee?.profilePic}
+        onSubmitted={() => {
+          setReviewStatus((prev) => ({ ...prev, canReview: false, alreadyReviewed: true }));
+          Alert.alert('Thank you!', 'Your review helps keep Dealr safe.');
+        }}
+      />
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
-  opaqueHeader: {
+  fixedHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
+  fixedHeaderOpaque: {
     ...SHADOW.small,
   },
-  headerBackBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  fixedHeaderBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.white,
+  },
+  fixedHeaderBorder: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.border,
+  },
+  fixedHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  fixedHeaderBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginHorizontal: 12,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 16,
-    marginRight: 4,
-  },
-  galleryContainer: { position: 'relative' },
-  floatingHeaderActions: {
-    position: 'absolute',
-    right: 16,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  floatingActionBtn: {
+  fixedHeaderBtnOverlay: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -556,6 +777,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...SHADOW.small,
   },
+  fixedHeaderTitle: {
+    flex: 1,
+    marginHorizontal: 8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  fixedHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  galleryContainer: { position: 'relative' },
   contentSheet: {
     marginTop: -20,
     backgroundColor: COLORS.white,
@@ -596,6 +830,24 @@ const styles = StyleSheet.create({
   dotSmall: { width: 4, height: 4, borderRadius: 2 },
   tagText: { fontSize: 11, fontWeight: '800' },
   section: { marginBottom: 28 },
+  reviewPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: RADIUS.lg,
+    padding: 14,
+    marginBottom: 20,
+  },
+  reviewPromptOwner: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+  },
+  reviewPromptTitle: { fontSize: 14, fontWeight: '800', color: '#92400e' },
+  reviewPromptTitleOwner: { color: COLORS.primary },
+  reviewPromptSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
   description: { fontSize: 15, color: COLORS.text, lineHeight: 24, opacity: 0.8 },
   aiSection: { marginBottom: 24, borderRadius: RADIUS.lg, overflow: 'hidden' },
@@ -603,7 +855,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f9ff',
     borderRadius: RADIUS.lg,
     padding: 16,
-    marginBottom: 28,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#bae6fd',
   },
@@ -615,7 +867,75 @@ const styles = StyleSheet.create({
   },
   safetyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   safetyTitle: { fontSize: 14, fontWeight: '700', color: '#0369a1' },
-  safetyText: { fontSize: 13, color: '#0c4a6e', marginBottom: 4, opacity: 0.8 },
+  safetyText: { fontSize: 13, color: '#0c4a6e', marginBottom: 4, opacity: 0.85 },
+  safetyTextLast: { marginBottom: 0 },
+  safetySellerBlock: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(3, 105, 161, 0.22)',
+  },
+  safetySellerEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0369a1',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginBottom: 10,
+    opacity: 0.9,
+  },
+  safetySellerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  safetySellerInfo: { flex: 1, minWidth: 0 },
+  safetySellerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'rgba(125, 211, 252, 0.9)',
+    backgroundColor: '#e0f2fe',
+  },
+  safetySellerAvatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#0284c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(125, 211, 252, 0.9)',
+  },
+  safetySellerName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0c4a6e',
+  },
+  safetySellerSince: {
+    fontSize: 12,
+    color: '#0369a1',
+    marginTop: 2,
+    opacity: 0.85,
+  },
+  safetyViewProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: 'rgba(125, 211, 252, 0.85)',
+  },
+  safetyViewProfileText: {
+    fontSize: 12,
+    color: '#0369a1',
+    fontWeight: '700',
+  },
+  sellerLabel: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600', marginBottom: 2 },
   sellerCard: {
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
@@ -721,4 +1041,93 @@ const styles = StyleSheet.create({
   offerDesc: { fontSize: 11, color: COLORS.textMuted, lineHeight: 15 },
   expandedCard: { flex: 2, borderColor: COLORS.primary, zIndex: 10, ...SHADOW.medium },
   readMoreText: { fontSize: 10, color: COLORS.primary, fontWeight: '700', marginTop: 4 },
+  reportOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  reportSheet: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '80%',
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+  },
+  reportIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.error + '1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  reportSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  reportStateBox: { paddingVertical: 28, alignItems: 'center', justifyContent: 'center' },
+  reportErrorText: { fontSize: 14, color: COLORS.error, marginBottom: 12 },
+  reportEmptyText: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center' },
+  reportRetryBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.background,
+  },
+  reportRetryText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  reportReasonList: { marginBottom: 16 },
+  reportReasonItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 8,
+  },
+  reportReasonItemSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '0D',
+  },
+  reportRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  reportRadioSelected: { borderColor: COLORS.primary },
+  reportRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+  reportReasonTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  reportReasonDesc: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, lineHeight: 16 },
+  reportActions: { flexDirection: 'row', gap: 12 },
+  reportCancelBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportCancelText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+  reportSubmitBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportSubmitBtnDisabled: { opacity: 0.5 },
+  reportSubmitText: { fontSize: 15, fontWeight: '700', color: COLORS.white },
 });

@@ -5,51 +5,94 @@ import {
   Image, Alert, ActivityIndicator, ScrollView, RefreshControl,
 } from 'react-native';
 import Icon from '../components/Icon';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { GoogleSignin, statusCodes, isCancelledResponse } from '@react-native-google-signin/google-signin';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../utils/api';
+import { API_BASE_URL, apiFetch } from '../utils/api';
+import ReviewModal from '../components/ReviewModal';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Configure Google Sign-In once
 GoogleSignin.configure({
   // This is the WEB client ID from your Google Cloud Console
   // (same one used in your web app)
-  webClientId: '782257434604-jff84f89n9kht0heamethsr01rrrabgg.apps.googleusercontent.com',
+  webClientId: '281405583072-n7rkibd2qc0afs76dve0kgbsi9p15jfk.apps.googleusercontent.com',
   offlineAccess: true,
 });
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
   const { user, loginWithGoogle, logout } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [pendingReviews, setPendingReviews] = useState([]);
+  const [activeReview, setActiveReview] = useState(null);
+
+  const loadPendingReviews = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await apiFetch('/api/reviews/pending');
+      setPendingReviews(data.pending || []);
+    } catch (e) {
+      console.warn('Could not load pending reviews', e);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPendingReviews();
+    }, [loadPendingReviews])
+  );
+
+  useEffect(() => {
+    const adId = route.params?.openReviewAdId;
+    if (!adId || pendingReviews.length === 0) return;
+    const match = pendingReviews.find((item) => String(item.adId) === String(adId));
+    if (match) {
+      setActiveReview(match);
+      navigation.setParams({ openReviewAdId: undefined });
+    }
+  }, [route.params?.openReviewAdId, pendingReviews, navigation]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    // Add any refresh logic here if needed, otherwise just stop the spinner
-    setTimeout(() => setRefreshing(false), 1000);
+    loadPendingReviews().finally(() => setRefreshing(false));
   };
 
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo.data?.idToken || userInfo.idToken;
+      const response = await GoogleSignin.signIn();
 
-      if (!idToken) throw new Error('No ID token received');
+      if (isCancelledResponse(response)) return;
+
+      let idToken = response.data?.idToken;
+      if (!idToken) {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken;
+      }
+      if (!idToken) {
+        throw new Error('No ID token received. Uninstall the app, rebuild, and try again.');
+      }
 
       await loginWithGoogle(idToken);
     } catch (error) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled — do nothing
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        // sign in already in progress
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services not available on this device.');
-      } else {
-        Alert.alert('Sign-In Failed', error.message || 'Could not sign in with Google.');
+      if (error.code === statusCodes.SIGN_IN_CANCELLED || error.code === statusCodes.IN_PROGRESS) {
+        return;
       }
+      if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Error', 'Google Play Services not available on this device.');
+        return;
+      }
+      if (String(error.code) === '10' || error.message?.includes('DEVELOPER_ERROR')) {
+        Alert.alert(
+          'Configuration Error',
+          'Google Sign-In is not set up for this build. In Firebase, add SHA-1 5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25 for package com.dealr.app, then rebuild the app.',
+        );
+        return;
+      }
+      Alert.alert('Sign-In Failed', error.message || 'Could not sign in with Google.');
     } finally {
       setSigningIn(false);
     }
@@ -153,6 +196,30 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
+        {pendingReviews.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Pending Reviews</Text>
+            <View style={styles.pendingCard}>
+              {pendingReviews.map((item) => (
+                <TouchableOpacity
+                  key={item.adId}
+                  style={styles.pendingRow}
+                  onPress={() => setActiveReview(item)}
+                >
+                  <View style={styles.pendingIcon}>
+                    <Icon name="star" size={16} color="#f59e0b" />
+                  </View>
+                  <View style={styles.pendingInfo}>
+                    <Text style={styles.pendingTitle} numberOfLines={1}>{item.adTitle}</Text>
+                    <Text style={styles.pendingSub}>Rate {item.revieweeName}</Text>
+                  </View>
+                  <Icon name="chevron-right" size={16} color={COLORS.border} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
+
         {/* Quick actions */}
         <Text style={styles.sectionLabel}>Quick Actions</Text>
 
@@ -251,6 +318,19 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
       )}
+
+      <ReviewModal
+        visible={!!activeReview}
+        onClose={() => setActiveReview(null)}
+        adId={activeReview?.adId}
+        adTitle={activeReview?.adTitle}
+        revieweeName={activeReview?.revieweeName}
+        revieweePic={activeReview?.revieweePic}
+        onSubmitted={() => {
+          loadPendingReviews();
+          Alert.alert('Thank you!', 'Your review helps keep Dealr safe.');
+        }}
+      />
     </View>
   );
 }
@@ -258,7 +338,7 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.primary,
     paddingTop: 54,
     paddingBottom: 16,
     paddingHorizontal: 20,
@@ -266,7 +346,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     ...SHADOW.small,
   },
-  headerTitle: { color: COLORS.text, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
   // Logged out
   centeredContent: {
@@ -357,6 +437,32 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  pendingCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    marginBottom: 20,
+    ...SHADOW.small,
+    overflow: 'hidden',
+  },
+  pendingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  pendingIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFBEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingInfo: { flex: 1 },
+  pendingTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  pendingSub: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
   actionsCard: {
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,

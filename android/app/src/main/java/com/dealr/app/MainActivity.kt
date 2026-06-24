@@ -1,4 +1,4 @@
-package com.anonymous.e4youfresh
+package com.dealr.app
 
 import android.os.Build
 import android.os.Bundle

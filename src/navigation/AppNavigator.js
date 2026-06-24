@@ -20,6 +20,7 @@ import { useMessages } from '../context/MessagesContext';
 import { useAuth } from '../context/AuthContext';
 import { navigationRef } from '../utils/navigation';
 import { Alert, View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -68,6 +69,7 @@ function ProfileStack() {
 function TabNavigator() {
   const { messageCount } = useMessages();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -78,8 +80,9 @@ function TabNavigator() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.border,
-          height: 70,
-          paddingBottom: 20,
+          height: 60 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 10),
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -105,7 +108,16 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Home', { screen: 'AllAds' });
+          },
+        })}
+      />
       <Tab.Screen
         name="Chat"
         component={MessagesStack}
@@ -122,6 +134,9 @@ function TabNavigator() {
                 "You have been blocked due to repeated suspicious activity. Please wait for another 30 days to access messages.",
                 [{ text: "OK" }]
               );
+            } else {
+              e.preventDefault();
+              navigation.navigate('Chat', { screen: 'MessagesList' });
             }
           },
         })}
@@ -158,8 +173,23 @@ function TabNavigator() {
         name="MyAds"
         component={MyAdsStack}
         options={{ tabBarLabel: 'My Ads' }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('MyAds', { screen: 'MyAdsList' });
+          },
+        })}
       />
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Profile', { screen: 'ProfileMain' });
+          },
+        })}
+      />
     </Tab.Navigator>
   );
 }

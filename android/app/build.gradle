@@ -89,9 +89,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk 35
 
-    namespace 'com.anonymous.e4youfresh'
+    namespace 'com.dealr.app'
     defaultConfig {
-        applicationId 'com.anonymous.e4youfresh'
+        applicationId 'com.dealr.app'
         minSdkVersion 24
         targetSdkVersion 35
         versionCode 1

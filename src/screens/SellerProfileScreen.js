@@ -8,7 +8,46 @@ import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import AdCard from '../components/AdCard';
+import SellerTrustLine from '../components/SellerTrustLine';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+function ReviewItem({ review }) {
+  const reviewerName = review.reviewer?.name || 'User';
+  const adTitle = review.ad?.title || 'Listing';
+  const date = review.createdAt
+    ? new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+
+  return (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewHeader}>
+        <View style={styles.reviewStars}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Icon
+              key={star}
+              name="star"
+              size={14}
+              color={star <= review.rating ? '#f59e0b' : COLORS.border}
+            />
+          ))}
+        </View>
+        <Text style={styles.reviewDate}>{date}</Text>
+      </View>
+      <Text style={styles.reviewAuthor}>{reviewerName}</Text>
+      <Text style={styles.reviewAdTitle} numberOfLines={1}>{adTitle}</Text>
+      {review.text ? <Text style={styles.reviewText}>{review.text}</Text> : null}
+      {review.tags?.length > 0 && (
+        <View style={styles.reviewTags}>
+          {review.tags.map((tag) => (
+            <View key={tag} style={styles.reviewTag}>
+              <Text style={styles.reviewTagText}>{tag}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function SellerProfileScreen({ route, navigation }) {
   const { sellerId, sellerName, sellerPic, sellerSince } = route.params;
@@ -16,6 +55,8 @@ export default function SellerProfileScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [reputation, setReputation] = useState(null);
+  const [reviews, setReviews] = useState([]);
 
   const fetchSellerAds = useCallback(async () => {
     try {
@@ -27,11 +68,24 @@ export default function SellerProfileScreen({ route, navigation }) {
       setAds(list.map(mapListing));
     } catch (error) {
       console.error('Error fetching seller ads:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
   }, [sellerId]);
+
+  const fetchReputation = useCallback(async () => {
+    try {
+      const data = await apiFetch(`/api/reviews/user/${sellerId}?limit=5`);
+      setReputation(data.user);
+      setReviews(data.reviews || []);
+    } catch (error) {
+      console.error('Error fetching seller reputation:', error);
+    }
+  }, [sellerId]);
+
+  const loadAll = useCallback(async () => {
+    await Promise.all([fetchSellerAds(), fetchReputation()]);
+    setLoading(false);
+    setRefreshing(false);
+  }, [fetchSellerAds, fetchReputation]);
 
   const loadFavorites = async () => {
     try {
@@ -41,17 +95,22 @@ export default function SellerProfileScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    fetchSellerAds();
+    loadAll();
     loadFavorites();
-  }, [fetchSellerAds]);
+  }, [loadAll]);
 
   const toggleFavorite = (id) => {
-    // Simple local toggle for UI feedback
     setFavorites(prev =>
       prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
     );
-    // In a real app, you'd call the API here too
   };
+
+  const ratingAvg = reputation?.ratingAvg || 0;
+  const reviewCount = reputation?.reviewCount || 0;
+  const completedSales = reputation?.completedSales || 0;
+  const memberSince = reputation?.createdAt
+    ? new Date(reputation.createdAt).getFullYear()
+    : (sellerSince || '2023');
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
@@ -70,7 +129,16 @@ export default function SellerProfileScreen({ route, navigation }) {
               <Icon name="check" size={10} color={COLORS.white} />
             </View>
           </View>
-          <Text style={styles.memberSince}>Member since {sellerSince || '2023'}</Text>
+          <Text style={styles.memberSince}>Member since {memberSince}</Text>
+          <SellerTrustLine
+            ratingAvg={ratingAvg}
+            reviewCount={reviewCount}
+            completedSales={completedSales}
+            badges={reputation?.badges || []}
+            trustScore={reputation?.trustScore ?? 50}
+            size="md"
+            showScore
+          />
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text style={styles.statNumber}>{ads.length}</Text>
@@ -78,19 +146,33 @@ export default function SellerProfileScreen({ route, navigation }) {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Text style={styles.statNumber}>Verified</Text>
-              <Text style={styles.statLabel}>Status</Text>
+              <Text style={styles.statNumber}>{completedSales}</Text>
+              <Text style={styles.statLabel}>Sales</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>{reviewCount}</Text>
+              <Text style={styles.statLabel}>Reviews</Text>
             </View>
           </View>
         </View>
       </View>
+
+      {reviews.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Recent Reviews</Text>
+          {reviews.map((review) => (
+            <ReviewItem key={review._id} review={review} />
+          ))}
+        </>
+      )}
+
       <Text style={styles.sectionTitle}>Ads by this Seller</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Custom Header */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon name="arrow-left" size={20} color={COLORS.text} />
@@ -116,7 +198,7 @@ export default function SellerProfileScreen({ route, navigation }) {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); fetchSellerAds(); }}
+            onRefresh={() => { setRefreshing(true); loadAll(); }}
             colors={[COLORS.primary]}
           />
         }
@@ -156,8 +238,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: 20,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
+    alignItems: 'flex-start',
+    marginBottom: 16,
     ...SHADOW.medium,
   },
   avatar: { width: 80, height: 80, borderRadius: 40 },
@@ -172,16 +254,43 @@ const styles = StyleSheet.create({
     width: 16, height: 16, borderRadius: 8,
     backgroundColor: COLORS.success, alignItems: 'center', justifyContent: 'center',
   },
-  memberSince: { fontSize: 14, color: COLORS.textMuted, marginBottom: 16 },
-  statsRow: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  memberSince: { fontSize: 14, color: COLORS.textMuted, marginBottom: 8 },
+  statsRow: { flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 12 },
   stat: { alignItems: 'flex-start' },
   statNumber: { fontSize: 16, fontWeight: '800', color: COLORS.text },
   statLabel: { fontSize: 12, color: COLORS.textMuted },
   statDivider: { width: 1, height: 24, backgroundColor: COLORS.border },
   sectionTitle: {
     fontSize: 18, fontWeight: '700', color: COLORS.text,
-    marginLeft: 6, marginBottom: 12,
+    marginLeft: 6, marginBottom: 12, marginTop: 8,
   },
+  reviewCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    padding: 14,
+    marginHorizontal: 6,
+    marginBottom: 10,
+    ...SHADOW.small,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  reviewStars: { flexDirection: 'row', gap: 2 },
+  reviewDate: { fontSize: 12, color: COLORS.textMuted },
+  reviewAuthor: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  reviewAdTitle: { fontSize: 12, color: COLORS.textMuted, marginBottom: 6 },
+  reviewText: { fontSize: 14, color: COLORS.text, lineHeight: 20 },
+  reviewTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  reviewTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  reviewTagText: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 60, gap: 12 },
   emptyText: { color: COLORS.textMuted, fontSize: 16, fontWeight: '600' },
 });

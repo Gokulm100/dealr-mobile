@@ -10,7 +10,7 @@ import {
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 
-export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, isTrending }) {
+export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, isTrending, style, compact }) {
   const isNew = item.createdAt && (new Date() - new Date(item.createdAt)) < 5 * 24 * 60 * 60 * 1000;
 
   const formatLocation = (loc) => {
@@ -24,14 +24,14 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
 
   return (
     <TouchableOpacity
-      style={[styles.card, item.isSold && styles.cardSold]}
+      style={[styles.card, compact && styles.cardCompact, item.isSold && styles.cardSold, style]}
       onPress={onPress}
       activeOpacity={item.isSold ? 0.95 : 0.85}
     >
       <View>
         <Image
           source={{ uri: item.images?.[0] }}
-          style={[styles.image, item.isSold && styles.imageSold]}
+          style={[styles.image, compact && styles.imageCompact, item.isSold && styles.imageSold]}
           resizeMode="cover"
         />
 
@@ -45,8 +45,8 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
         )}
 
         {/* Category tag */}
-        <View style={styles.tag}>
-          <Text style={styles.tagText} numberOfLines={1}>
+        <View style={[styles.tag, compact && styles.tagCompact]}>
+          <Text style={[styles.tagText, compact && styles.tagTextCompact]} numberOfLines={1}>
             {item.category}
           </Text>
         </View>
@@ -58,66 +58,84 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
           </View>
         )}
 
-        <TouchableOpacity
-          style={styles.favBtn}
-          onPress={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(item.id);
-          }}
-          activeOpacity={0.7}
-        >
-          <Icon
-            name="heart"
-            size={18}
-            color={isFavorite ? COLORS.error : COLORS.white}
-            fill={isFavorite ? COLORS.error : 'transparent'}
-          />
-        </TouchableOpacity>
+        {onToggleFavorite ? (
+          <TouchableOpacity
+            style={styles.favBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(item.id);
+            }}
+            activeOpacity={0.7}
+          >
+            <Icon
+              name="heart"
+              size={18}
+              color={isFavorite ? COLORS.error : COLORS.white}
+              fill={isFavorite ? COLORS.error : 'transparent'}
+            />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
-      <View style={styles.body}>
-
-
+      <View style={[styles.body, compact && styles.bodyCompact]}>
         <View style={styles.priceRow}>
-          <Text style={[styles.price, item.isSold && styles.textMuted]}>
+          <Text style={[styles.price, compact && styles.priceCompact, item.isSold && styles.textMuted]}>
             ₹{Number(item.price).toLocaleString('en-IN')}
           </Text>
-          <View style={styles.badgeRow}>
-            {isNew && !item.isSold && (
-              <View style={styles.inlineNewTag}>
-                <Text style={styles.newTagText}>NEW</Text>
-              </View>
-            )}
-            {item.isSold && (
-              <View style={styles.soldBadgeSmall}>
-                <Text style={styles.soldBadgeTextSmall}>SOLD</Text>
-              </View>
-            )}
-          </View>
+          {!compact && (
+            <View style={styles.badgeRow}>
+              {isNew && !item.isSold && (
+                <View style={styles.inlineNewTag}>
+                  <Text style={styles.newTagText}>NEW</Text>
+                </View>
+              )}
+              {item.isSold && (
+                <View style={styles.soldBadgeSmall}>
+                  <Text style={styles.soldBadgeTextSmall}>SOLD</Text>
+                </View>
+              )}
+            </View>
+          )}
+          {compact && item.isSold && (
+            <View style={styles.soldBadgeSmall}>
+              <Text style={styles.soldBadgeTextSmall}>SOLD</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.titleRow}>
-          <Text style={[styles.title, item.isSold && styles.textMuted]} numberOfLines={2}>
+        <View style={[styles.titleRow, compact && styles.titleRowCompact]}>
+          <Text style={[styles.title, compact && styles.titleCompact, item.isSold && styles.textMuted]} numberOfLines={2}>
             {item.title}
           </Text>
         </View>
-          <View style={[styles.metaItem, { flex: 1, marginRight: 4 }]}>
-            <Icon name="map-pin" size={12} color={COLORS.textMuted} />
-            <Text style={styles.metaText} numberOfLines={1}>
+
+        {compact ? (
+          <View style={styles.metaItem}>
+            <Icon name="map-pin" size={10} color={COLORS.textMuted} />
+            <Text style={styles.metaTextCompact} numberOfLines={1}>
               {formatLocation(item.location)}
             </Text>
           </View>
-        <View style={styles.divider} />
-
-        <View style={styles.meta}>
-                <View style={styles.topRow}>
-                  <Text style={styles.postedSmall}>{item.posted}</Text>
-                </View>
-          <View style={styles.metaItem}>
-            <Icon name="eye" size={12} color={COLORS.textMuted} />
-            <Text style={styles.metaText}>{item.views} views</Text>
-          </View>
-        </View>
+        ) : (
+          <>
+            <View style={[styles.metaItem, { flex: 1, marginRight: 4 }]}>
+              <Icon name="map-pin" size={12} color={COLORS.textMuted} />
+              <Text style={styles.metaText} numberOfLines={1}>
+                {formatLocation(item.location)}
+              </Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.meta}>
+              <View style={styles.topRow}>
+                <Text style={styles.postedSmall}>{item.posted}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Icon name="eye" size={12} color={COLORS.textMuted} />
+                <Text style={styles.metaText}>{item.views} views</Text>
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -133,6 +151,9 @@ const styles = StyleSheet.create({
     margin: 6,
     marginBottom: 8,
   },
+  cardCompact: {
+    borderRadius: RADIUS.md,
+  },
   cardSold: {
     opacity: 0.8,
   },
@@ -140,6 +161,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 130,
     backgroundColor: COLORS.border,
+  },
+  imageCompact: {
+    height: 72,
   },
   imageSold: {
     // optional: grayscale or blur
@@ -200,11 +224,21 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     maxWidth: 140,
   },
+  tagCompact: {
+    top: 6,
+    left: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    maxWidth: 120,
+  },
   tagText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#333',
     letterSpacing: 0.3,
+  },
+  tagTextCompact: {
+    fontSize: 9,
   },
   newTag: {
     position: 'absolute',
@@ -262,6 +296,10 @@ const styles = StyleSheet.create({
     padding: 10,
     paddingTop: 8,
   },
+  bodyCompact: {
+    padding: 6,
+    paddingTop: 5,
+  },
   title: {
     fontSize: 14,
     fontWeight: '700',
@@ -276,6 +314,22 @@ const styles = StyleSheet.create({
     gap: 4,
     height: 38,
     marginBottom: 2,
+  },
+  titleRowCompact: {
+    height: 26,
+    marginBottom: 0,
+  },
+  titleCompact: {
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  priceCompact: {
+    fontSize: 13,
+  },
+  metaTextCompact: {
+    fontSize: 9,
+    color: COLORS.textMuted,
+    flex: 1,
   },
   postedSmall: {
     fontSize: 10,

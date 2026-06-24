@@ -2,16 +2,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform,
+  StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
 import Icon from '../components/Icon';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, API_BASE_URL } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AiTextArea from '../components/AiTextArea';
 import { checkAndPromptNotifications } from '../utils/notifications';
+
+const KERALA_DISTRICTS = [
+  'Thiruvananthapuram', 'Kollam', 'Pathanamthitta', 'Alappuzha', 'Kottayam',
+  'Idukki', 'Ernakulam', 'Thrissur', 'Palakkad', 'Malappuram',
+  'Kozhikode', 'Wayanad', 'Kannur', 'Kasaragod',
+];
 
 export default function PostAdScreen({ navigation, route }) {
   const { user } = useAuth();
@@ -28,6 +34,12 @@ export default function PostAdScreen({ navigation, route }) {
   const [locationSearch, setLocationSearch] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [newLocation, setNewLocation] = useState(null);
+  const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const slideAnim = useRef(new Animated.Value(0)).current;
   const [images, setImages] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +83,20 @@ export default function PostAdScreen({ navigation, route }) {
     }
   }, [route.params?.ad, categories]);
 
+  const loadLocations = () => {
+    apiFetch('/api/users/locations').then(res => {
+      let data = res.data;
+      if (Array.isArray(data)) setLocations(data.map(c => ({
+        id: c._id || c.id,
+        name: c.locality + ',' + c.city,
+        locality: c.locality,
+        city: c.city,
+        district: c.district,
+        state: c.state,
+      })));
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     // Fetch categories
     apiFetch('/api/ads/listCategories').then(data => {
@@ -85,10 +111,7 @@ export default function PostAdScreen({ navigation, route }) {
     }).catch(() => {});
 
     // Fetch Kerala cities
-    apiFetch('/api/users/locations').then(res => {
-    let data = res.data;
-      if (Array.isArray(data)) setLocations(data.map(c => ({ id: c.id, name: c.locality+','+c.city })));
-    }).catch(() => {});
+    loadLocations();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -100,12 +123,198 @@ export default function PostAdScreen({ navigation, route }) {
     l.name.toLowerCase().includes(locationSearch.toLowerCase())
   ).slice(0, 20);
 
-  const pickImages = () => {
-    launchImageLibrary({ mediaType: 'photo', selectionLimit: 5, includeBase64: false }, res => {
-      if (res.assets) {
-        setImages(res.assets);
-      }
+  const queryMatchesExisting = locations.some(
+    l => l.name.toLowerCase() === locationSearch.trim().toLowerCase()
+  );
+
+  const districtOptions = [...new Set(locations.map(l => l.district).filter(Boolean))];
+  const districtChoices = [...new Set([...districtOptions, ...KERALA_DISTRICTS])].sort();
+
+  const getDistrictChoicesForCity = (cityName) => {
+    const city = String(cityName || '').trim().toLowerCase();
+    if (!city) return districtChoices;
+    const fromData = [...new Set(
+      locations
+        .filter(l =>
+          l.city?.toLowerCase() === city
+          || l.district?.toLowerCase() === city
+        )
+        .map(l => l.district)
+        .filter(Boolean),
+    )].sort();
+    if (fromData.length) return fromData;
+    return districtChoices;
+  };
+
+  const suggestDistrictForCity = (cityName, currentDistrict = '') => {
+    const city = String(cityName || '').trim();
+    if (!city) return '';
+    const choices = getDistrictChoicesForCity(city);
+    if (currentDistrict && choices.includes(currentDistrict)) return currentDistrict;
+    const exactDistrict = KERALA_DISTRICTS.find(d => d.toLowerCase() === city.toLowerCase());
+    if (exactDistrict && choices.includes(exactDistrict)) return exactDistrict;
+    if (choices.length === 1) return choices[0];
+    return '';
+  };
+
+  const handleNewLocationCityChange = (city) => {
+    setNewLocation(p => ({ ...p, city }));
+    setDistrictDropdownOpen(false);
+  };
+
+  const districtChoicesForForm = newLocation?.city
+    ? getDistrictChoicesForCity(newLocation.city)
+    : [];
+
+  const filteredDistricts = districtChoicesForForm.filter(d =>
+    d.toLowerCase().includes(districtSearch.toLowerCase()),
+  ).slice(0, 20);
+
+  const pickDistrict = (district) => {
+    setNewLocation(p => ({ ...p, district }));
+    setDistrictSearch(district);
+    setDistrictDropdownOpen(false);
+  };
+
+  const handleDistrictSearchChange = (q) => {
+    setDistrictSearch(q);
+    setDistrictDropdownOpen(q.trim().length > 0);
+    const match = districtChoicesForForm.find(
+      d => d.toLowerCase() === q.trim().toLowerCase(),
+    );
+    setNewLocation(p => ({ ...p, district: match || '' }));
+  };
+
+  const showDistrictList = districtDropdownOpen
+    && districtSearch.trim().length > 0
+    && filteredDistricts.length > 0;
+
+  const resetDistrictSearch = () => {
+    setDistrictSearch('');
+    setDistrictDropdownOpen(false);
+  };
+
+  const confirmCityStep = () => {
+    const city = newLocation?.city?.trim();
+    if (!city) {
+      Alert.alert('Missing city', 'Please enter a city.');
+      return;
+    }
+    const district = suggestDistrictForCity(city);
+    setNewLocation(p => ({ ...p, step: 'district', district }));
+    setDistrictSearch(district || '');
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const goBackToCityStep = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    setNewLocation(p => ({ ...p, step: 'city', district: '' }));
+    resetDistrictSearch();
+  };
+
+  const openNewLocationForm = () => {
+    const q = locationSearch.trim();
+    const parts = q.split(',').map(s => s.trim()).filter(Boolean);
+    setShowLocationDropdown(false);
+    resetDistrictSearch();
+    slideAnim.setValue(0);
+    setNewLocation({
+      locality: parts[0] || q,
+      city: parts[1] || '',
+      district: '',
+      step: 'city',
     });
+  };
+
+  const saveNewLocation = async () => {
+    const { locality, district, city } = newLocation || {};
+    if (!locality?.trim() || !district?.trim() || !city?.trim()) {
+      Alert.alert('Missing details', 'Please enter city and district.');
+      return;
+    }
+    setSavingLocation(true);
+    try {
+      const res = await apiFetch('/api/users/locations/add', {
+        method: 'POST',
+        body: JSON.stringify({
+          locality: locality.trim(),
+          district: district.trim(),
+          city: city.trim(),
+        }),
+      });
+      const saved = res?.data;
+      const name = `${saved?.locality || locality.trim()},${saved?.city || city.trim()}`;
+      loadLocations();
+      setSelectedLocation({ id: saved?._id || null, name });
+      setLocationSearch(name);
+      setNewLocation(null);
+      resetDistrictSearch();
+      slideAnim.setValue(0);
+    } catch {
+      Alert.alert('Error', 'Could not add location. Please try again.');
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
+  const MAX_IMAGES = 5;
+
+  const addAssets = (assets = []) => {
+    if (!assets.length) return;
+    setImages(prev => [...prev, ...assets].slice(0, MAX_IMAGES));
+  };
+
+  const openGallery = () => {
+    const remaining = MAX_IMAGES - images.length;
+    launchImageLibrary(
+      { mediaType: 'photo', selectionLimit: remaining, includeBase64: false },
+      res => {
+        if (res.didCancel || res.errorCode) return;
+        addAssets(res.assets);
+      }
+    );
+  };
+
+  const openCamera = () => {
+    launchCamera(
+      { mediaType: 'photo', includeBase64: false, saveToPhotos: false, quality: 0.8 },
+      res => {
+        if (res.didCancel) return;
+        if (res.errorCode) {
+          Alert.alert(
+            'Camera unavailable',
+            res.errorMessage || 'Could not open the camera. Please check app permissions.'
+          );
+          return;
+        }
+        addAssets(res.assets);
+      }
+    );
+  };
+
+  const pickImages = () => {
+    if (images.length >= MAX_IMAGES) {
+      Alert.alert('Limit reached', `You can add up to ${MAX_IMAGES} images.`);
+      return;
+    }
+    Alert.alert(
+      'Add Photos',
+      'Choose how you want to add an image.',
+      [
+        { text: 'Take Photo', onPress: openCamera },
+        { text: 'Choose from Gallery', onPress: openGallery },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handlePost = async () => {
@@ -154,6 +363,8 @@ export default function PostAdScreen({ navigation, route }) {
       });
 
       if (res.ok) {
+        // Refresh locations so a newly entered one is available next time.
+        loadLocations();
         Alert.alert('Success', editingAd ? 'Your ad has been updated!' : 'Your ad has been posted!', [
           {
             text: 'OK',
@@ -279,7 +490,7 @@ export default function PostAdScreen({ navigation, route }) {
           />
           {showLocationDropdown && locationSearch.length > 0 && (
             <View style={styles.dropdown}>
-              <ScrollView nestedScrollEnabled={true}>
+              <ScrollView nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
                 {filteredLocations.map(loc => (
                   <TouchableOpacity
                     key={loc.id}
@@ -294,7 +505,139 @@ export default function PostAdScreen({ navigation, route }) {
                     <Text style={styles.dropdownText}>{loc.name}</Text>
                   </TouchableOpacity>
                 ))}
+                {locationSearch.trim().length > 0 && !queryMatchesExisting && (
+                  <TouchableOpacity
+                    style={[styles.dropdownItem, styles.dropdownAddItem]}
+                    onPress={openNewLocationForm}
+                  >
+                    <Icon name="plus" size={14} color={COLORS.primary} />
+                    <Text style={styles.dropdownAddText}>Add “{locationSearch.trim()}” as a new location</Text>
+                  </TouchableOpacity>
+                )}
               </ScrollView>
+            </View>
+          )}
+
+          {newLocation && (
+            <View style={[styles.locCard, showDistrictList && styles.locCardDropdownOpen]}>
+              <View style={styles.locAccent} />
+              <View style={styles.locTop}>
+                <View style={styles.locTopLeft}>
+                  <Text style={styles.locEyebrow}>
+                    {newLocation.locality}
+                    {newLocation.step === 'district' && !!newLocation.city?.trim() && (
+                      <>
+                        <Text style={styles.locBreadcrumbSep}> &gt; </Text>
+                        <Text style={styles.locBreadcrumbCity}>{newLocation.city.trim()}</Text>
+                      </>
+                    )}
+                  </Text>
+                  <View style={styles.locDots}>
+                    <View style={[styles.locDot, newLocation.step === 'city' ? styles.locDotActive : styles.locDotDone]} />
+                    <View style={[styles.locDot, newLocation.step === 'district' && styles.locDotActive]} />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.locClose}
+                  onPress={() => { setNewLocation(null); resetDistrictSearch(); slideAnim.setValue(0); }}
+                >
+                  <Icon name="x" size={16} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View
+                style={[
+                  styles.locSlider,
+                  showDistrictList && styles.locSliderDropdownOpen,
+                ]}
+                onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
+              >
+                <Animated.View
+                  style={{
+                    flexDirection: 'row',
+                    width: sliderWidth > 0 ? sliderWidth * 2 : '200%',
+                    transform: [{
+                      translateX: slideAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, sliderWidth > 0 ? -sliderWidth : 0],
+                      }),
+                    }],
+                  }}
+                >
+                  <View style={[styles.locSlide, sliderWidth > 0 && { width: sliderWidth }]}>
+                    <Text style={styles.locQuestion}>What is the city?</Text>
+                    <View style={styles.locFieldRow}>
+                      <TextInput
+                        style={styles.locFieldInput}
+                        placeholder="e.g. Thiruvananthapuram"
+                        placeholderTextColor={COLORS.textMuted}
+                        value={newLocation.city}
+                        onChangeText={handleNewLocationCityChange}
+                        editable={!savingLocation}
+                        returnKeyType="next"
+                        onSubmitEditing={confirmCityStep}
+                      />
+                      <TouchableOpacity
+                        style={[styles.locTickBtn, (!newLocation.city?.trim() || savingLocation) && styles.locTickBtnDisabled]}
+                        onPress={confirmCityStep}
+                        disabled={savingLocation || !newLocation.city?.trim()}
+                        accessibilityLabel="Continue"
+                      >
+                        <Icon name="check" size={16} color={COLORS.white} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={[styles.locSlide, sliderWidth > 0 && { width: sliderWidth }]}>
+                    <TouchableOpacity
+                      style={styles.locBackBtn}
+                      onPress={goBackToCityStep}
+                      disabled={savingLocation}
+                    >
+                      <Text style={styles.locBackBtnText}>← Back</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.locQuestion}>What is the district?</Text>
+                    <View style={styles.locDistrictWrap}>
+                      <View style={styles.locFieldRow}>
+                        <TextInput
+                          style={styles.locFieldInput}
+                          placeholder="Search district..."
+                          placeholderTextColor={COLORS.textMuted}
+                          value={districtSearch}
+                          onChangeText={handleDistrictSearchChange}
+                          editable={!savingLocation}
+                        />
+                        <TouchableOpacity
+                          style={[styles.locTickBtn, (!newLocation.district || savingLocation) && styles.locTickBtnDisabled]}
+                          onPress={saveNewLocation}
+                          disabled={savingLocation || !newLocation.district}
+                          accessibilityLabel="Add location"
+                        >
+                          {savingLocation
+                            ? <ActivityIndicator color={COLORS.white} size="small" />
+                            : <Icon name="check" size={16} color={COLORS.white} />
+                          }
+                        </TouchableOpacity>
+                      </View>
+                      {showDistrictList && (
+                        <View style={[styles.dropdown, styles.locDistrictDropdown]}>
+                          <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 168 }}>
+                            {filteredDistricts.map(d => (
+                              <TouchableOpacity
+                                key={d}
+                                style={styles.dropdownItem}
+                                onPress={() => pickDistrict(d)}
+                              >
+                                <Text style={styles.dropdownText}>{d}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </Animated.View>
+              </View>
             </View>
           )}
           {/* Description */}
@@ -307,6 +650,8 @@ export default function PostAdScreen({ navigation, route }) {
             category={categories.find(c => c.id === selectedCategory)?.name}
             subcategory={selectedSubCategory}
             title={form.title}
+            price={form.price}
+            location={selectedLocation?.name || locationSearch}
             onFocus={() => {
               setTimeout(() => {
                 scrollRef.current?.scrollTo({ y: 1000, animated: true });
@@ -353,6 +698,7 @@ export default function PostAdScreen({ navigation, route }) {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
     </View>
   );
 }
@@ -426,6 +772,104 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   dropdownText: { fontSize: 14, color: COLORS.text },
+  dropdownAddItem: { backgroundColor: '#f0f6ff', borderBottomWidth: 0 },
+  dropdownAddText: { fontSize: 14, color: COLORS.primary, fontWeight: '700', flex: 1 },
+  locCard: {
+    marginTop: 12,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: '#eef2f7',
+    overflow: 'hidden',
+    ...SHADOW.small,
+  },
+  locCardDropdownOpen: {
+    overflow: 'visible',
+    zIndex: 50,
+    elevation: 12,
+  },
+  locAccent: {
+    height: 3,
+    backgroundColor: COLORS.primary,
+  },
+  locTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 20,
+  },
+  locTopLeft: { flex: 1 },
+  locEyebrow: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+    letterSpacing: -0.2,
+    textTransform: 'capitalize',
+  },
+  locBreadcrumbSep: { color: '#cbd5e1', fontWeight: '400', textTransform: 'none' },
+  locBreadcrumbCity: { color: COLORS.primary, fontWeight: '600', textTransform: 'none' },
+  locDots: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
+  locDot: {
+    width: 7,
+    height: 7,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#e2e8f0',
+  },
+  locDotActive: { width: 18, backgroundColor: COLORS.primary },
+  locDotDone: { backgroundColor: COLORS.primary, opacity: 0.35 },
+  locClose: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locSlider: {
+    overflow: 'hidden',
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  locSliderDropdownOpen: {
+    overflow: 'visible',
+  },
+  locSlide: { flex: 1, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 22, overflow: 'visible' },
+  locQuestion: { fontSize: 16, fontWeight: '600', color: COLORS.text, letterSpacing: -0.3, marginBottom: 12 },
+  locBackBtn: { alignSelf: 'flex-start', marginBottom: 12 },
+  locBackBtnText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '500' },
+  locFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 14,
+    paddingRight: 6,
+    paddingVertical: 6,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#eef2f7',
+    borderRadius: 12,
+  },
+  locDistrictWrap: { marginBottom: 4, zIndex: 20 },
+  locDistrictDropdown: { marginTop: 6, zIndex: 300, elevation: 8 },
+  locFieldInput: {
+    flex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 0,
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  locTickBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOW.small,
+  },
+  locTickBtnDisabled: { opacity: 0.3 },
   imagePickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',

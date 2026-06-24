@@ -2,12 +2,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Alert, Image, ActivityIndicator, RefreshControl, Modal, TextInput,
+  Alert, Image, ActivityIndicator, RefreshControl, Modal, TextInput, ScrollView,
 } from 'react-native';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import ReviewModal from '../components/ReviewModal';
+import PostSaleReminderModal from '../components/PostSaleReminderModal';
+import SkeletonCard from '../components/SkeletonCard';
 
 export default function MyAdsScreen({ navigation }) {
   const { user } = useAuth();
@@ -23,6 +26,9 @@ export default function MyAdsScreen({ navigation }) {
   const [offerUsers, setOfferUsers] = useState([]);
   const [fetchingOffers, setFetchingOffers] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [postSaleReminder, setPostSaleReminder] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [pendingReviews, setPendingReviews] = useState([]);
 
   const fetchMyAds = useCallback(async () => {
     if (!user?._id) return;
@@ -46,9 +52,14 @@ export default function MyAdsScreen({ navigation }) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchMyAds();
+      if (user?._id) {
+        apiFetch('/api/reviews/pending')
+          .then((data) => setPendingReviews(data.pending || []))
+          .catch(() => {});
+      }
     });
     return unsubscribe;
-  }, [navigation, fetchMyAds]);
+  }, [navigation, fetchMyAds, user]);
 
   const formatLocation = (loc) => {
     if (!loc) return '';
@@ -137,12 +148,24 @@ export default function MyAdsScreen({ navigation }) {
       });
 
       setShowSoldModal(false);
-      Alert.alert('🎉 Success', 'Item marked as sold! Congratulations.');
 
       // Update local state
       setAds(prev => prev.map(a =>
-        a.id === selectedAd.id ? { ...a, status: 'sold' } : a
+        a.id === selectedAd.id ? { ...a, status: 'sold', isSold: true } : a
       ));
+
+      if (soldTo) {
+        setPostSaleReminder({
+          adId: selectedAd.id,
+          adTitle: selectedAd.title,
+          revieweeName: soldTo.name || soldTo.email || 'Buyer',
+          revieweePic: soldTo.profilePic || null,
+          counterpartyName: soldTo.name || soldTo.email || 'Buyer',
+          saleAmount: soldAmount.trim(),
+        });
+      } else {
+        Alert.alert('🎉 Success', 'Item marked as sold! Congratulations.');
+      }
     } catch (error) {
       Alert.alert('Error', 'Could not mark ad as sold.');
     } finally {
@@ -162,6 +185,7 @@ export default function MyAdsScreen({ navigation }) {
 
   const renderItem = ({ item }) => {
     const isSold = item.isSold === true || item.status === 'sold';
+    const pendingReview = pendingReviews.find((p) => String(p.adId) === String(item.id));
 
     return (
       <View style={styles.cardContainer}>
@@ -233,11 +257,27 @@ export default function MyAdsScreen({ navigation }) {
                   </TouchableOpacity>
                 </>
               ) : (
-                <View style={styles.soldSummary}>
-                  <View style={styles.soldSuccessIcon}>
-                    <Icon name="check" size={12} color={COLORS.success} />
+                <View style={styles.soldActions}>
+                  <View style={styles.soldSummary}>
+                    <View style={styles.soldSuccessIcon}>
+                      <Icon name="check" size={12} color={COLORS.success} />
+                    </View>
+                    <Text style={styles.soldSuccessText}>Marked as Sold</Text>
                   </View>
-                  <Text style={styles.soldSuccessText}>Marked as Sold</Text>
+                  {pendingReview && (
+                    <TouchableOpacity
+                      style={styles.reviewBtn}
+                      onPress={() => setReviewTarget({
+                        adId: pendingReview.adId,
+                        adTitle: pendingReview.adTitle,
+                        revieweeName: pendingReview.revieweeName,
+                        revieweePic: pendingReview.revieweePic,
+                      })}
+                    >
+                      <Icon name="star" size={12} color="#b45309" />
+                      <Text style={styles.reviewBtnText}>Rate {pendingReview.revieweeName}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
@@ -299,21 +339,38 @@ export default function MyAdsScreen({ navigation }) {
                   ) : offerUsers.length === 0 ? (
                     <Text style={styles.noOffersText}>No recent interactions found</Text>
                   ) : (
-                    offerUsers.map(u => (
-                      <TouchableOpacity
-                        key={u._id || u.id}
-                        style={[styles.buyerItem, (soldTo?._id === u._id || soldTo?.id === u.id) && styles.buyerItemSelected]}
-                        onPress={() => {
-                          setSoldTo(u);
-                          setIsDropdownOpen(false);
-                        }}
-                      >
-                        <Text style={[styles.buyerName, (soldTo?._id === u._id || soldTo?.id === u.id) && styles.buyerNameSelected]}>
-                          {u.name}
-                        </Text>
-                        {(soldTo?._id === u._id || soldTo?.id === u.id) && <Icon name="check" size={14} color={COLORS.primary} />}
-                      </TouchableOpacity>
-                    ))
+                    <ScrollView
+                      style={styles.dropdownScroll}
+                      contentContainerStyle={styles.dropdownScrollContent}
+                      nestedScrollEnabled
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator
+                      bounces={false}
+                    >
+                      {offerUsers.map((u, index) => {
+                        const selected = soldTo?._id === u._id || soldTo?.id === u.id;
+                        const isLast = index === offerUsers.length - 1;
+                        return (
+                          <TouchableOpacity
+                            key={u._id || u.id}
+                            style={[
+                              styles.buyerItem,
+                              selected && styles.buyerItemSelected,
+                              isLast && styles.buyerItemLast,
+                            ]}
+                            onPress={() => {
+                              setSoldTo(u);
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={[styles.buyerName, selected && styles.buyerNameSelected]}>
+                              {u.name || u.email || 'Unknown buyer'}
+                            </Text>
+                            {selected && <Icon name="check" size={14} color={COLORS.primary} />}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
                   )}
                 </View>
               )}
@@ -343,9 +400,40 @@ export default function MyAdsScreen({ navigation }) {
         </View>
       </Modal>
 
+      <PostSaleReminderModal
+        visible={!!postSaleReminder}
+        onClose={() => {
+          setPostSaleReminder(null);
+          Alert.alert('Reminder saved', 'You can leave a review anytime from Profile → Pending Reviews.');
+        }}
+        onRateNow={() => {
+          setReviewTarget(postSaleReminder);
+          setPostSaleReminder(null);
+        }}
+        adTitle={postSaleReminder?.adTitle}
+        revieweeName={postSaleReminder?.revieweeName}
+        counterpartyName={postSaleReminder?.counterpartyName}
+        saleAmount={postSaleReminder?.saleAmount}
+      />
+
+      <ReviewModal
+        visible={!!reviewTarget}
+        onClose={() => setReviewTarget(null)}
+        adId={reviewTarget?.adId}
+        adTitle={reviewTarget?.adTitle}
+        revieweeName={reviewTarget?.revieweeName}
+        revieweePic={reviewTarget?.revieweePic}
+        onSubmitted={() => {
+          Alert.alert('Thank you!', 'Your review helps keep Dealr safe.');
+          setPendingReviews((prev) => prev.filter((item) => String(item.adId) !== String(reviewTarget?.adId)));
+        }}
+      />
+
       {loading && ads.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+        <View style={styles.list}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <SkeletonCard key={`skeleton-${idx}`} horizontal />
+          ))}
         </View>
       ) : (
         <FlatList
@@ -558,6 +646,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'flex-start',
   },
+  soldActions: { gap: 6 },
+  reviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  reviewBtnText: { fontSize: 11, fontWeight: '700', color: '#b45309' },
   soldSuccessIcon: {
     width: 18,
     height: 18,
@@ -653,17 +755,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    maxHeight: 200,
+    maxHeight: 220,
     overflow: 'hidden',
     ...SHADOW.medium,
+  },
+  dropdownScroll: {
+    maxHeight: 220,
+  },
+  dropdownScrollContent: {
+    flexGrow: 0,
   },
   buyerItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
+  },
+  buyerItemLast: {
+    borderBottomWidth: 0,
   },
   buyerItemSelected: {
     backgroundColor: '#F0F9FF',

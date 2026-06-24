@@ -1,23 +1,40 @@
 // src/screens/ChatScreen.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Alert,
+  View, Text, FlatList, TextInput, TouchableOpacity, Image,
+  StyleSheet, KeyboardAvoidingView, Platform, Keyboard, Alert, Modal, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { launchImageLibrary } from 'react-native-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE_URL } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useMessages } from '../context/MessagesContext';
 import { useIsFocused } from '@react-navigation/native';
 import { checkAndPromptNotifications } from '../utils/notifications';
+import ChatTrustCaution from '../components/ChatTrustCaution';
+import { getChatTrustCautionFromProfile } from '../utils/chatTrustCaution';
 import { getSocket } from '../utils/socket';
+import SkeletonCard from '../components/SkeletonCard';
+
+// Alternating left/right bubble pattern shown while a conversation loads.
+const CHAT_SKELETON = [
+  { align: 'left', width: '55%', height: 40 },
+  { align: 'left', width: '38%', height: 40 },
+  { align: 'right', width: '62%', height: 56 },
+  { align: 'left', width: '70%', height: 40 },
+  { align: 'right', width: '45%', height: 40 },
+  { align: 'right', width: '52%', height: 40 },
+  { align: 'left', width: '48%', height: 56 },
+  { align: 'right', width: '40%', height: 40 },
+];
 
 export default function ChatScreen({ route, navigation }) {
   const { chat, otherName, isSeller } = route.params;
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const insets = useSafeAreaInsets();
   const { refresh, messageCount } = useMessages();
   const isFocused = useIsFocused();
@@ -28,6 +45,10 @@ export default function ChatScreen({ route, navigation }) {
   const [sending, setSending] = useState(false);
   const [showOfferInput, setShowOfferInput] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
+  const [counterparty, setCounterparty] = useState(null);
+  const [showTrustCaution, setShowTrustCaution] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [viewerImage, setViewerImage] = useState(null);
   const listRef = useRef(null);
 
   // Resolve adId, buyerId, sellerId from whatever shape the chat object has
@@ -45,6 +66,8 @@ export default function ChatScreen({ route, navigation }) {
           adId,
           reader: user._id,
           sender: senderId,
+          buyerId,
+          sellerId,
         }),
       });
       console.log(stat)
@@ -64,6 +87,9 @@ export default function ChatScreen({ route, navigation }) {
       // Handle fraudCheck from response
       if (data.fraudCheck) {
         setFraudCheck(data.fraudCheck);
+      }
+      if (data.counterparty) {
+        setCounterparty(data.counterparty);
       }
 
       // API returns { chats: [...] } or just an array
@@ -85,16 +111,21 @@ export default function ChatScreen({ route, navigation }) {
   }, [messageCount, isFocused]);
 
   useEffect(() => {
+    setShowTrustCaution(true);
+  }, [counterparty?._id, adId]);
+
+  useEffect(() => {
     fetchMessages();
     markAsSeen();
 
     // WebSocket Setup
-    const socket = getSocket(user?._id);
+    const socket = getSocket(user?._id, token);
 
-    console.log('DEBUG: Emitting join event with ID:', user?._id);
-    socket.emit('join', user?._id);
+    if (socket?.connected) {
+      socket.emit('join', user?._id);
+    }
 
-    socket.on('chat:new-message', (payload) => {
+    const handleNewMessage = (payload) => {
       console.log('DEBUG: Socket Payload Received:', JSON.stringify(payload));
 
       const msg = payload.chat;
@@ -125,7 +156,9 @@ export default function ChatScreen({ route, navigation }) {
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 300);
         markAsSeen();
       }
-    });
+    };
+
+    socket?.on('chat:new-message', handleNewMessage);
 
     // Prompt for notifications
     setTimeout(checkAndPromptNotifications, 1000);
@@ -138,8 +171,7 @@ export default function ChatScreen({ route, navigation }) {
 
     return () => {
       keyboardShowSub.remove();
-      socket.off('chat:new-message');
-      socket.emit('leave', user?._id);
+      socket?.off('chat:new-message', handleNewMessage);
     };
   }, []);
 
@@ -176,6 +208,57 @@ export default function ChatScreen({ route, navigation }) {
       setMessages(prev => prev.filter(m => m._id !== tempId));
       setInput(text);
       Alert.alert("Error", "Message failed to send.");
+    }
+  };
+
+  const sendImage = async () => {
+    if (uploadingImage) return;
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.8,
+      selectionLimit: 1,
+    });
+    if (result.didCancel || !result.assets?.length) return;
+    const asset = result.assets[0];
+
+    const tempId = 'temp-img-' + Date.now();
+    const optimisticMsg = {
+      _id: tempId,
+      from: user._id,
+      message: '',
+      imageUrl: asset.uri,
+      _pendingImage: true,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+    setUploadingImage(true);
+
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      const formData = new FormData();
+      formData.append('adId', adId);
+      formData.append('from', isSeller ? sellerId : buyerId);
+      formData.append('to', isSeller ? buyerId : sellerId);
+      formData.append('image', {
+        uri: asset.uri,
+        type: asset.type || 'image/jpeg',
+        name: asset.fileName || `chat_${Date.now()}.jpg`,
+      });
+
+      const res = await fetch(`${API_BASE_URL}/api/ads/chat`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error('upload failed');
+      fetchMessages(true);
+    } catch (e) {
+      console.warn('sendImage error:', e?.message);
+      setMessages(prev => prev.filter(m => m._id !== tempId));
+      Alert.alert('Error', 'Failed to send photo. Please try again.');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -309,12 +392,25 @@ export default function ChatScreen({ route, navigation }) {
         )}
         <View style={[
           styles.bubble,
+          item.imageUrl ? styles.bubbleImage : null,
           isMe ? styles.bubbleMe : styles.bubbleThem,
           isMe ? (isLastInGroup ? styles.bubbleMeLast : null) : (isLastInGroup ? styles.bubbleThemLast : null)
         ]}>
-          <Text style={[styles.bubbleText, isMe && { color: COLORS.white }]}>
-            {item.message}
-          </Text>
+          {item.imageUrl ? (
+            <TouchableOpacity activeOpacity={0.9} onPress={() => setViewerImage(item.imageUrl)}>
+              <Image source={{ uri: item.imageUrl }} style={styles.chatImage} resizeMode="cover" />
+              {item._pendingImage && (
+                <View style={styles.imageUploadingOverlay}>
+                  <ActivityIndicator color={COLORS.white} />
+                </View>
+              )}
+            </TouchableOpacity>
+          ) : null}
+          {item.message ? (
+            <Text style={[styles.bubbleText, isMe && { color: COLORS.white }, item.imageUrl && { marginTop: 8 }]}>
+              {item.message}
+            </Text>
+          ) : null}
           {item.createdAt && (
             <View style={styles.bubbleFooter}>
               <Text style={[styles.bubbleTime, isMe && { color: 'rgba(255,255,255,0.7)' }]}>
@@ -384,6 +480,17 @@ export default function ChatScreen({ route, navigation }) {
     );
   };
 
+  const renderTrustCaution = () => {
+    const trustCaution = getChatTrustCautionFromProfile(counterparty);
+    if (!showTrustCaution || !trustCaution.show) return null;
+    return (
+      <ChatTrustCaution
+        reason={trustCaution.reason}
+        onClose={() => setShowTrustCaution(false)}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -403,9 +510,7 @@ export default function ChatScreen({ route, navigation }) {
             <Text style={styles.headerName} numberOfLines={1}>{otherName}</Text>
             {chat.adTitle ? (
               <Text style={styles.headerAd} numberOfLines={1}>{chat.adTitle}</Text>
-            ) : (
-              <Text style={styles.headerStatus}>Active Now</Text>
-            )}
+            ) : null}
           </View>
         </View>
 
@@ -423,10 +528,20 @@ export default function ChatScreen({ route, navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        {renderTrustCaution()}
+
         {/* Messages */}
         {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={COLORS.primary} />
+          <View style={[styles.msgList, styles.skeletonContainer]}>
+            {CHAT_SKELETON.map((b, idx) => (
+              <SkeletonCard
+                key={`chat-skeleton-${idx}`}
+                bubble
+                align={b.align}
+                width={b.width}
+                height={b.height}
+              />
+            ))}
           </View>
         ) : (
           <FlatList
@@ -519,6 +634,13 @@ export default function ChatScreen({ route, navigation }) {
             }}
           />
           <TouchableOpacity
+            style={styles.attachBtn}
+            onPress={sendImage}
+            disabled={uploadingImage}
+          >
+            <Icon name="image" size={26} color={uploadingImage ? COLORS.border : COLORS.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
             onPress={sendMessage}
             disabled={!input.trim() || sending}
@@ -527,6 +649,21 @@ export default function ChatScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Fullscreen image viewer */}
+      <Modal
+        visible={!!viewerImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewerImage(null)}
+      >
+        <View style={styles.viewerOverlay}>
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewerImage(null)}>
+            <Icon name="x" size={26} color={COLORS.white} />
+          </TouchableOpacity>
+          <Image source={{ uri: viewerImage }} style={styles.viewerImage} resizeMode="contain" />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -585,6 +722,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   msgList: { paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
+  skeletonContainer: { flex: 1 },
   dateSeparator: {
     alignItems: 'center',
     marginVertical: 20,
@@ -628,6 +766,20 @@ const styles = StyleSheet.create({
   bubbleThemLast: {
     borderBottomLeftRadius: 0,
   },
+  bubbleImage: { padding: 4 },
+  chatImage: {
+    width: 220,
+    height: 220,
+    borderRadius: 14,
+    backgroundColor: COLORS.background,
+  },
+  imageUploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bubbleText: { fontSize: 15, color: COLORS.text, lineHeight: 21 },
   bubbleFooter: {
     flexDirection: 'row',
@@ -639,13 +791,38 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 12,
+    gap: 4,
     backgroundColor: COLORS.white,
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: Platform.OS === 'ios' ? Math.max(useSafeAreaInsets().bottom, 16) : 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  attachBtn: {
+    width: 38,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerImage: { width: '100%', height: '80%' },
+  viewerClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,

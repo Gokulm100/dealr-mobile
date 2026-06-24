@@ -18,7 +18,12 @@ import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const THUMB_SIZE = 52;
 
-export default function AdImageGallery({ images = [], onBack }) {
+export default function AdImageGallery({
+  images = [],
+  onBack,
+  controlsRightInset = 0,
+  showExpandIcon = true,
+}) {
   const insets = useSafeAreaInsets();
   const galleryHeight = SCREEN_WIDTH + insets.top;
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -115,7 +120,7 @@ export default function AdImageGallery({ images = [], onBack }) {
             </TouchableOpacity>
           )}
 
-          <View style={styles.controlsRight}>
+          <View style={[styles.controlsRight, controlsRightInset > 0 && { marginRight: controlsRightInset }]}>
             {hasMultiple && (
               <View style={styles.counterPill}>
                 <Text style={styles.counterText}>
@@ -123,14 +128,16 @@ export default function AdImageGallery({ images = [], onBack }) {
                 </Text>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.expandBtn}
-              onPress={() => openFullscreen()}
-              activeOpacity={0.85}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Icon name="image" size={15} color={COLORS.white} />
-            </TouchableOpacity>
+            {showExpandIcon && (
+              <TouchableOpacity
+                style={styles.expandBtn}
+                onPress={() => openFullscreen()}
+                activeOpacity={0.85}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Icon name="image" size={15} color={COLORS.white} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
