@@ -17,7 +17,7 @@ export const COLORS = {
   tagBg: '#ffd6e0',
   navBg: '#3f4e6f',
   brandAccentL: '#ff6666',
-  splashBg: '#29ABE2',
+  splashBg: '#378cf6',
 };
 
 export const BRAND = {

@@ -17,7 +17,7 @@ export default function DealrLogo({
     sm: { word: 20, line: 24, tagline: 9, tracking: -0.6 },
     md: { word: 24, line: 28, tagline: 10, tracking: -0.7 },
     lg: { word: 28, line: 32, tagline: 10, tracking: -0.7 },
-    title: { word: 32, line: 36, tagline: 11, tracking: -0.8 },
+    title: { word: 36, line: 40, tagline: 11, tracking: -0.9 },
   };
   const metrics = sizeMap[size] || sizeMap.md;
   const markSize = size === 'lg' || size === 'title' ? 46 : size === 'sm' ? 30 : 38;
@@ -53,6 +53,7 @@ export default function DealrLogo({
                 {
                   fontSize: metrics.tagline,
                   color: isLight ? 'rgba(255,255,255,0.72)' : COLORS.textMuted,
+                  marginTop: 3,
                 },
               ]}
             >
@@ -95,8 +96,6 @@ const styles = StyleSheet.create({
   },
   tagline: {
     fontWeight: '600',
-    letterSpacing: 0.55,
-    textTransform: 'uppercase',
-    marginTop: 3,
+    letterSpacing: 0.15,
   },
 });

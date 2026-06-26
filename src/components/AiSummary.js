@@ -1,18 +1,64 @@
 // src/components/AiSummary.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, ActivityIndicator,
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Easing,
 } from 'react-native';
 import { apiFetch } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
+import {
+  GEMINI,
+  useGradientId,
+  SparklesIcon,
+  GradientText,
+  GeminiCardBackground,
+  GeminiWaveAnimation,
+} from './geminiBrand';
+
+function FadeInRow({ index, style, children }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(10)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 500,
+        delay: index * 70,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 500,
+        delay: index * 70,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [index, opacity, translateY]);
+
+  return (
+    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function AiSummary({ adId, adTitle, category, subCategory, description, cachedSummary }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
+  const iconGradId = useGradientId('ai-icon');
+  const headerGradId = useGradientId('ai-header');
+  const loadingGradId = useGradientId('ai-loading');
+  const keyGradId = useGradientId('ai-key');
 
   useEffect(() => {
-    // Use the stored summary directly when the ad already carries one.
     if (cachedSummary && Object.keys(cachedSummary).length > 0) {
       setSummary(cachedSummary);
       setLoading(false);
@@ -31,31 +77,67 @@ export default function AiSummary({ adId, adTitle, category, subCategory, descri
   }, [adId, adTitle, category, subCategory, description, cachedSummary]);
 
   return (
-    <View style={styles.card}>
-      {/* Header */}
+    <View
+      style={styles.card}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setCardSize({ width, height });
+      }}
+    >
+      <GeminiCardBackground width={cardSize.width} height={cardSize.height} />
+
       <View style={styles.header}>
-        <Text style={styles.aiIcon}>✦</Text>
-        <Text style={styles.headerText}>AI Summary</Text>
+        <SparklesIcon gradientId={iconGradId} />
+        <GradientText
+          text="AI Summary"
+          fontSize={15}
+          fontWeight="800"
+          width={104}
+          height={18}
+          gradientId={headerGradId}
+          style={{ marginTop: 1 }}
+        />
       </View>
 
       {loading ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color={COLORS.accent} />
-          <Text style={styles.loadingText}>Analysing description…</Text>
+        <View style={styles.loadingBlock}>
+          <GradientText
+            text="Analysing description…"
+            fontSize={13}
+            fontWeight="600"
+            width={168}
+            height={16}
+            align="center"
+            gradientId={loadingGradId}
+          />
+          <GeminiWaveAnimation width={180} height={36} style={styles.loadingWave} />
         </View>
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : summary && Object.keys(summary).length > 0 ? (
         <View style={styles.list}>
-          {Object.entries(summary).map(([key, value]) => (
-            <View key={key} style={styles.row}>
-              <Text style={styles.rowKey}>{key}</Text>
+          {Object.entries(summary).map(([key, value], index, arr) => (
+            <FadeInRow
+              key={key}
+              index={index}
+              style={[styles.row, index === arr.length - 1 && styles.rowLast]}
+            >
+              <View style={styles.rowKeyWrap}>
+                <GradientText
+                  text={key}
+                  fontSize={13}
+                  fontWeight="700"
+                  width={110}
+                  height={18}
+                  gradientId={`${keyGradId}-${index}`}
+                />
+              </View>
               <Text style={styles.rowValue}>
                 {typeof value === 'object' && value !== null
                   ? Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(' · ')
                   : String(value)}
               </Text>
-            </View>
+            </FadeInRow>
           ))}
         </View>
       ) : (
@@ -72,7 +154,8 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e0e7ff',
+    borderColor: GEMINI.border,
+    overflow: 'hidden',
     ...SHADOW.small,
   },
   header: {
@@ -80,26 +163,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
+    minHeight: 22,
   },
-  aiIcon: {
-    fontSize: 18,
-    color: '#7f5af0',
-  },
-  headerText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#7f5af0',
-    letterSpacing: 0.3,
-  },
-  loadingRow: {
-    flexDirection: 'row',
+  loadingBlock: {
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
-  loadingText: {
-    fontSize: 13,
-    color: COLORS.textMuted,
+  loadingWave: {
+    marginTop: 14,
   },
   errorText: {
     fontSize: 13,
@@ -110,26 +181,29 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
   list: {
-    gap: 8,
+    gap: 0,
   },
   row: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 10,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: GEMINI.rowBorder,
   },
-  rowKey: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.text,
+  rowLast: {
+    borderBottomWidth: 0,
+  },
+  rowKeyWrap: {
     width: 110,
     flexShrink: 0,
+    paddingTop: 1,
   },
   rowValue: {
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: '#334155',
     flex: 1,
     flexWrap: 'wrap',
+    lineHeight: 19,
   },
 });

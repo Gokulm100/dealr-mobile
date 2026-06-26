@@ -15,14 +15,23 @@ import {
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { apiFetch } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import Icon from './Icon';
+import {
+  GEMINI,
+  useGradientId,
+  SparklesIcon,
+  GradientText,
+  GeminiCardBackground,
+  GeminiWaveAnimation,
+  GeminiAnalyzingVisual,
+} from './geminiBrand';
 
-const CARD_ACCENTS = ['#378cf6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
-const AI_PURPLE = '#7f5af0';
+const CARD_ACCENTS = ['#4285f4', '#9b72cb', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
 const BORDER = '#e5e7eb';
+const ANALYZE_TITLE_W = 220;
 
 const FEATURES = [
   { label: 'Performance metrics', icon: 'trending-up' },
@@ -167,36 +176,24 @@ function LevelMeter({ score, size = 'md' }) {
   );
 }
 
-/** Arc ring showing the overall score number in the center */
-function OverallRing({ score, color, size = 92 }) {
+/** Horizontal Gemini gradient score bar — no ring */
+function GeminiScoreBar({ score, height = 8 }) {
+  const gradId = useGradientId('glance-score-bar');
   const pct = Math.min(100, Math.max(0, score));
-  const half = size / 2;
-  const stroke = 8;
-  const r = half - stroke;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - pct / 100);
 
   return (
-    <View style={{ width: size, height: size }} accessibilityLabel={`Overall score ${score} out of 100`}>
-      <Svg width={size} height={size}>
-        <Circle cx={half} cy={half} r={r} stroke="#e8eef5" strokeWidth={stroke} fill="none" />
-        <Circle
-          cx={half}
-          cy={half}
-          r={r}
-          stroke={color}
-          strokeWidth={stroke}
-          fill="none"
-          strokeDasharray={`${c} ${c}`}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${half}, ${half}`}
-        />
-      </Svg>
-      <View style={[styles.ringCenter, { width: size, height: size }]}>
-        <Text style={[styles.ringScore, { color }]}>{score}</Text>
-        <Text style={styles.ringScoreLabel}>OVERALL</Text>
+    <View style={[styles.scoreBarTrack, { height }]}>
+      <View style={[styles.scoreBarFill, { width: `${pct}%`, height }]}>
+        <Svg width="100%" height={height} preserveAspectRatio="none" viewBox="0 0 100 8">
+          <Defs>
+            <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <Stop offset="0%" stopColor={GEMINI.blue} />
+              <Stop offset="50%" stopColor={GEMINI.purple} />
+              <Stop offset="100%" stopColor={GEMINI.rose} />
+            </LinearGradient>
+          </Defs>
+          <Rect x={0} y={0} width={100} height={8} rx={4} fill={`url(#${gradId})`} />
+        </Svg>
       </View>
     </View>
   );
@@ -212,53 +209,98 @@ function StatusPill({ tone, label }) {
   );
 }
 
+function GlanceMetricChip({ title, value, status }) {
+  const s = STATUS_STYLES[status.tone] || STATUS_STYLES.good;
+
+  return (
+    <View style={styles.glanceChip}>
+      <Text style={styles.glanceChipTitle} numberOfLines={1}>{title}</Text>
+      <Text style={styles.glanceChipValue} numberOfLines={1}>{value}</Text>
+      <View style={[styles.glanceChipBadge, { backgroundColor: s.bg }]}>
+        <Text style={[styles.glanceChipBadgeText, { color: s.text }]}>{status.label}</Text>
+      </View>
+    </View>
+  );
+}
+
 function AtAGlancePanel({ insights, suggestions }) {
+  const glanceSparkId = useGradientId('glance-spark');
+  const labelGradId = useGradientId('glance-label');
+  const scoreGradId = useGradientId('glance-score');
   const metrics = buildGlanceMetrics(insights);
   const validScores = metrics.map((m) => m.score).filter((s) => Number.isFinite(s));
   const overallScore = validScores.length
     ? Math.round(validScores.reduce((sum, s) => sum + s, 0) / validScores.length)
     : 0;
   const overallStatus = getMetricStatus(overallScore);
-  const headline = insights[0];
-  const tint = overallStatus.color;
+  const previewMetrics = metrics.slice(0, 3);
 
   return (
-    <View
-      style={[
-        styles.glance,
-        { backgroundColor: accentRgba(tint, 0.06), borderColor: accentRgba(tint, 0.22) },
-      ]}
-    >
+    <View style={styles.glance}>
+      <View style={styles.glanceAccent} pointerEvents="none">
+        <Svg width="100%" height={3} preserveAspectRatio="none" viewBox="0 0 100 3">
+          <Defs>
+            <LinearGradient id="glance-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+              <Stop offset="0%" stopColor={GEMINI.blue} stopOpacity="0.9" />
+              <Stop offset="50%" stopColor={GEMINI.purple} />
+              <Stop offset="100%" stopColor={GEMINI.rose} stopOpacity="0.85" />
+            </LinearGradient>
+          </Defs>
+          <Rect x={0} y={0} width={100} height={3} fill="url(#glance-accent)" />
+        </Svg>
+      </View>
+
       <View style={styles.glanceTop}>
         <View style={styles.glanceLabelRow}>
-          <Text style={styles.glanceSpark}>✦</Text>
-          <Text style={styles.glanceLabel}>At a glance</Text>
+          <SparklesIcon size={14} gradientId={glanceSparkId} />
+          <GradientText
+            text="At a glance"
+            fontSize={12}
+            fontWeight="800"
+            width={92}
+            height={16}
+            gradientId={labelGradId}
+            style={styles.glanceLabelText}
+          />
         </View>
         <StatusPill tone={overallStatus.tone} label={overallStatus.label} />
       </View>
 
-      <View style={styles.glanceHero}>
-        <OverallRing score={overallScore} color={tint} size={92} />
-        <Text style={styles.glanceMsg}>{getOverallMessage(overallScore)}</Text>
+      <View style={styles.glanceScoreBlock}>
+        <View style={styles.glanceScoreRow}>
+          <GradientText
+            text={String(overallScore)}
+            fontSize={34}
+            fontWeight="800"
+            width={overallScore >= 100 ? 72 : 56}
+            height={40}
+            gradientId={scoreGradId}
+          />
+          <View style={styles.glanceScoreCopy}>
+            <Text style={styles.glanceScoreLabel}>Overall score</Text>
+            <Text style={styles.glanceMsg}>{getOverallMessage(overallScore)}</Text>
+          </View>
+        </View>
+        <GeminiScoreBar score={overallScore} />
       </View>
 
-      {headline && (
-        <View style={styles.spotlight}>
-          <View style={[styles.spotlightIcon, { backgroundColor: accentRgba(tint, 0.14) }]}>
-            <Icon name="award" size={16} color={tint} />
-          </View>
-          <View style={styles.spotlightTextCol}>
-            <Text style={styles.spotlightLabel}>Top highlight</Text>
-            <Text style={styles.spotlightTitle} numberOfLines={1}>{headline.title}</Text>
-          </View>
-          <Text style={styles.spotlightValue} numberOfLines={1}>{headline.value}</Text>
+      {previewMetrics.length > 0 && (
+        <View style={styles.glanceChips}>
+          {previewMetrics.map((metric, idx) => (
+            <GlanceMetricChip
+              key={`${metric.title}-${idx}`}
+              title={metric.title}
+              value={metric.value}
+              status={metric.status}
+            />
+          ))}
         </View>
       )}
 
       <Text style={styles.glanceMeta}>
         {suggestions.length > 0
-          ? `Explore each score below · ${suggestions.length} tip${suggestions.length > 1 ? 's' : ''} to improve your ad`
-          : 'Explore each score in the Metrics tab below'}
+          ? `Tap metrics below for detail · ${suggestions.length} tip${suggestions.length > 1 ? 's' : ''} ready`
+          : 'Tap each metric below for the full breakdown'}
       </Text>
     </View>
   );
@@ -283,18 +325,40 @@ function GlanceLegend() {
   );
 }
 
+function MetricMeterBar({ score }) {
+  const gradId = useGradientId('metric-meter');
+  const pct = Math.min(100, Math.max(0, score));
+
+  return (
+    <View style={styles.metricMeterTrack}>
+      <View style={[styles.metricMeterFill, { width: `${pct}%` }]}>
+        <Svg width="100%" height={5} preserveAspectRatio="none" viewBox="0 0 100 5">
+          <Defs>
+            <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+              <Stop offset="0%" stopColor={GEMINI.blue} />
+              <Stop offset="55%" stopColor={GEMINI.purple} />
+              <Stop offset="100%" stopColor={GEMINI.rose} />
+            </LinearGradient>
+          </Defs>
+          <Rect x={0} y={0} width={100} height={5} rx={3} fill={`url(#${gradId})`} />
+        </Svg>
+      </View>
+    </View>
+  );
+}
+
 function MetricGlanceCard({ metric, active, onPress }) {
   const { icon, title, value, accent, score, status, description } = metric;
   const s = STATUS_STYLES[status.tone] || STATUS_STYLES.good;
 
   return (
     <TouchableOpacity
-      style={[styles.glanceCard, active && { borderColor: accent, backgroundColor: COLORS.white }]}
+      style={[styles.glanceCard, active && styles.glanceCardActive]}
       onPress={onPress}
       activeOpacity={0.88}
     >
       <View style={styles.glanceCardRow}>
-        <View style={[styles.glanceCardIcon, { backgroundColor: accentRgba(accent, 0.12) }]}>
+        <View style={[styles.glanceCardIcon, { backgroundColor: accentRgba(accent, 0.1) }]}>
           <Icon name={icon} size={18} color={accent} />
         </View>
         <View style={styles.glanceCardMain}>
@@ -314,9 +378,7 @@ function MetricGlanceCard({ metric, active, onPress }) {
         />
       </View>
 
-      <View style={styles.glanceCardMeter}>
-        <View style={[styles.glanceCardMeterFill, { width: `${score}%`, backgroundColor: accent }]} />
-      </View>
+      <MetricMeterBar score={score} />
 
       {active && (
         <View style={styles.glanceDetail}>
@@ -329,76 +391,84 @@ function MetricGlanceCard({ metric, active, onPress }) {
   );
 }
 
-/** Animated "AI is thinking" loading state */
+/** Refined analyzing state — Gemini star burst, flowing waves, crossfading copy */
 function AnalyzingState() {
-  const pulse = useRef(new Animated.Value(0)).current;
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const textFade = useRef(new Animated.Value(1)).current;
+  const [stepIndex, setStepIndex] = useState(0);
+  const titleGradId = useGradientId('aa-title');
+
+  const steps = [
+    'Reviewing price signals',
+    'Reading market demand',
+    'Preparing your insights',
+  ];
 
   useEffect(() => {
-    const p = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ])
-    );
-    const s = Animated.loop(
-      Animated.timing(shimmer, { toValue: 1, duration: 1300, easing: Easing.linear, useNativeDriver: true })
-    );
-    p.start();
-    s.start();
-    return () => {
-      p.stop();
-      s.stop();
-    };
-  }, [pulse, shimmer]);
+    let idx = 0;
+    const copyTimer = setInterval(() => {
+      Animated.timing(textFade, {
+        toValue: 0,
+        duration: 350,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (!finished) return;
+        idx = (idx + 1) % steps.length;
+        setStepIndex(idx);
+        Animated.timing(textFade, {
+          toValue: 1,
+          duration: 550,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 3200);
 
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
-  const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.65] });
-  const orbScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
-
-  const lines = [
-    { w: '100%', phase: 0 },
-    { w: '84%', phase: 0.18 },
-    { w: '66%', phase: 0.36 },
-  ];
+    return () => clearInterval(copyTimer);
+  }, [textFade, steps.length]);
 
   return (
     <View style={styles.analyzeWrap}>
-      <View style={styles.analyzeOrbWrap}>
-        <Animated.View style={[styles.analyzeGlow, { opacity: glowOpacity, transform: [{ scale }] }]} />
-        <Animated.View style={[styles.analyzeGlowInner, { opacity: glowOpacity }]} />
-        <Animated.View style={[styles.analyzeOrb, { transform: [{ scale: orbScale }] }]}>
-          <Text style={styles.analyzeOrbIcon}>✦</Text>
-        </Animated.View>
-      </View>
+      <GeminiAnalyzingVisual style={styles.analyzeVisual} />
 
-      <Text style={styles.analyzeTitle}>Analyzing your listing</Text>
-      <Text style={styles.analyzeSub}>Scanning pricing, demand and market signals…</Text>
+      <View style={styles.analyzeCopy}>
+        <GradientText
+          text="Analyzing your listing"
+          fontSize={16}
+          fontWeight="800"
+          width={ANALYZE_TITLE_W}
+          height={22}
+          align="center"
+          gradientId={titleGradId}
+        />
 
-      <View style={styles.skeletonWrap}>
-        {lines.map((ln, i) => {
-          const opacity = shimmer.interpolate({
-            inputRange: [0, 0.5, 1],
-            outputRange: [0.35, 1, 0.35],
-          });
-          return (
-            <Animated.View
-              key={i}
-              style={[styles.skelLine, { width: ln.w, opacity }]}
-            />
-          );
-        })}
+        <Animated.Text style={[styles.analyzeSub, { opacity: textFade }]}>
+          {steps[stepIndex]}
+        </Animated.Text>
+
+        <GeminiWaveAnimation width={200} height={40} style={styles.analyzeWave} />
       </View>
     </View>
   );
 }
 
 function AnalyticsHeader({ onRefresh, showRefresh }) {
+  const iconGradId = useGradientId('aa-header-icon');
+  const textGradId = useGradientId('aa-header-text');
+
   return (
     <View style={styles.headerRow}>
       <View style={styles.aiHeader}>
-        <Text style={styles.aiIcon}>✦</Text>
-        <Text style={styles.aiHeaderText}>AI Analytics</Text>
+        <SparklesIcon gradientId={iconGradId} />
+        <GradientText
+          text="AI Analytics"
+          fontSize={15}
+          fontWeight="800"
+          width={108}
+          height={18}
+          gradientId={textGradId}
+          style={styles.headerGradientText}
+        />
       </View>
       {showRefresh && (
         <TouchableOpacity
@@ -517,6 +587,23 @@ function TipsList({ suggestions }) {
   );
 }
 
+function GeminiCard({ children }) {
+  const [cardSize, setCardSize] = useState({ width: 0, height: 0 });
+
+  return (
+    <View
+      style={styles.card}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setCardSize({ width, height });
+      }}
+    >
+      <GeminiCardBackground width={cardSize.width} height={cardSize.height} />
+      {children}
+    </View>
+  );
+}
+
 export default function AiAnalytics({ ad }) {
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -552,7 +639,7 @@ export default function AiAnalytics({ ad }) {
 
   if (!generated) {
     return (
-      <View style={styles.card}>
+      <GeminiCard>
         <AnalyticsHeader />
         <Text style={styles.lead}>
           See how your listing compares and get smart suggestions to sell faster.
@@ -571,22 +658,22 @@ export default function AiAnalytics({ ad }) {
           <Icon name="AI" size={16} color={COLORS.white} />
           <Text style={styles.generateBtnText}>Generate insights</Text>
         </TouchableOpacity>
-      </View>
+      </GeminiCard>
     );
   }
 
   if (loading) {
     return (
-      <View style={styles.card}>
+      <GeminiCard>
         <AnalyticsHeader />
         <AnalyzingState />
-      </View>
+      </GeminiCard>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.card}>
+      <GeminiCard>
         <AnalyticsHeader onRefresh={handleGenerate} showRefresh />
         <View style={styles.errorBox}>
           <Icon name="alert-circle" size={20} color={COLORS.error} />
@@ -603,7 +690,7 @@ export default function AiAnalytics({ ad }) {
           <Icon name="refresh" size={16} color={COLORS.primary} />
           <Text style={styles.generateBtnTextSecondary}>Try again</Text>
         </TouchableOpacity>
-      </View>
+      </GeminiCard>
     );
   }
 
@@ -613,7 +700,7 @@ export default function AiAnalytics({ ad }) {
   ];
 
   return (
-    <View style={styles.card}>
+    <GeminiCard>
       <AnalyticsHeader onRefresh={handleGenerate} showRefresh />
 
       {insights.length > 0 && <AtAGlancePanel insights={insights} suggestions={suggestions} />}
@@ -629,7 +716,7 @@ export default function AiAnalytics({ ad }) {
           <Text style={styles.muted}>No tips for this listing right now.</Text>
         )}
       </View>
-    </View>
+    </GeminiCard>
   );
 }
 
@@ -640,8 +727,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#e0e7ff',
+    borderColor: GEMINI.border,
     padding: 20,
+    overflow: 'hidden',
     ...SHADOW.small,
   },
   headerRow: {
@@ -650,9 +738,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  aiIcon: { fontSize: 18, color: AI_PURPLE },
-  aiHeaderText: { fontSize: 15, fontWeight: '800', color: AI_PURPLE },
+  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minHeight: 22 },
+  headerGradientText: { marginTop: 1 },
   refreshBtn: {
     width: 36,
     height: 36,
@@ -680,50 +767,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: COLORS.primary,
+    backgroundColor: GEMINI.purple,
     borderRadius: RADIUS.md,
     paddingVertical: 12,
   },
-  generateBtnSecondary: { backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe' },
+  generateBtnSecondary: { backgroundColor: '#f5f0ff', borderWidth: 1, borderColor: GEMINI.border },
   generateBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
-  generateBtnTextSecondary: { fontSize: 14, fontWeight: '700', color: COLORS.primary },
-  analyzeWrap: { alignItems: 'center', paddingTop: 14, paddingBottom: 18, paddingHorizontal: 8 },
-  analyzeOrbWrap: { width: 80, height: 80, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  analyzeGlow: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: accentRgba(AI_PURPLE, 0.28),
-  },
-  analyzeGlowInner: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: accentRgba(AI_PURPLE, 0.22),
-  },
-  analyzeOrb: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: AI_PURPLE,
+  generateBtnTextSecondary: { fontSize: 14, fontWeight: '700', color: GEMINI.purple },
+  analyzeWrap: {
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOW.small,
+    paddingTop: 18,
+    paddingBottom: 22,
+    paddingHorizontal: 12,
   },
-  analyzeOrbIcon: { color: COLORS.white, fontSize: 24, fontWeight: '800', marginTop: -2 },
-  analyzeTitle: { fontSize: 16, fontWeight: '800', color: COLORS.text },
+  analyzeVisual: {
+    marginBottom: 20,
+    alignSelf: 'center',
+  },
+  analyzeCopy: {
+    width: '100%',
+    alignItems: 'center',
+  },
   analyzeSub: {
     fontSize: 13,
     color: COLORS.textMuted,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 10,
     lineHeight: 18,
-    paddingHorizontal: 12,
+    width: '100%',
+    maxWidth: ANALYZE_TITLE_W,
+    letterSpacing: 0.2,
   },
-  skeletonWrap: { alignSelf: 'stretch', marginTop: 20, gap: 10 },
-  skelLine: { height: 12, borderRadius: 6, backgroundColor: accentRgba(AI_PURPLE, 0.16) },
+  analyzeWave: {
+    marginTop: 18,
+  },
   muted: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19 },
   errorBox: {
     flexDirection: 'row',
@@ -741,12 +819,21 @@ const styles = StyleSheet.create({
 
   // At a glance
   glance: {
-    padding: 18,
+    padding: 16,
+    paddingTop: 14,
     marginBottom: 18,
     borderRadius: RADIUS.lg,
-    backgroundColor: '#f6f8ff',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#e6ebff',
+    borderColor: GEMINI.border,
+    overflow: 'hidden',
+  },
+  glanceAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
   },
   glanceTop: {
     flexDirection: 'row',
@@ -754,56 +841,73 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
-  glanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  glanceSpark: { fontSize: 13, color: AI_PURPLE },
-  glanceLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: COLORS.text,
-    textTransform: 'uppercase',
-    letterSpacing: 0.7,
-  },
-  glanceHero: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  glanceMsg: { flex: 1, minWidth: 0, fontSize: 15, lineHeight: 21, color: COLORS.text, fontWeight: '600' },
-  ringCenter: { position: 'absolute', top: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
-  ringScore: { fontSize: 26, fontWeight: '800', lineHeight: 28 },
-  ringScoreLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    letterSpacing: 1,
-    marginTop: 1,
-  },
-  spotlight: {
+  glanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  glanceLabelText: { marginTop: 1 },
+  glanceScoreBlock: { marginBottom: 14 },
+  glanceScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 16,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    gap: 14,
+    marginBottom: 12,
   },
-  spotlightIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spotlightTextCol: { flex: 1, minWidth: 0 },
-  spotlightLabel: {
-    fontSize: 10,
+  glanceScoreCopy: { flex: 1, minWidth: 0 },
+  glanceScoreLabel: {
+    fontSize: 11,
     fontWeight: '800',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+    marginBottom: 4,
   },
-  spotlightValue: { fontSize: 16, fontWeight: '800', color: COLORS.text },
-  spotlightTitle: { fontSize: 13, color: COLORS.text, fontWeight: '600', marginTop: 2 },
-  glanceMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 14, lineHeight: 17 },
+  glanceMsg: { fontSize: 14, lineHeight: 20, color: COLORS.text, fontWeight: '500' },
+  scoreBarTrack: {
+    width: '100%',
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(155, 114, 203, 0.08)',
+    overflow: 'hidden',
+  },
+  scoreBarFill: {
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+    minWidth: 8,
+  },
+  glanceChips: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 4,
+  },
+  glanceChip: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.md,
+    backgroundColor: 'rgba(66, 133, 244, 0.04)',
+    borderWidth: 1,
+    borderColor: GEMINI.rowBorder,
+  },
+  glanceChipTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  glanceChipValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  glanceChipBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+  },
+  glanceChipBadgeText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  glanceMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 12, lineHeight: 17 },
 
   levelMeter: { flexDirection: 'row', alignItems: 'flex-end', flexShrink: 0 },
   levelSeg: { borderRadius: 3 },
@@ -849,9 +953,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabBadgeActive: { backgroundColor: accentRgba(AI_PURPLE, 0.14) },
+  tabBadgeActive: { backgroundColor: accentRgba(GEMINI.purple, 0.14) },
   tabBadgeText: { fontSize: 11, fontWeight: '800', color: COLORS.textMuted },
-  tabBadgeTextActive: { color: AI_PURPLE },
+  tabBadgeTextActive: { color: GEMINI.purple },
   panel: { minHeight: 48 },
 
   metrics: { width: '100%' },
@@ -864,9 +968,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: RADIUS.md,
-    backgroundColor: '#fafbfc',
-    borderWidth: 1.5,
-    borderColor: '#e8eef5',
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: GEMINI.rowBorder,
+  },
+  glanceCardActive: {
+    borderColor: GEMINI.border,
+    backgroundColor: 'rgba(66, 133, 244, 0.03)',
   },
   glanceCardRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   glanceCardMain: { flex: 1, minWidth: 0 },
@@ -876,17 +984,27 @@ const styles = StyleSheet.create({
   glanceCardValue: { fontSize: 18, fontWeight: '800', color: COLORS.text },
   glanceStatusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full },
   glanceStatusPillText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
-  glanceCardMeter: { height: 5, borderRadius: RADIUS.full, backgroundColor: '#eef2f7', overflow: 'hidden' },
-  glanceCardMeterFill: { height: '100%', borderRadius: RADIUS.full },
+  metricMeterTrack: {
+    height: 5,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(155, 114, 203, 0.08)',
+    overflow: 'hidden',
+  },
+  metricMeterFill: {
+    height: '100%',
+    borderRadius: RADIUS.full,
+    overflow: 'hidden',
+    minWidth: 6,
+  },
 
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: 12,
     marginTop: 6,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#eef2f7',
+    borderTopColor: GEMINI.rowBorder,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
@@ -896,7 +1014,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#eef2f7',
+    borderTopColor: GEMINI.rowBorder,
   },
   glanceDetailDesc: { fontSize: 14, lineHeight: 21, color: COLORS.textMuted },
 

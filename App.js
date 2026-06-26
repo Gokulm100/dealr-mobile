@@ -1,7 +1,6 @@
 // App.js
 import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Alert } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import messaging from '@react-native-firebase/messaging';
@@ -9,7 +8,6 @@ import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { MessagesProvider } from './src/context/MessagesContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import BrandSplash from './src/components/BrandSplash';
 import { navigationRef, openFromNotification } from './src/utils/navigation';
 import { getStoredUser, getStoredToken } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
@@ -17,9 +15,6 @@ import { registerPushToken, requestNotificationPermission } from './src/utils/pu
 SplashScreen.preventAutoHideAsync();
 
 function AppContent() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [splashExiting, setSplashExiting] = useState(false);
-
   useEffect(() => {
     const setupNotifications = async () => {
       try {
@@ -101,19 +96,7 @@ function AppContent() {
       }
     });
 
-    const prepare = async () => {
-      try {
-        await SplashScreen.hideAsync();
-        await new Promise(resolve => setTimeout(resolve, 1600));
-        setSplashExiting(true);
-      } catch (e) {
-        console.warn(e);
-        setShowSplash(false);
-      }
-    };
-
     setupNotifications();
-    prepare();
 
     return () => {
       unsubscribeOnMessage();
@@ -128,20 +111,35 @@ function AppContent() {
           <AppNavigator />
         </MessagesProvider>
       </AuthProvider>
-      {showSplash && (
-        <BrandSplash
-          exiting={splashExiting}
-          onExitComplete={() => setShowSplash(false)}
-        />
-      )}
     </SafeAreaProvider>
   );
 }
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Sora_800ExtraBold });
+  const [appReady, setAppReady] = useState(false);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    if (!fontsLoaded) return undefined;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await SplashScreen.hideAsync();
+        if (!cancelled) setAppReady(true);
+      } catch (e) {
+        console.warn(e);
+        if (!cancelled) setAppReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fontsLoaded]);
+
+  if (!appReady) {
     return null;
   }
 

@@ -7,7 +7,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#29ABE2"
+      "backgroundColor": "#378cf6"
     },
     "android": {
       "package": "com.dealr.app",
