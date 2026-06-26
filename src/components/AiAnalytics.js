@@ -120,12 +120,6 @@ function scoreLevel(score) {
   return 1;
 }
 
-function getOverallMessage(score) {
-  if (score >= 75) return 'Your listing is performing well overall.';
-  if (score >= 50) return 'Solid start — a few tweaks could help you sell faster.';
-  return 'There’s room to improve — check the tips below.';
-}
-
 function pickMetricIcon(title) {
   const t = String(title || '').toLowerCase();
   if (/price|cost|₹|rupee|value/.test(t)) return 'dolar-sign';
@@ -172,136 +166,6 @@ function LevelMeter({ score, size = 'md' }) {
           ]}
         />
       ))}
-    </View>
-  );
-}
-
-/** Horizontal Gemini gradient score bar — no ring */
-function GeminiScoreBar({ score, height = 8 }) {
-  const gradId = useGradientId('glance-score-bar');
-  const pct = Math.min(100, Math.max(0, score));
-
-  return (
-    <View style={[styles.scoreBarTrack, { height }]}>
-      <View style={[styles.scoreBarFill, { width: `${pct}%`, height }]}>
-        <Svg width="100%" height={height} preserveAspectRatio="none" viewBox="0 0 100 8">
-          <Defs>
-            <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor={GEMINI.blue} />
-              <Stop offset="50%" stopColor={GEMINI.purple} />
-              <Stop offset="100%" stopColor={GEMINI.rose} />
-            </LinearGradient>
-          </Defs>
-          <Rect x={0} y={0} width={100} height={8} rx={4} fill={`url(#${gradId})`} />
-        </Svg>
-      </View>
-    </View>
-  );
-}
-
-function StatusPill({ tone, label }) {
-  const s = STATUS_STYLES[tone] || STATUS_STYLES.good;
-  return (
-    <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
-      <View style={[styles.statusDot, { backgroundColor: s.text }]} />
-      <Text style={[styles.statusPillText, { color: s.text }]}>{label}</Text>
-    </View>
-  );
-}
-
-function GlanceMetricChip({ title, value, status }) {
-  const s = STATUS_STYLES[status.tone] || STATUS_STYLES.good;
-
-  return (
-    <View style={styles.glanceChip}>
-      <Text style={styles.glanceChipTitle} numberOfLines={1}>{title}</Text>
-      <Text style={styles.glanceChipValue} numberOfLines={1}>{value}</Text>
-      <View style={[styles.glanceChipBadge, { backgroundColor: s.bg }]}>
-        <Text style={[styles.glanceChipBadgeText, { color: s.text }]}>{status.label}</Text>
-      </View>
-    </View>
-  );
-}
-
-function AtAGlancePanel({ insights, suggestions }) {
-  const glanceSparkId = useGradientId('glance-spark');
-  const labelGradId = useGradientId('glance-label');
-  const scoreGradId = useGradientId('glance-score');
-  const metrics = buildGlanceMetrics(insights);
-  const validScores = metrics.map((m) => m.score).filter((s) => Number.isFinite(s));
-  const overallScore = validScores.length
-    ? Math.round(validScores.reduce((sum, s) => sum + s, 0) / validScores.length)
-    : 0;
-  const overallStatus = getMetricStatus(overallScore);
-  const previewMetrics = metrics.slice(0, 3);
-
-  return (
-    <View style={styles.glance}>
-      <View style={styles.glanceAccent} pointerEvents="none">
-        <Svg width="100%" height={3} preserveAspectRatio="none" viewBox="0 0 100 3">
-          <Defs>
-            <LinearGradient id="glance-accent" x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor={GEMINI.blue} stopOpacity="0.9" />
-              <Stop offset="50%" stopColor={GEMINI.purple} />
-              <Stop offset="100%" stopColor={GEMINI.rose} stopOpacity="0.85" />
-            </LinearGradient>
-          </Defs>
-          <Rect x={0} y={0} width={100} height={3} fill="url(#glance-accent)" />
-        </Svg>
-      </View>
-
-      <View style={styles.glanceTop}>
-        <View style={styles.glanceLabelRow}>
-          <SparklesIcon size={14} gradientId={glanceSparkId} />
-          <GradientText
-            text="At a glance"
-            fontSize={12}
-            fontWeight="800"
-            width={92}
-            height={16}
-            gradientId={labelGradId}
-            style={styles.glanceLabelText}
-          />
-        </View>
-        <StatusPill tone={overallStatus.tone} label={overallStatus.label} />
-      </View>
-
-      <View style={styles.glanceScoreBlock}>
-        <View style={styles.glanceScoreRow}>
-          <GradientText
-            text={String(overallScore)}
-            fontSize={34}
-            fontWeight="800"
-            width={overallScore >= 100 ? 72 : 56}
-            height={40}
-            gradientId={scoreGradId}
-          />
-          <View style={styles.glanceScoreCopy}>
-            <Text style={styles.glanceScoreLabel}>Overall score</Text>
-            <Text style={styles.glanceMsg}>{getOverallMessage(overallScore)}</Text>
-          </View>
-        </View>
-        <GeminiScoreBar score={overallScore} />
-      </View>
-
-      {previewMetrics.length > 0 && (
-        <View style={styles.glanceChips}>
-          {previewMetrics.map((metric, idx) => (
-            <GlanceMetricChip
-              key={`${metric.title}-${idx}`}
-              title={metric.title}
-              value={metric.value}
-              status={metric.status}
-            />
-          ))}
-        </View>
-      )}
-
-      <Text style={styles.glanceMeta}>
-        {suggestions.length > 0
-          ? `Tap metrics below for detail · ${suggestions.length} tip${suggestions.length > 1 ? 's' : ''} ready`
-          : 'Tap each metric below for the full breakdown'}
-      </Text>
     </View>
   );
 }
@@ -703,8 +567,6 @@ export default function AiAnalytics({ ad }) {
     <GeminiCard>
       <AnalyticsHeader onRefresh={handleGenerate} showRefresh />
 
-      {insights.length > 0 && <AtAGlancePanel insights={insights} suggestions={suggestions} />}
-
       <SegmentTabs segments={segments} activeKey={activeTab} onChange={setActiveTab} />
 
       <View style={styles.panel}>
@@ -817,111 +679,8 @@ const styles = StyleSheet.create({
   errorCopy: { flex: 1, minWidth: 0 },
   errorTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
 
-  // At a glance
-  glance: {
-    padding: 16,
-    paddingTop: 14,
-    marginBottom: 18,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: GEMINI.border,
-    overflow: 'hidden',
-  },
-  glanceAccent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-  },
-  glanceTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  glanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  glanceLabelText: { marginTop: 1 },
-  glanceScoreBlock: { marginBottom: 14 },
-  glanceScoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 12,
-  },
-  glanceScoreCopy: { flex: 1, minWidth: 0 },
-  glanceScoreLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 4,
-  },
-  glanceMsg: { fontSize: 14, lineHeight: 20, color: COLORS.text, fontWeight: '500' },
-  scoreBarTrack: {
-    width: '100%',
-    borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(155, 114, 203, 0.08)',
-    overflow: 'hidden',
-  },
-  scoreBarFill: {
-    borderRadius: RADIUS.full,
-    overflow: 'hidden',
-    minWidth: 8,
-  },
-  glanceChips: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 4,
-  },
-  glanceChip: {
-    flex: 1,
-    minWidth: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: RADIUS.md,
-    backgroundColor: 'rgba(66, 133, 244, 0.04)',
-    borderWidth: 1,
-    borderColor: GEMINI.rowBorder,
-  },
-  glanceChipTitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: 4,
-  },
-  glanceChipValue: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: 6,
-  },
-  glanceChipBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: RADIUS.full,
-  },
-  glanceChipBadgeText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
-  glanceMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 12, lineHeight: 17 },
-
   levelMeter: { flexDirection: 'row', alignItems: 'flex-end', flexShrink: 0 },
   levelSeg: { borderRadius: 3 },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-  },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusPillText: { fontSize: 11, fontWeight: '700' },
 
   tabs: {
     flexDirection: 'row',
