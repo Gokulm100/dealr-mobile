@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Path, Text as SvgText, Rect } from 'react-native-svg';
 import { RADIUS } from '../utils/theme';
@@ -183,21 +183,61 @@ const waveStyles = StyleSheet.create({
   },
 });
 
-/** Rounded aurora wash + twinkling stars — no rings or circular frames */
-export function GeminiAnalyzingVisual({ style }) {
-  const shift = useRef(new Animated.Value(0)).current;
+const STAR_COLORS = [GEMINI.blue, GEMINI.purple, GEMINI.rose];
+const STAR_SIZE = 10;
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function buildRandomStars(count, width, height) {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const exclusionRadius = 28;
+  const pad = 2;
+  const stars = [];
+  let attempts = 0;
+  const maxAttempts = count * 30;
+
+  while (stars.length < count && attempts < maxAttempts) {
+    attempts += 1;
+    const left = randomBetween(pad, Math.max(pad, width - STAR_SIZE - pad));
+    const top = randomBetween(pad, Math.max(pad, height - STAR_SIZE - pad));
+    const dx = left + STAR_SIZE / 2 - centerX;
+    const dy = top + STAR_SIZE / 2 - centerY;
+    if (Math.hypot(dx, dy) < exclusionRadius) continue;
+
+    stars.push({
+      id: `${stars.length}-${left.toFixed(1)}-${top.toFixed(1)}`,
+      left,
+      top,
+      color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+      delay: Math.floor(randomBetween(0, 2800)),
+      size: Math.round(randomBetween(6, 11)),
+      drift: randomBetween(3, 9),
+      duration: Math.floor(randomBetween(900, 1500)),
+    });
+  }
+
+  return stars;
+}
+
+/** Animated Gemini sparkles icon with random twinkling stars — no background block */
+export function GeminiAnalyzingVisual({ style, size = 28, starCount = 48 }) {
   const breathe = useRef(new Animated.Value(0)).current;
   const iconGradId = useGradientId('gem-analyze-icon');
+  const [stars, setStars] = useState([]);
+
+  const handleLayout = useCallback((event) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (width <= 0 || height <= 0) return;
+    setStars((prev) => {
+      if (prev.length > 0) return prev;
+      return buildRandomStars(starCount, width, height);
+    });
+  }, [starCount]);
 
   useEffect(() => {
-    const shiftLoop = Animated.loop(
-      Animated.timing(shift, {
-        toValue: 1,
-        duration: 3800,
-        easing: Easing.inOut(Easing.sin),
-        useNativeDriver: true,
-      })
-    );
     const breatheLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(breathe, {
@@ -215,73 +255,42 @@ export function GeminiAnalyzingVisual({ style }) {
       ])
     );
 
-    shiftLoop.start();
     breatheLoop.start();
+    return () => breatheLoop.stop();
+  }, [breathe]);
 
-    return () => {
-      shiftLoop.stop();
-      breatheLoop.stop();
-    };
-  }, [breathe, shift]);
-
-  const blueOpacity = shift.interpolate({
-    inputRange: [0, 0.33, 0.66, 1],
-    outputRange: [0.22, 0.07, 0.05, 0.22],
-  });
-  const purpleOpacity = shift.interpolate({
-    inputRange: [0, 0.33, 0.66, 1],
-    outputRange: [0.06, 0.26, 0.08, 0.06],
-  });
-  const roseOpacity = shift.interpolate({
-    inputRange: [0, 0.33, 0.66, 1],
-    outputRange: [0.05, 0.08, 0.24, 0.05],
-  });
   const iconScale = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
-  const washScale = breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] });
-
-  const stars = [
-    { top: 4, left: 8, color: GEMINI.blue, delay: 0 },
-    { top: 10, right: 6, color: GEMINI.purple, delay: 400 },
-    { bottom: 8, left: 6, color: GEMINI.rose, delay: 800 },
-    { bottom: 4, right: 12, color: GEMINI.blue, delay: 1200 },
-  ];
 
   return (
-    <View style={[analyzeStyles.wrap, style]}>
-      <Animated.View style={[analyzeStyles.wash, { transform: [{ scale: washScale }] }]}>
-        <Animated.View style={[analyzeStyles.washLayer, { backgroundColor: GEMINI.blue, opacity: blueOpacity }]} />
-        <Animated.View style={[analyzeStyles.washLayer, { backgroundColor: GEMINI.purple, opacity: purpleOpacity }]} />
-        <Animated.View style={[analyzeStyles.washLayer, { backgroundColor: GEMINI.rose, opacity: roseOpacity }]} />
-      </Animated.View>
-
-      {stars.map((star, index) => (
-        <TwinkleStar key={index} {...star} />
+    <View style={[analyzeStyles.wrap, style]} onLayout={handleLayout}>
+      {stars.map((star) => (
+        <TwinkleStar key={star.id} {...star} />
       ))}
 
       <Animated.View style={[analyzeStyles.iconWrap, { transform: [{ scale: iconScale }] }]}>
-        <SparklesIcon size={26} gradientId={iconGradId} />
+        <SparklesIcon size={size} gradientId={iconGradId} />
       </Animated.View>
     </View>
   );
 }
 
-function TwinkleStar({ top, left, right, bottom, color, delay }) {
+function TwinkleStar({ left, top, color, delay, size = 10, drift = 5, duration = 1100 }) {
   const twinkle = useRef(new Animated.Value(0)).current;
-  const drift = useRef(new Animated.Value(0)).current;
+  const driftAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const twinkleLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(twinkle, {
           toValue: 1,
-          duration: 1100,
+          duration,
           delay,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(twinkle, {
           toValue: 0,
-          duration: 1100,
+          duration,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -289,16 +298,16 @@ function TwinkleStar({ top, left, right, bottom, color, delay }) {
     );
     const driftLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(drift, {
+        Animated.timing(driftAnim, {
           toValue: 1,
-          duration: 2200,
+          duration: duration * 2,
           delay: delay / 2,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(drift, {
+        Animated.timing(driftAnim, {
           toValue: 0,
-          duration: 2200,
+          duration: duration * 2,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -312,21 +321,20 @@ function TwinkleStar({ top, left, right, bottom, color, delay }) {
       twinkleLoop.stop();
       driftLoop.stop();
     };
-  }, [delay, drift, twinkle]);
+  }, [delay, driftAnim, duration, twinkle]);
 
-  const opacity = twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] });
-  const scale = twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.2] });
-  const translateY = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
-
-  const position = { position: 'absolute' };
-  if (top != null) position.top = top;
-  if (left != null) position.left = left;
-  if (right != null) position.right = right;
-  if (bottom != null) position.bottom = bottom;
+  const opacity = twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.15, 1] });
+  const scale = twinkle.interpolate({ inputRange: [0, 1], outputRange: [0.65, 1.25] });
+  const translateY = driftAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -drift] });
 
   return (
-    <Animated.View style={[position, { opacity, transform: [{ translateY }, { scale }] }]}>
-      <Svg width={10} height={10} viewBox="0 0 10 10">
+    <Animated.View
+      style={[
+        analyzeStyles.star,
+        { left, top, opacity, transform: [{ translateY }, { scale }] },
+      ]}
+    >
+      <Svg width={size} height={size} viewBox="0 0 10 10">
         <Path
           d="M5 0.5 L5.8 3.6 L9 4.2 L5.8 4.8 L5 7.9 L4.2 4.8 L1 4.2 L4.2 3.6 Z"
           fill={color}
@@ -338,26 +346,20 @@ function TwinkleStar({ top, left, right, bottom, color, delay }) {
 
 const analyzeStyles = StyleSheet.create({
   wrap: {
-    width: 88,
-    height: 72,
+    width: '100%',
+    minHeight: 128,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  wash: {
-    ...StyleSheet.absoluteFillObject,
-    top: 6,
-    bottom: 6,
-    left: 4,
-    right: 4,
-    borderRadius: 20,
+    position: 'relative',
     overflow: 'hidden',
   },
-  washLayer: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 20,
+  star: {
+    position: 'absolute',
+    zIndex: 1,
   },
   iconWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2,
   },
 });

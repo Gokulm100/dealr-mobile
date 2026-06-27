@@ -25,7 +25,6 @@ import {
   SparklesIcon,
   GradientText,
   GeminiCardBackground,
-  GeminiWaveAnimation,
   GeminiAnalyzingVisual,
 } from './geminiBrand';
 
@@ -309,8 +308,6 @@ function AnalyzingState() {
         <Animated.Text style={[styles.analyzeSub, { opacity: textFade }]}>
           {steps[stepIndex]}
         </Animated.Text>
-
-        <GeminiWaveAnimation width={200} height={40} style={styles.analyzeWave} />
       </View>
     </View>
   );
@@ -644,8 +641,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   analyzeVisual: {
-    marginBottom: 20,
-    alignSelf: 'center',
+    width: '100%',
+    marginBottom: 16,
+    alignSelf: 'stretch',
   },
   analyzeCopy: {
     width: '100%',
@@ -660,9 +658,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: ANALYZE_TITLE_W,
     letterSpacing: 0.2,
-  },
-  analyzeWave: {
-    marginTop: 18,
   },
   muted: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19 },
   errorBox: {

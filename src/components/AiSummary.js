@@ -15,7 +15,6 @@ import {
   SparklesIcon,
   GradientText,
   GeminiCardBackground,
-  GeminiWaveAnimation,
 } from './geminiBrand';
 
 function FadeInRow({ index, style, children }) {
@@ -110,7 +109,6 @@ export default function AiSummary({ adId, adTitle, category, subCategory, descri
             align="center"
             gradientId={loadingGradId}
           />
-          <GeminiWaveAnimation width={180} height={36} style={styles.loadingWave} />
         </View>
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
@@ -168,9 +166,6 @@ const styles = StyleSheet.create({
   loadingBlock: {
     alignItems: 'center',
     paddingVertical: 10,
-  },
-  loadingWave: {
-    marginTop: 14,
   },
   errorText: {
     fontSize: 13,
