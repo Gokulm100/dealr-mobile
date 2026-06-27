@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Alert, Image, ActivityIndicator, RefreshControl, Modal, TextInput, ScrollView,
+  Alert, Image, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import ReviewModal from '../components/ReviewModal';
+import MarkSoldModal from '../components/MarkSoldModal';
 import PostSaleReminderModal from '../components/PostSaleReminderModal';
 import SkeletonCard from '../components/SkeletonCard';
 
@@ -18,14 +19,7 @@ export default function MyAdsScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Mark Sold Modal State
-  const [showSoldModal, setShowSoldModal] = useState(false);
-  const [selectedAd, setSelectedAd] = useState(null);
-  const [soldAmount, setSoldAmount] = useState('');
-  const [soldTo, setSoldTo] = useState(null);
-  const [offerUsers, setOfferUsers] = useState([]);
-  const [fetchingOffers, setFetchingOffers] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [soldModalAd, setSoldModalAd] = useState(null);
   const [postSaleReminder, setPostSaleReminder] = useState(null);
   const [reviewTarget, setReviewTarget] = useState(null);
   const [pendingReviews, setPendingReviews] = useState([]);
@@ -101,76 +95,16 @@ export default function MyAdsScreen({ navigation }) {
     ]);
   };
 
-  const handleMarkAsSold = async (item) => {
+  const handleMarkAsSold = (item) => {
     if (item.status === 'sold') return;
-
-    setSelectedAd(item);
-    setSoldAmount(String(item.price || ''));
-    setSoldTo(null);
-    setOfferUsers([]);
-    setIsDropdownOpen(false);
-    setShowSoldModal(true);
-    setFetchingOffers(true);
-
-    try {
-      // Fetch people who have shown interest in this ad
-      const data = await apiFetch('/api/ads/getUsersInterestedInAd', {
-        method: 'POST',
-        body: JSON.stringify({ adId: item.id })
-      });
-      setOfferUsers(Array.isArray(data) ? data : (data?.users || []));
-    } catch (e) {
-      console.warn('Error fetching offers:', e);
-    } finally {
-      setFetchingOffers(false);
-    }
+    setSoldModalAd(item);
   };
 
-  const confirmMarkSold = async () => {
-    if (!soldAmount.trim()) {
-      Alert.alert('Error', 'Please enter the sale amount');
-      return;
-    }
-    if (!soldTo) {
-      Alert.alert('Error', 'Please select the buyer');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await apiFetch('/api/ads/markAdAsSold', {
-        method: 'POST',
-        body: JSON.stringify({
-          adId: selectedAd.id,
-          buyerId: soldTo._id || soldTo.id,
-          amount: soldAmount.trim()
-        })
-      });
-
-      setShowSoldModal(false);
-
-      // Update local state
-      setAds(prev => prev.map(a =>
-        a.id === selectedAd.id ? { ...a, status: 'sold', isSold: true } : a
-      ));
-
-      if (soldTo) {
-        setPostSaleReminder({
-          adId: selectedAd.id,
-          adTitle: selectedAd.title,
-          revieweeName: soldTo.name || soldTo.email || 'Buyer',
-          revieweePic: soldTo.profilePic || null,
-          counterpartyName: soldTo.name || soldTo.email || 'Buyer',
-          saleAmount: soldAmount.trim(),
-        });
-      } else {
-        Alert.alert('Success', 'Item marked as sold.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Could not mark ad as sold.');
-    } finally {
-      setLoading(false);
-    }
+  const handleSoldComplete = (target) => {
+    setAds((prev) => prev.map((a) =>
+      a.id === target.adId ? { ...a, status: 'sold', isSold: true } : a
+    ));
+    setPostSaleReminder(target);
   };
 
   if (!user) {
@@ -300,105 +234,12 @@ export default function MyAdsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Mark Sold Modal */}
-      <Modal
-        visible={showSoldModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSoldModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Mark as Sold</Text>
-              <TouchableOpacity onPress={() => setShowSoldModal(false)}>
-                <Icon name="x" size={20} color={COLORS.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalLabel}>Select Buyer</Text>
-            <View style={styles.dropdownContainer}>
-              <TouchableOpacity
-                style={styles.dropdownHeader}
-                onPress={() => setIsDropdownOpen(!isDropdownOpen)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.buyerInfoRow}>
-                  <Icon name="user" size={16} color={soldTo ? COLORS.primary : COLORS.textMuted} />
-                  <Text style={[styles.selectedBuyerText, !soldTo && { color: COLORS.textMuted }]}>
-                    {soldTo ? soldTo.name : 'Select the person who bought this'}
-                  </Text>
-                </View>
-                <Icon name={isDropdownOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.textMuted} />
-              </TouchableOpacity>
-
-              {isDropdownOpen && (
-                <View style={styles.dropdownList}>
-                  {fetchingOffers ? (
-                    <ActivityIndicator size="small" color={COLORS.primary} style={{ padding: 20 }} />
-                  ) : offerUsers.length === 0 ? (
-                    <Text style={styles.noOffersText}>No recent interactions found</Text>
-                  ) : (
-                    <ScrollView
-                      style={styles.dropdownScroll}
-                      contentContainerStyle={styles.dropdownScrollContent}
-                      nestedScrollEnabled
-                      keyboardShouldPersistTaps="handled"
-                      showsVerticalScrollIndicator
-                      bounces={false}
-                    >
-                      {offerUsers.map((u, index) => {
-                        const selected = soldTo?._id === u._id || soldTo?.id === u.id;
-                        const isLast = index === offerUsers.length - 1;
-                        return (
-                          <TouchableOpacity
-                            key={u._id || u.id}
-                            style={[
-                              styles.buyerItem,
-                              selected && styles.buyerItemSelected,
-                              isLast && styles.buyerItemLast,
-                            ]}
-                            onPress={() => {
-                              setSoldTo(u);
-                              setIsDropdownOpen(false);
-                            }}
-                          >
-                            <Text style={[styles.buyerName, selected && styles.buyerNameSelected]}>
-                              {u.name || u.email || 'Unknown buyer'}
-                            </Text>
-                            {selected && <Icon name="check" size={14} color={COLORS.primary} />}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  )}
-                </View>
-              )}
-            </View>
-
-            <Text style={styles.modalLabel}>Final Sale Amount</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter amount ₹"
-              keyboardType="numeric"
-              value={soldAmount}
-              onChangeText={setSoldAmount}
-            />
-
-            <TouchableOpacity
-              style={[styles.modalSubmit, (!soldAmount || !soldTo || loading) && styles.modalSubmitDisabled]}
-              onPress={confirmMarkSold}
-              disabled={!soldAmount || !soldTo || loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={COLORS.white} size="small" />
-              ) : (
-                <Text style={styles.modalSubmitText}>Confirm & Complete Sale</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <MarkSoldModal
+        visible={!!soldModalAd}
+        ad={soldModalAd}
+        onClose={() => setSoldModalAd(null)}
+        onSold={handleSoldComplete}
+      />
 
       <PostSaleReminderModal
         visible={!!postSaleReminder}
@@ -684,136 +525,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
-  },
-  // ... rest of modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modal: {
-    backgroundColor: COLORS.white,
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 24,
-    padding: 24,
-    ...SHADOW.medium,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-  modalLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  modalInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: COLORS.text,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  dropdownContainer: {
-    marginBottom: 24,
-    zIndex: 100,
-  },
-  dropdownHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  selectedBuyerText: {
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  dropdownList: {
-    marginTop: 8,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    maxHeight: 220,
-    overflow: 'hidden',
-    ...SHADOW.medium,
-  },
-  dropdownScroll: {
-    maxHeight: 220,
-  },
-  dropdownScrollContent: {
-    flexGrow: 0,
-  },
-  buyerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  buyerItemLast: {
-    borderBottomWidth: 0,
-  },
-  buyerItemSelected: {
-    backgroundColor: '#F0F9FF',
-  },
-  buyerInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  buyerName: {
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  buyerNameSelected: {
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  noOffersText: {
-    padding: 24,
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-  },
-  modalSubmit: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    padding: 18,
-    alignItems: 'center',
-    ...SHADOW.small,
-  },
-  modalSubmitDisabled: {
-    opacity: 0.5,
-    backgroundColor: '#94A3B8',
-  },
-  modalSubmitText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

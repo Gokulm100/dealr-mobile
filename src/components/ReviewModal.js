@@ -1,4 +1,3 @@
-// src/components/ReviewModal.js
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal,
@@ -69,28 +68,28 @@ export default function ReviewModal({ visible, onClose, adId, revieweeName, revi
     }
   };
 
+  const initials = revieweeName?.charAt(0)?.toUpperCase() || 'U';
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Rate your experience</Text>
-            <TouchableOpacity onPress={handleClose}>
-              <Icon name="x" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
+            <Icon name="x" size={18} color="#94a3b8" />
+          </TouchableOpacity>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.subtitle} numberOfLines={2}>
-              How was your experience for "{adTitle}"?
-            </Text>
+          <Text style={styles.title}>Rate your experience</Text>
+          <Text style={styles.subtitle} numberOfLines={2}>
+            How was your experience for "{adTitle}"?
+          </Text>
 
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View style={styles.revieweeRow}>
               {revieweePic ? (
                 <Image source={{ uri: revieweePic }} style={styles.avatar} />
               ) : (
                 <View style={styles.avatarFallback}>
-                  <Icon name="user" size={18} color={COLORS.white} />
+                  <Text style={styles.avatarInitial}>{initials}</Text>
                 </View>
               )}
               <Text style={styles.revieweeName}>{revieweeName}</Text>
@@ -102,7 +101,7 @@ export default function ReviewModal({ visible, onClose, adId, revieweeName, revi
                   <Icon
                     name="star"
                     size={32}
-                    color={star <= rating ? '#f59e0b' : COLORS.border}
+                    color={star <= rating ? '#f59e0b' : '#cbd5e1'}
                   />
                 </TouchableOpacity>
               ))}
@@ -128,7 +127,7 @@ export default function ReviewModal({ visible, onClose, adId, revieweeName, revi
             <TextInput
               style={styles.input}
               placeholder="Share a quick note about your experience..."
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor="#94a3b8"
               value={text}
               onChangeText={setText}
               maxLength={200}
@@ -146,7 +145,7 @@ export default function ReviewModal({ visible, onClose, adId, revieweeName, revi
               {submitting ? (
                 <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
-                <Text style={styles.submitText}>Submit Review</Text>
+                <Text style={styles.submitText}>Submit review</Text>
               )}
             </TouchableOpacity>
           </ScrollView>
@@ -159,32 +158,42 @@ export default function ReviewModal({ visible, onClose, adId, revieweeName, revi
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'center',
     padding: 20,
   },
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 20,
-    padding: 20,
+    padding: 24,
     maxHeight: '90%',
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.06)',
     ...SHADOW.medium,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  closeBtn: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    zIndex: 2,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.text,
+    letterSpacing: -0.3,
+    marginBottom: 6,
+    paddingRight: 28,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textMuted,
-    marginBottom: 16,
+    color: '#64748b',
+    marginBottom: 18,
     lineHeight: 20,
   },
   revieweeRow: {
@@ -202,20 +211,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: 16 },
   revieweeName: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   starsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 20,
+    marginBottom: 18,
   },
   starBtn: { padding: 4 },
   label: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
     marginBottom: 8,
   },
   tagsWrap: {
@@ -227,24 +235,24 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    borderRadius: 999,
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#e2e8f0',
   },
   tagActive: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: 'rgba(55, 140, 246, 0.08)',
     borderColor: COLORS.primary,
   },
   tagText: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
   tagTextActive: { color: COLORS.primary },
   input: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 14,
-    minHeight: 80,
+    borderColor: '#e2e8f0',
+    padding: 12,
+    minHeight: 88,
     textAlignVertical: 'top',
     color: COLORS.text,
     fontSize: 14,
@@ -252,9 +260,9 @@ const styles = StyleSheet.create({
   charCount: {
     textAlign: 'right',
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: '#94a3b8',
     marginTop: 4,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   error: {
     color: COLORS.error,
@@ -263,12 +271,11 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
     marginBottom: 8,
   },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { color: COLORS.white, fontWeight: '700', fontSize: 16 },
+  submitDisabled: { opacity: 0.45 },
+  submitText: { color: COLORS.white, fontWeight: '600', fontSize: 15 },
 });
