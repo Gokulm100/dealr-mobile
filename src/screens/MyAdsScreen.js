@@ -164,7 +164,7 @@ export default function MyAdsScreen({ navigation }) {
           saleAmount: soldAmount.trim(),
         });
       } else {
-        Alert.alert('🎉 Success', 'Item marked as sold! Congratulations.');
+        Alert.alert('Success', 'Item marked as sold.');
       }
     } catch (error) {
       Alert.alert('Error', 'Could not mark ad as sold.');
