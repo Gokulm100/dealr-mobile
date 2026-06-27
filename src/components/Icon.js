@@ -52,6 +52,18 @@ const CheckSvg = ({ size, color }) => (
   </Svg>
 );
 
+const SendSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 19V5M6 12l6-6 6 6"
+      stroke={color}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const EditSvg = ({ size, color }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M11 4H4C2.89543 4 2 4.89543 2 6V20C2 21.1046 2.89543 22 4 22H18C19.1046 22 20 21.1046 20 20V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -530,6 +542,13 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <CheckSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'send') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <SendSvg size={size} color={color} />
       </View>
     );
   }

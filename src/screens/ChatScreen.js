@@ -644,8 +644,9 @@ export default function ChatScreen({ route, navigation }) {
             style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnDisabled]}
             onPress={sendMessage}
             disabled={!input.trim() || sending}
+            activeOpacity={0.85}
           >
-            <Icon name="send" size={18} color={COLORS.white} />
+            <Icon name="send" size={20} color={(!input.trim() || sending) ? '#94a3b8' : COLORS.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -838,14 +839,23 @@ const styles = StyleSheet.create({
   },
   sendBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 24,
-    width: 48,
-    height: 48,
+    borderRadius: 999,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOW.small,
+    marginLeft: 2,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  sendBtnDisabled: { backgroundColor: COLORS.border },
+  sendBtnDisabled: {
+    backgroundColor: '#e2e8f0',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyText: { color: COLORS.textMuted, fontSize: 14 },
   offerBar: {
