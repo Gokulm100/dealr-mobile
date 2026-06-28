@@ -25,7 +25,7 @@ export default function AboutScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.hero}>
-          <DealrLogo variant="dark" size="sm" showMark showTagline tagline={TAGLINE} />
+          <DealrLogo variant="dark" size="md" showMark showTagline tagline={TAGLINE} />
           <Text style={styles.lead}>{ABOUT_INTRO}</Text>
         </View>
 
