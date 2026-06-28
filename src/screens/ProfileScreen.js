@@ -160,6 +160,15 @@ export default function ProfileScreen({ navigation, route }) {
               </View>
             ))}
           </View>
+
+          <View style={styles.infoLinks}>
+            <TouchableOpacity style={styles.infoLink} onPress={() => navigation.navigate('About')}>
+              <Text style={styles.infoLinkText}>About us</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.infoLink} onPress={() => navigation.navigate('Contact')}>
+              <Text style={styles.infoLinkText}>Contact us</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
     );
@@ -266,6 +275,32 @@ export default function ProfileScreen({ navigation, route }) {
               <Icon name="plus-circle" size={18} color='#f97316' />
             </View>
             <Text style={styles.actionText}>Post a New Ad</Text>
+            <Icon name="chevron-right" size={16} color={COLORS.border} />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('About')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#eff6ff' }]}>
+              <Icon name="AI" size={18} color={COLORS.primary} />
+            </View>
+            <Text style={styles.actionText}>About us</Text>
+            <Icon name="chevron-right" size={16} color={COLORS.border} />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => navigation.navigate('Contact')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#fef3c7' }]}>
+              <Icon name="mail" size={18} color="#d97706" />
+            </View>
+            <Text style={styles.actionText}>Contact us</Text>
             <Icon name="chevron-right" size={16} color={COLORS.border} />
           </TouchableOpacity>
 
@@ -396,6 +431,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   featureText: { fontSize: 14, color: COLORS.text, fontWeight: '500' },
+  infoLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+    width: '100%',
+  },
+  infoLink: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  infoLinkText: { fontSize: 13, fontWeight: '600', color: '#475569' },
 
   // Logged in
   scroll: { padding: 16 },

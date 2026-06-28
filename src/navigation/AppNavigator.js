@@ -13,6 +13,8 @@ import MessagesScreen from '../screens/MessagesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
+import AboutScreen from '../screens/AboutScreen';
+import ContactScreen from '../screens/ContactScreen';
 import ConsentScreen from '../screens/ConsentScreen';
 import SellerProfileScreen from '../screens/SellerProfileScreen';
 import { COLORS } from '../utils/theme';
@@ -62,6 +64,8 @@ function ProfileStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
+      <Stack.Screen name="Contact" component={ContactScreen} />
     </Stack.Navigator>
   );
 }
@@ -235,6 +239,7 @@ export default function AppNavigator() {
             <RootStack.Screen name="MainTabs" component={TabNavigator} />
             <RootStack.Screen name="SellerProfile" component={SellerProfileScreen} />
             <RootStack.Screen name="AdDetail" component={AdDetailScreen} />
+            <RootStack.Screen name="Consent" component={ConsentScreen} />
           </>
         ) : !hasConsented ? (
           // 2. LOGGED IN, NO CONSENT: Lock to Consent screen ONLY
