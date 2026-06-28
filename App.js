@@ -1,7 +1,6 @@
 // App.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
@@ -11,8 +10,6 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { navigationRef, openFromNotification } from './src/utils/navigation';
 import { getStoredUser, getStoredToken } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
-
-SplashScreen.preventAutoHideAsync();
 
 function AppContent() {
   useEffect(() => {
@@ -117,29 +114,8 @@ function AppContent() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Sora_800ExtraBold });
-  const [appReady, setAppReady] = useState(false);
 
-  useEffect(() => {
-    if (!fontsLoaded) return undefined;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        await SplashScreen.hideAsync();
-        if (!cancelled) setAppReady(true);
-      } catch (e) {
-        console.warn(e);
-        if (!cancelled) setAppReady(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fontsLoaded]);
-
-  if (!appReady) {
+  if (!fontsLoaded) {
     return null;
   }
 
