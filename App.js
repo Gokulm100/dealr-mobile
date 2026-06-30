@@ -1,5 +1,5 @@
 // App.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import messaging from '@react-native-firebase/messaging';
@@ -10,6 +10,11 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { navigationRef, openFromNotification } from './src/utils/navigation';
 import { getStoredUser, getStoredToken } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
+import SplashScreen from './src/components/SplashScreen';
+
+require('./assets/handshake-mark.png');
+
+const SPLASH_MIN_MS = 2500;
 
 function AppContent() {
   useEffect(() => {
@@ -114,9 +119,15 @@ function AppContent() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Sora_800ExtraBold });
+  const [splashElapsed, setSplashElapsed] = useState(false);
 
-  if (!fontsLoaded) {
-    return null;
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashElapsed(true), SPLASH_MIN_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!fontsLoaded || !splashElapsed) {
+    return <SplashScreen />;
   }
 
   return <AppContent />;

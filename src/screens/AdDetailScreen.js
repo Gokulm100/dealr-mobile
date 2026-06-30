@@ -54,7 +54,9 @@ export default function AdDetailScreen({ route, navigation }) {
   const [reviewOpen, setReviewOpen] = useState(false);
 
   useEffect(() => {
-    addToRecentlyViewed(listing);
+    if (!isOwner) {
+      addToRecentlyViewed(listing);
+    }
     incrementViews();
     checkFavoriteStatus();
     if (isOwner) {

@@ -1,7 +1,7 @@
 // src/context/AuthContext.js
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL, mapListing } from '../utils/api';
+import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL, mapListing, isAdOwnedByUser } from '../utils/api';
 import { registerPushToken, unregisterPushToken } from '../utils/pushNotifications';
 import { initSocket, disconnectSocket } from '../utils/socket';
 
@@ -51,7 +51,9 @@ export function AuthProvider({ children }) {
       // Sync lastViewedAds to local recently_viewed_ads if they exist
       if (data.user.lastViewedAds && Array.isArray(data.user.lastViewedAds)) {
         try {
-          const mappedAds = data.user.lastViewedAds.map(mapListing);
+          const mappedAds = data.user.lastViewedAds
+            .map(mapListing)
+            .filter((ad) => !isAdOwnedByUser(ad, normalizedUser));
           await AsyncStorage.setItem('recently_viewed_ads', JSON.stringify(mappedAds));
         } catch (e) {
           console.error('Error syncing lastViewedAds from login:', e);

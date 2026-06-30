@@ -249,3 +249,12 @@ export function mapListing(listing) {
         : ['https://images.pexels.com/photos/10703759/pexels-photo-10703759.jpeg','https://images.pexels.com/photos/7643961/pexels-photo-7643961.jpeg'],
   };
 }
+
+export function isAdOwnedByUser(ad, user) {
+  if (!ad || !user?._id) return false;
+  const userId = String(user._id);
+  const sellerId = ad.sellerId
+    || (typeof ad.seller === 'object' ? ad.seller?._id : null)
+    || ad.seller;
+  return sellerId != null && String(sellerId) === userId;
+}

@@ -160,15 +160,6 @@ export default function ProfileScreen({ navigation, route }) {
               </View>
             ))}
           </View>
-
-          <View style={styles.infoLinks}>
-            <TouchableOpacity style={styles.infoLink} onPress={() => navigation.navigate('About')}>
-              <Text style={styles.infoLinkText}>About us</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.infoLink} onPress={() => navigation.navigate('Contact')}>
-              <Text style={styles.infoLinkText}>Contact us</Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       </View>
     );
@@ -431,22 +422,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   featureText: { fontSize: 14, color: COLORS.text, fontWeight: '500' },
-  infoLinks: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-    width: '100%',
-  },
-  infoLink: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  infoLinkText: { fontSize: 13, fontWeight: '600', color: '#475569' },
 
   // Logged in
   scroll: { padding: 16 },

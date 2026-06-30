@@ -1,4 +1,4 @@
-export const SUPPORT_EMAIL = 'support@dealr.app';
+export const SUPPORT_EMAIL = 'support@dealrapp.in';
 export const TAGLINE = 'Deal with the Right App!';
 
 export const ABOUT_INTRO =

@@ -15,8 +15,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
 import DealrLogo from '../components/DealrLogo';
 import AdCard from '../components/AdCard';
+import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
-import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite } from '../utils/api';
+import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -58,6 +59,34 @@ export default function HomeScreen({ navigation }) {
   const [recentAds, setRecentAds] = useState([]);
   const isFirstLoad = useRef(true);
   const listRef = useRef(null);
+  const lastScrollY = useRef(0);
+  const quickFiltersCollapsed = useRef(false);
+  const quickFilterAnim = useRef(new Animated.Value(1)).current;
+
+  const setQuickFiltersCollapsed = useCallback((collapsed) => {
+    if (quickFiltersCollapsed.current === collapsed) return;
+    quickFiltersCollapsed.current = collapsed;
+    Animated.timing(quickFilterAnim, {
+      toValue: collapsed ? 0 : 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [quickFilterAnim]);
+
+  const handleListScroll = useCallback((event) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const diff = y - lastScrollY.current;
+
+    if (y <= 8) {
+      setQuickFiltersCollapsed(false);
+    } else if (diff > 6) {
+      setQuickFiltersCollapsed(true);
+    } else if (diff < -6) {
+      setQuickFiltersCollapsed(false);
+    }
+
+    lastScrollY.current = y;
+  }, [setQuickFiltersCollapsed]);
 
   useEffect(() => {
     loadRecentlyViewed();
@@ -68,7 +97,7 @@ export default function HomeScreen({ navigation }) {
       loadLocations();
     });
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, user?._id]);
 
   const loadFavorites = async () => {
     try {
@@ -82,7 +111,16 @@ export default function HomeScreen({ navigation }) {
   const loadRecentlyViewed = async () => {
     try {
       const raw = await AsyncStorage.getItem('recently_viewed_ads');
-      if (raw) setRecentAds(JSON.parse(raw));
+      if (!raw) {
+        setRecentAds([]);
+        return;
+      }
+      const list = JSON.parse(raw);
+      const filtered = user ? list.filter((ad) => !isAdOwnedByUser(ad, user)) : list;
+      if (filtered.length !== list.length) {
+        await AsyncStorage.setItem('recently_viewed_ads', JSON.stringify(filtered));
+      }
+      setRecentAds(filtered);
     } catch (err) {
       console.log('Error loading recent ads:', err);
     }
@@ -340,6 +378,19 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      <Animated.View
+        style={{
+          overflow: 'hidden',
+          opacity: quickFilterAnim,
+          maxHeight: quickFilterAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 160],
+          }),
+        }}
+      >
+        {renderQuickCategoryFilter()}
+      </Animated.View>
+
       {/* Filter Section */}
       {showFilters && (
         <View style={styles.filterSection}>
@@ -545,6 +596,112 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const handleQuickCategorySelect = (cat) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const nextCategory = selectedCategory === cat.name && cat.name !== 'All' ? 'All' : cat.name;
+    setCategoryInput(nextCategory);
+    setSelectedCategory(nextCategory);
+    setSelectedSubCategory('');
+    setSubCategoryInput('');
+    setQuickFiltersCollapsed(false);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  const handleQuickSubCategorySelect = (sub) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const nextSubCategory = selectedSubCategory === sub ? '' : sub;
+    setSelectedSubCategory(nextSubCategory);
+    setSubCategoryInput(nextSubCategory);
+    setQuickFiltersCollapsed(false);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  const quickSubCategories = React.useMemo(() => {
+    if (selectedCategory === 'All') return [];
+    return categories.find((c) => c.name === selectedCategory)?.subCategories || [];
+  }, [selectedCategory, categories]);
+
+  const renderQuickSubCategoryFilter = () => {
+    if (quickSubCategories.length === 0) return null;
+
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.quickSubCategoryTrack}
+      >
+        <TouchableOpacity
+          style={[styles.quickSubPill, !selectedSubCategory && styles.quickSubPillActive]}
+          onPress={() => handleQuickSubCategorySelect('')}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.quickSubPillText, !selectedSubCategory && styles.quickSubPillTextActive]}>
+            All
+          </Text>
+        </TouchableOpacity>
+        {quickSubCategories.map((sub, idx) => {
+          const active = selectedSubCategory === sub;
+          return (
+            <TouchableOpacity
+              key={`quick-sub-${sub}-${idx}`}
+              style={[styles.quickSubPill, active && styles.quickSubPillActive]}
+              onPress={() => handleQuickSubCategorySelect(sub)}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={[styles.quickSubPillText, active && styles.quickSubPillTextActive]}
+                numberOfLines={1}
+              >
+                {sub}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+  };
+
+  const renderQuickCategoryFilter = () => (
+    <View style={styles.quickCategorySection}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.quickCategoryTrack}
+      >
+        {categories.map((cat) => {
+          const active = selectedCategory === cat.name;
+          const theme = getCategoryTheme(cat.name);
+          return (
+            <TouchableOpacity
+              key={`quick-${cat.id}`}
+              style={[styles.quickCategoryTile, active && styles.quickCategoryTileActive]}
+              onPress={() => handleQuickCategorySelect(cat)}
+              activeOpacity={0.85}
+            >
+              <CategoryIcon
+                name={cat.name}
+                size={16}
+                active={active}
+                variant="tile"
+                colored
+              />
+              <Text
+                style={[
+                  styles.quickCategoryText,
+                  active && [styles.quickCategoryTextActive, { color: theme.icon }],
+                ]}
+                numberOfLines={2}
+              >
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+      {renderQuickSubCategoryFilter()}
+    </View>
+  );
+
   const isPriceRangeActive = (range) =>
     minPriceInput === range.min && maxPriceInput === range.max;
 
@@ -743,6 +900,8 @@ export default function HomeScreen({ navigation }) {
         columnWrapperStyle={styles.columnWrapper}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.4}
+        onScroll={handleListScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -792,9 +951,72 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 8,
     paddingHorizontal: 16,
     alignItems: 'center',
+  },
+  quickCategorySection: {
+    paddingBottom: 10,
+  },
+  quickCategoryTrack: {
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  quickSubCategoryTrack: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+    alignItems: 'center',
+  },
+  quickSubPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: '#e8edf3',
+  },
+  quickSubPillActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  quickSubPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  quickSubPillTextActive: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  quickCategoryTile: {
+    width: 68,
+    minHeight: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: '#e8edf3',
+  },
+  quickCategoryTileActive: {
+    backgroundColor: '#eef5ff',
+    borderColor: 'rgba(55, 140, 246, 0.35)',
+  },
+  quickCategoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748b',
+    letterSpacing: -0.1,
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  quickCategoryTextActive: {
+    fontWeight: '700',
   },
   searchBox: {
     flex: 1,
