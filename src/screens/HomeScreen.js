@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, ScrollView, RefreshControl,
+  StyleSheet, ActivityIndicator, RefreshControl,
   StatusBar, Image,
 } from 'react-native';
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
-import { apiFetch, mapListing, API_BASE_URL } from '../utils/api';
+import CategoryFilter from '../components/CategoryFilter';
+import { apiFetch, mapListing } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
@@ -143,53 +144,14 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Category Pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryScroll}
-        contentContainerStyle={styles.categoryContent}
-      >
-        {categories.map(cat => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[styles.pill, selectedCategory === cat.name && styles.pillActive]}
-            onPress={() => setSelectedCategory(cat.name)}
-          >
-            <Text style={[styles.pillText, selectedCategory === cat.name && styles.pillTextActive]}>
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Subcategory Pills */}
-      {subCategories.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.subCategoryScroll}
-          contentContainerStyle={styles.categoryContent}
-        >
-          <TouchableOpacity
-            style={[styles.pill, styles.pillSub, selectedSubCategory === '' && styles.pillSubActive]}
-            onPress={() => setSelectedSubCategory('')}
-          >
-            <Text style={[styles.pillText, selectedSubCategory === '' && styles.pillTextActive]}>All</Text>
-          </TouchableOpacity>
-          {subCategories.map((sub, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[styles.pill, styles.pillSub, selectedSubCategory === sub && styles.pillSubActive]}
-              onPress={() => setSelectedSubCategory(sub)}
-            >
-              <Text style={[styles.pillText, selectedSubCategory === sub && styles.pillTextActive]}>
-                {sub}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+      <CategoryFilter
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        subCategories={subCategories}
+        selectedSubCategory={selectedSubCategory}
+        onSelectSubCategory={setSelectedSubCategory}
+      />
 
       {/* Results count */}
       {searchQuery ? (
@@ -295,13 +257,13 @@ const styles = StyleSheet.create({
   subtext: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
-  listContent: { paddingHorizontal: 4, paddingBottom: 20 },
+  listContent: { paddingHorizontal: 8, paddingBottom: 20 },
   cardWrapper: { flex: 0.5 },
   searchRow: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 14,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   searchBox: {
     flex: 1,
@@ -324,22 +286,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...SHADOW.small,
   },
-  categoryScroll: { marginBottom: 4 },
-  subCategoryScroll: { marginBottom: 10 },
-  categoryContent: { paddingHorizontal: 0, gap: 8, paddingVertical: 4 },
-  pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  pillSub: { backgroundColor: '#f0f4ff', borderColor: '#c7d4f0' },
-  pillSubActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  pillText: { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
-  pillTextActive: { color: COLORS.white },
   resultsLabel: { fontSize: 13, color: COLORS.textMuted, marginBottom: 8, marginLeft: 2 },
   loader: { paddingVertical: 20, alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
