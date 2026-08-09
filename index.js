@@ -5,22 +5,25 @@ import notifee, { EventType } from '@notifee/react-native';
 import App from './App';
 import { openFromNotification } from './src/utils/navigation';
 
-// Background handler (required)
-// Register this outside of any component, at the top level of index.js
-messaging().setBackgroundMessageHandler(async remoteMessage => {
-  // FCM auto-shows notification if `notification` key is present
-  // Handle data-only messages here if needed
-});
+// Background handlers must be registered at the top level, but they must not
+// take down the entire app if Firebase/Notifee fail to initialize.
+try {
+  messaging().setBackgroundMessageHandler(async () => {
+    // FCM auto-shows notification if `notification` key is present.
+  });
+} catch (error) {
+  console.warn('Failed to register FCM background handler', error);
+}
 
-// Handle taps on Notifee notifications while the app is in the background/quit.
-// openChatFromNotification retries until navigation is ready once the app resumes.
-notifee.onBackgroundEvent(async ({ type, detail }) => {
-  if (type === EventType.PRESS) {
-    openFromNotification(detail.notification?.data);
-  }
-});
+try {
+  notifee.onBackgroundEvent(async ({ type, detail }) => {
+    if (type === EventType.PRESS) {
+      openFromNotification(detail.notification?.data);
+    }
+  });
+} catch (error) {
+  console.warn('Failed to register Notifee background handler', error);
+}
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
 registerRootComponent(App);

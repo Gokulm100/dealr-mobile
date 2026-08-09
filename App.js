@@ -25,6 +25,9 @@ const SPLASH_MIN_MS = 2500;
 
 function AppContent() {
   useEffect(() => {
+    let unsubscribeOnMessage = () => {};
+    let unsubscribeNotifee = () => {};
+
     const setupNotifications = async () => {
       try {
         await requestNotificationPermission();
@@ -48,62 +51,72 @@ function AppContent() {
       }
     };
 
-    const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-      const currentUser = await getStoredUser();
-      const senderId = remoteMessage.data?.senderId || remoteMessage.data?.from;
+    try {
+      unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+        try {
+          const currentUser = await getStoredUser();
+          const senderId = remoteMessage.data?.senderId || remoteMessage.data?.from;
 
-      if (currentUser && senderId === currentUser._id) {
-        return;
-      }
-
-      if (navigationRef.isReady()) {
-        const route = navigationRef.getCurrentRoute();
-        if (route?.name === 'ChatDetail' || route?.name === 'Chat') {
-          const activeAdId = route.params?.chat?.adId || route.params?.chat?.ad?._id || route.params?.chat?._id;
-          const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
-
-          if (activeAdId?.toString() === incomingAdId?.toString()) {
+          if (currentUser && senderId === currentUser._id) {
             return;
           }
-        }
-      }
 
-      await notifee.requestPermission();
+          if (navigationRef.isReady()) {
+            const route = navigationRef.getCurrentRoute();
+            if (route?.name === 'ChatDetail' || route?.name === 'Chat') {
+              const activeAdId = route.params?.chat?.adId || route.params?.chat?.ad?._id || route.params?.chat?._id;
+              const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
 
-      const channelId = await notifee.createChannel({
-        id: 'default',
-        name: 'Default Channel',
-        importance: AndroidImportance.HIGH,
-      });
+              if (activeAdId?.toString() === incomingAdId?.toString()) {
+                return;
+              }
+            }
+          }
 
-      await notifee.displayNotification({
-        title: remoteMessage.notification?.title || remoteMessage.data?.senderName || 'Dealr',
-        body: remoteMessage.notification?.body || remoteMessage.data?.messageText || 'You have a new message!',
-        data: remoteMessage.data,
-        android: {
-          channelId,
-          pressAction: {
+          await notifee.requestPermission();
+
+          const channelId = await notifee.createChannel({
             id: 'default',
-          },
-        },
+            name: 'Default Channel',
+            importance: AndroidImportance.HIGH,
+          });
+
+          await notifee.displayNotification({
+            title: remoteMessage.notification?.title || remoteMessage.data?.senderName || 'Dealr',
+            body: remoteMessage.notification?.body || remoteMessage.data?.messageText || 'You have a new message!',
+            data: remoteMessage.data,
+            android: {
+              channelId,
+              pressAction: {
+                id: 'default',
+              },
+            },
+          });
+        } catch (error) {
+          console.warn('Failed to handle foreground FCM message', error);
+        }
       });
-    });
 
-    const unsubscribeNotifee = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS) {
-        openFromNotification(detail.notification?.data);
-      }
-    });
+      unsubscribeNotifee = notifee.onForegroundEvent(({ type, detail }) => {
+        if (type === EventType.PRESS) {
+          openFromNotification(detail.notification?.data);
+        }
+      });
 
-    messaging().onNotificationOpenedApp(remoteMessage => {
-      openFromNotification(remoteMessage?.data);
-    });
+      messaging().onNotificationOpenedApp(remoteMessage => {
+        openFromNotification(remoteMessage?.data);
+      });
 
-    messaging().getInitialNotification().then(remoteMessage => {
-      if (remoteMessage) {
-        openFromNotification(remoteMessage.data);
-      }
-    });
+      messaging().getInitialNotification().then(remoteMessage => {
+        if (remoteMessage) {
+          openFromNotification(remoteMessage.data);
+        }
+      }).catch((error) => {
+        console.warn('Failed to read initial notification', error);
+      });
+    } catch (error) {
+      console.warn('Failed to wire notification listeners', error);
+    }
 
     setupNotifications();
 
@@ -125,7 +138,7 @@ function AppContent() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Sora_700Bold,
     Sora_800ExtraBold,
     PlusJakartaSans_400Regular,
@@ -135,14 +148,22 @@ export default function App() {
     PlusJakartaSans_800ExtraBold,
   });
   const [splashElapsed, setSplashElapsed] = useState(false);
+  // Proceed even if font download/load fails so release builds don't hang/crash.
+  const fontsReady = fontsLoaded || !!fontError;
+
+  useEffect(() => {
+    if (fontError) {
+      console.warn('Custom fonts failed to load; falling back to system fonts', fontError);
+    }
+  }, [fontError]);
 
   useEffect(() => {
     const timer = setTimeout(() => setSplashElapsed(true), SPLASH_MIN_MS);
     return () => clearTimeout(timer);
   }, []);
 
-  if (!fontsLoaded || !splashElapsed) {
-    return <SplashScreen />;
+  if (!fontsReady || !splashElapsed) {
+    return <SplashScreen fontsReady={fontsLoaded} />;
   }
 
   return <AppContent />;

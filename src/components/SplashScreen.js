@@ -77,7 +77,7 @@ function SplashDecorations({ arcOpacity, arcScale, waveShift }) {
   );
 }
 
-export default function SplashScreen() {
+export default function SplashScreen({ fontsReady = false }) {
   const arcOpacity = useRef(new Animated.Value(0.55)).current;
   const arcScale = useRef(new Animated.Value(1)).current;
   const waveShift = useRef(new Animated.Value(0)).current;
@@ -155,7 +155,9 @@ export default function SplashScreen() {
             {
               fontSize: WORD_SIZE,
               lineHeight: WORD_SIZE + 6,
-              fontFamily: BRAND.wordmarkFont,
+              // Only apply after Font.loadAsync — using an unloaded custom
+              // fontFamily can crash the release build on Android.
+              ...(fontsReady ? { fontFamily: BRAND.wordmarkFont } : null),
             },
           ]}
           accessibilityRole="header"
