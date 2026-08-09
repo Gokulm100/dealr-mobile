@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import Icon from '../components/Icon';
 import ScreenHeader from '../components/ScreenHeader';
+import SeededBadge from '../components/SeededBadge';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -149,6 +150,11 @@ export default function MyAdsScreen({ navigation }) {
             </View>
 
             <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+            {item.isSeeded ? (
+              <View style={{ marginTop: 4, marginBottom: 2, alignSelf: 'flex-start' }}>
+                <SeededBadge size="sm" />
+              </View>
+            ) : null}
 
             <View style={styles.priceRow}>
               <Text style={styles.price}>₹{Number(item.price).toLocaleString('en-IN')}</Text>

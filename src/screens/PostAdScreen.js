@@ -44,6 +44,8 @@ export default function PostAdScreen({ navigation, route }) {
   const [images, setImages] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [visionLoading, setVisionLoading] = useState(false);
+  const [aiDraftMeta, setAiDraftMeta] = useState(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -81,6 +83,7 @@ export default function PostAdScreen({ navigation, route }) {
       setExistingImages([]);
       setSelectedCategory('');
       setSelectedSubCategory('');
+      setAiDraftMeta(null);
     }
   }, [route.params?.ad, categories]);
 
@@ -316,6 +319,146 @@ export default function PostAdScreen({ navigation, route }) {
       ],
       { cancelable: true }
     );
+  };
+
+  const applyCategoryFromName = (categoryName, subCategoryName) => {
+    if (!categoryName) return false;
+    const cat = categories.find(
+      (c) => c.name.toLowerCase() === String(categoryName).toLowerCase(),
+    );
+    if (!cat) return false;
+    setSelectedCategory(cat.id);
+    const subs = cat.subCategories || [];
+    setSubCategories(subs);
+    if (subCategoryName) {
+      const match = subs.find((s) => {
+        const name = typeof s === 'string' ? s : s.name;
+        return name?.toLowerCase() === String(subCategoryName).toLowerCase();
+      });
+      setSelectedSubCategory(match ? (typeof match === 'string' ? match : match.name) : '');
+    } else {
+      setSelectedSubCategory('');
+    }
+    return true;
+  };
+
+  const fillFormFromAiDraft = (draft) => {
+    const applied = [];
+    const skipped = [];
+
+    if (draft.title) {
+      if (!form.title.trim()) {
+        setForm((p) => ({ ...p, title: draft.title }));
+        applied.push('title');
+      } else {
+        skipped.push('title');
+      }
+    }
+
+    if (draft.category) {
+      if (!selectedCategory) {
+        if (applyCategoryFromName(draft.category, draft.subCategory)) {
+          applied.push('category');
+          if (draft.subCategory) applied.push('subcategory');
+        }
+      } else {
+        skipped.push('category');
+      }
+    } else if (draft.subCategory && selectedCategory && !selectedSubCategory) {
+      const cat = categories.find((c) => c.id === selectedCategory);
+      applyCategoryFromName(cat?.name, draft.subCategory);
+      applied.push('subcategory');
+    }
+
+    if (draft.description) {
+      if (!form.description.trim()) {
+        setForm((p) => ({ ...p, description: draft.description }));
+        applied.push('description');
+      } else {
+        skipped.push('description');
+      }
+    }
+
+    setAiDraftMeta({
+      applied,
+      skipped,
+      confidence: draft.confidence || {},
+      notes: draft.notes || '',
+    });
+
+    return { applied, skipped };
+  };
+
+  const fillWithAiFromPhotos = async () => {
+    if (!user) {
+      Alert.alert('Login required', 'Please sign in to use AI fill.');
+      return;
+    }
+    if (!images.length && !existingImages.length) {
+      Alert.alert('Add photos', 'Add at least one photo first.');
+      return;
+    }
+    if (!images.length) {
+      Alert.alert(
+        'New photo needed',
+        'Add a new photo to analyze (existing listing photos aren’t re-uploaded).',
+      );
+      return;
+    }
+
+    setVisionLoading(true);
+    setAiDraftMeta(null);
+    try {
+      const formData = new FormData();
+      images.slice(0, 5).forEach((img, idx) => {
+        formData.append('images', {
+          uri: img.uri,
+          type: img.type || 'image/jpeg',
+          name: img.fileName || `photo_${idx}.jpg`,
+        });
+      });
+      formData.append(
+        'categories',
+        JSON.stringify(
+          categories.map((c) => ({
+            name: c.name,
+            subCategories: (c.subCategories || []).map((s) =>
+              typeof s === 'string' ? s : s.name,
+            ),
+          })),
+        ),
+      );
+
+      const token = await AsyncStorage.getItem('authToken');
+      const res = await fetch(`${API_BASE_URL}/api/ads/extractAdFromImages`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || 'AI analysis failed');
+      }
+
+      const draft = body.data || {};
+      const { applied } = fillFormFromAiDraft(draft);
+
+      if (!applied.length) {
+        Alert.alert(
+          'Couldn’t fill confidently',
+          draft.notes || 'Try clearer photos or fill the form manually.',
+        );
+      } else {
+        Alert.alert(
+          'AI draft ready',
+          `Filled: ${applied.join(', ')}. Review, then add price & location.`,
+        );
+      }
+    } catch (err) {
+      Alert.alert('AI photo analysis failed', err.message || 'Please try again.');
+    } finally {
+      setVisionLoading(false);
+    }
   };
 
   const handlePost = async () => {
@@ -658,19 +801,77 @@ export default function PostAdScreen({ navigation, route }) {
             }}
           />
           <View style={{ height: 10 }} />
-          {/* Images */}
-          <Text style={styles.label}>Images (optional)</Text>
+          {/* Images + AI vision draft */}
+          <Text style={styles.label}>Photos</Text>
+          <Text style={styles.hintText}>
+            Add clear photos, then let AI draft the title, category, and description. You still set price and location.
+          </Text>
           <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages}>
             <Icon name="camera" size={18} color={COLORS.primary} />
             <Text style={styles.imagePickerText}>
               {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
             </Text>
           </TouchableOpacity>
-          <View style={{ height: 30 }} />
-          {images.length > 0 && (
+
+          {(images.length > 0 || existingImages.length > 0) && (
+            <TouchableOpacity
+              style={[styles.aiFillBtn, visionLoading && styles.aiFillBtnLoading]}
+              onPress={fillWithAiFromPhotos}
+              disabled={visionLoading || !user || images.length === 0}
+              activeOpacity={0.88}
+            >
+              {visionLoading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Icon name="AI" size={16} color={COLORS.white} />
+              )}
+              <Text style={styles.aiFillBtnText}>
+                {visionLoading ? 'Analyzing…' : 'Draft with AI'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {aiDraftMeta && (
+            <View style={styles.aiDraftBanner}>
+              <Text style={styles.aiDraftTitle}>AI draft ready — review before posting</Text>
+              <Text style={styles.aiDraftBody}>
+                {aiDraftMeta.applied?.length
+                  ? `Filled: ${aiDraftMeta.applied.join(', ')}.`
+                  : 'No high-confidence fields were filled.'}
+                {' '}Price and location stay manual.
+                {aiDraftMeta.skipped?.length
+                  ? ` Skipped existing: ${aiDraftMeta.skipped.join(', ')}.`
+                  : ''}
+              </Text>
+              {!!Object.keys(aiDraftMeta.confidence || {}).length && (
+                <View style={styles.aiConfRow}>
+                  {Object.entries(aiDraftMeta.confidence).map(([key, value]) => (
+                    <View
+                      key={key}
+                      style={[
+                        styles.aiConfChip,
+                        Number(value) >= 0.6 ? styles.aiConfOk : styles.aiConfLow,
+                      ]}
+                    >
+                      <Text style={styles.aiConfText}>
+                        {key} {Math.round(Number(value) * 100)}%
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {(images.length > 0 || existingImages.length > 0) && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
+              {existingImages.map((uri, idx) => (
+                <View key={`ex-${idx}`} style={styles.imagePreviewWrap}>
+                  <Image source={{ uri }} style={styles.imagePreview} />
+                </View>
+              ))}
               {images.map((img, idx) => (
-                <View key={idx} style={styles.imagePreviewWrap}>
+                <View key={`new-${idx}`} style={styles.imagePreviewWrap}>
                   <Image source={{ uri: img.uri }} style={styles.imagePreview} />
                   <TouchableOpacity
                     style={styles.removeImg}
@@ -874,6 +1075,73 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   imagePickerText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+  hintText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    lineHeight: 18,
+    marginBottom: 10,
+    marginTop: -2,
+  },
+  aiFillBtn: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#6d28d9',
+    borderRadius: RADIUS.md,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  aiFillBtnLoading: {
+    opacity: 0.85,
+  },
+  aiFillBtnText: {
+    color: COLORS.white,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  aiDraftBanner: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: RADIUS.md,
+    backgroundColor: '#faf5ff',
+    borderWidth: 1,
+    borderColor: '#e9d5ff',
+    gap: 6,
+  },
+  aiDraftTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#5b21b6',
+  },
+  aiDraftBody: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#6b7280',
+  },
+  aiConfRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  aiConfChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+  },
+  aiConfOk: {
+    backgroundColor: '#dcfce7',
+  },
+  aiConfLow: {
+    backgroundColor: '#ffedd5',
+  },
+  aiConfText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
   imagePreviewRow: { marginTop: 10, marginBottom: 4 },
   imagePreviewWrap: { marginRight: 8, position: 'relative' },
   imagePreview: { width: 80, height: 80, borderRadius: RADIUS.md },

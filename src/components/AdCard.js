@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import Icon from '../components/Icon';
+import SeededBadge from './SeededBadge';
 import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 
 export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, isTrending, style, compact }) {
@@ -81,6 +82,7 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
           </Text>
           {!compact && (
             <View style={styles.badgeRow}>
+              {item.isSeeded && <SeededBadge size="sm" />}
               {isNew && !item.isSold && (
                 <View style={styles.inlineNewTag}>
                   <Text style={styles.newTagText}>NEW</Text>
