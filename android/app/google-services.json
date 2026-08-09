@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "281405583072-6v7h5oeba755abpdgn1njlv1fih8gam7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dealr.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "281405583072-hg9cobm0tt11f1frq4qpt6r6op346roe.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -22,7 +30,7 @@
           }
         },
         {
-          "client_id": "281405583072-ftusp6mnl4e10tfn70h3hrh73vtfhbaq.apps.googleusercontent.com",
+          "client_id": "281405583072-n7rkibd2qc0afs76dve0kgbsi9p15jfk.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -35,7 +43,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "281405583072-ftusp6mnl4e10tfn70h3hrh73vtfhbaq.apps.googleusercontent.com",
+              "client_id": "281405583072-n7rkibd2qc0afs76dve0kgbsi9p15jfk.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

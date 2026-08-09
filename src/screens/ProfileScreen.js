@@ -89,7 +89,7 @@ export default function ProfileScreen({ navigation, route }) {
         Alert.alert(
           'Configuration Error',
           __DEV__
-            ? 'Google Sign-In is not set up for this local debug build. In Firebase → Project settings → Android app (com.dealr.app), add this debug SHA-1:\n\n5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25\n\n(From android/app/debug.keystore. Or run: cd android && ./gradlew signingReport)\n\nWait a few minutes, then clear app data and try again. No rebuild required.'
+            ? 'Local Google Sign-In needs the debug SHA in Firebase project dealr-app-494db (not e4you).\n\nFirebase → Project settings → Android app (com.dealr.app) → Add fingerprint:\n\nSHA-1:\n5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25\n\nKeep the Play signing SHA too. Then:\n1) Wait 5–10 minutes\n2) Uninstall Dealr completely\n3) Reinstall the debug build (npx expo run:android)\n\nVerify with: bash scripts/print-android-sha.sh'
             : 'Google Sign-In is not set up for this build. In Firebase → Project settings → Android app (com.dealr.app), add the SHA-1 from Play Console → App integrity → App signing key certificate (and your upload key SHA-1). Wait a few minutes, then clear app data and try again. No new AAB needed.',
         );
         return;
