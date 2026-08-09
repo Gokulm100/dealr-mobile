@@ -1,9 +1,10 @@
 import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, StyleSheet,
 } from 'react-native';
 import DealrLogo from '../components/DealrLogo';
 import Icon from '../components/Icon';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import {
   ABOUT_INTRO,
@@ -15,13 +16,7 @@ import {
 export default function AboutScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="arrow-left" size={20} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>About us</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="About us" onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.hero}>
@@ -67,33 +62,6 @@ export default function AboutScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 54,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...SHADOW.small,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  headerSpacer: { width: 36 },
   scroll: { padding: 16, paddingBottom: 32 },
   hero: { marginBottom: 20, gap: 12 },
   lead: {

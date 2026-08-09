@@ -14,11 +14,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
 import DealrLogo from '../components/DealrLogo';
+import SafeLinearGradient from '../components/SafeLinearGradient';
 import AdCard from '../components/AdCard';
 import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
-import { COLORS, RADIUS, SHADOW } from '../utils/theme';
+import {COLORS, RADIUS, SHADOW, SURFACE} from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
 const LIMIT = 8;
@@ -815,10 +816,15 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+      <StatusBar backgroundColor={COLORS.primaryDeep} barStyle="light-content" />
 
-      {/* Top Header */}
-      <View style={styles.header}>
+      {/* Top Header — premium chrome */}
+      <SafeLinearGradient
+        colors={SURFACE.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: Math.max(insets.top, 12) + 8 }]}
+      >
         <DealrLogo variant="light" size="title" showTagline style={styles.headerBrand} />
         <View style={styles.headerRight}>
           {user && (
@@ -828,10 +834,11 @@ export default function HomeScreen({ navigation }) {
             />
           )}
         </View>
-      </View>
+      </SafeLinearGradient>
 
       {/* Search + categories — one continuous surface */}
       <View style={styles.stickyShell}>
+        <View style={styles.filterAccent} />
         {renderHeader()}
         {renderStickyFilters()}
       </View>
@@ -926,32 +933,46 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 40,
     paddingBottom: 28,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.12)',
+    ...SHADOW.header,
   },
   headerBrand: {
     flexShrink: 1,
     minWidth: 0,
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingBottom: 2 },
-  avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.white },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
   listContent: { paddingHorizontal: 4, paddingBottom: 20 },
   cardWrapper: { flex: 0.5 },
   stickyShell: {
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 5,
-    borderBottomRightRadius: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     zIndex: 10,
-    paddingBottom: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0, 0, 0, 0.06)',
-    marginTop: -20,
-    ...SHADOW.small,
+    paddingBottom: 8,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: 'rgba(226, 232, 240, 0.95)',
+    marginTop: -18,
+    marginHorizontal: 0,
+    overflow: 'hidden',
+    ...SHADOW.medium,
+  },
+  filterAccent: {
+    height: 3,
+    backgroundColor: COLORS.primary,
   },
   searchSection: {
     zIndex: 100,
@@ -980,16 +1001,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   quickSubPill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderWidth: 1,
-    borderColor: '#e8edf3',
+    borderColor: COLORS.border,
+    ...SHADOW.small,
   },
   quickSubPillActive: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    borderColor: 'transparent',
+    shadowColor: '#1e4fd6',
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 4,
   },
   quickSubPillText: {
     fontSize: 11,
@@ -1008,7 +1034,7 @@ const styles = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 6,
     paddingVertical: 11,
-    borderRadius: 14,
+    borderRadius: 8,
     backgroundColor: COLORS.white,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(15, 23, 42, 0.06)',
@@ -1049,14 +1075,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: RADIUS.full,
+    borderRadius: 14,
     paddingHorizontal: 14,
     height: 44,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOW.small,
   },
   searchIcon: { marginRight: 6 },
-  searchInput: { flex: 1, fontSize: 13, color: COLORS.text, height: '100%' },
-  locationInput: { flex: 1, fontSize: 13, color: COLORS.text, height: '100%' },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.text,
+    height: '100%',
+  },
+  locationInput: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.text,
+    height: '100%',
+  },
   filterSection: {
     padding: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -1147,12 +1185,16 @@ const styles = StyleSheet.create({
   },
   searchBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.full,
+    borderRadius: 14,
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOW.small,
+    shadowColor: '#1e4fd6',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 4,
     position: 'relative',
   },
   filterBadge: {
@@ -1397,10 +1439,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   recentTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
     color: COLORS.text,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   clearRecentText: {
     fontSize: 11,
@@ -1430,7 +1472,8 @@ const styles = StyleSheet.create({
   recentPrice: {
     fontSize: 12,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
+    letterSpacing: -0.2,
   },
   recentItemTitle: {
     fontSize: 10,
@@ -1446,10 +1489,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   recommendationTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     color: COLORS.text,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
   recommendationLine: {
     flex: 1,

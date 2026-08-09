@@ -79,18 +79,24 @@ function TabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: COLORS.accent,
+        tabBarActiveTintColor: COLORS.primaryDark,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarStyle: {
-          backgroundColor: COLORS.white,
-          borderTopColor: COLORS.border,
-          height: 60 + insets.bottom,
+          backgroundColor: 'rgba(255, 255, 255, 0.96)',
+          borderTopColor: 'rgba(226, 232, 240, 0.95)',
+          height: 62 + insets.bottom,
           paddingBottom: Math.max(insets.bottom, 10),
-          paddingTop: 6,
+          paddingTop: 8,
+          elevation: 12,
+          shadowColor: '#0f172a',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontWeight: '700',
+          letterSpacing: -0.1,
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {
@@ -200,19 +206,19 @@ function TabNavigator() {
 
 const styles = StyleSheet.create({
   postButton: {
-    width: 55,
-    height: 55,
-    backgroundColor: COLORS.accent,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    backgroundColor: COLORS.primary,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -0,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    borderWidth: 4,
+    marginTop: -4,
+    elevation: 8,
+    shadowColor: '#1e4fd6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    borderWidth: 3,
     borderColor: COLORS.white,
   },
 });

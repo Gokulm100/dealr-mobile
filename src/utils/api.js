@@ -1,5 +1,6 @@
 // src/utils/api.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isSeededDescription, stripSeededMarker } from './seededListing';
 
 // ⚠️ CHANGE THIS to your backend URL
 export const API_BASE_URL = 'https://e4u-backend.onrender.com';
@@ -213,6 +214,8 @@ export function mapListing(listing) {
   // Handle case where category/subCategory might be just a string name or an object
   const catName = typeof listing.category === 'object' ? listing.category?.name : (typeof listing.category === 'string' ? listing.category : null);
   const subCatName = typeof listing.subCategory === 'object' ? listing.subCategory?.name : (typeof listing.subCategory === 'string' ? listing.subCategory : null);
+  const rawDescription = listing.description || '';
+  const seeded = isSeededDescription(rawDescription);
 
   return {
     id: listing._id,
@@ -221,7 +224,8 @@ export function mapListing(listing) {
     location: listing.location,
     category: catName || 'Uncategorized',
     categoryId: listing?.category?._id || null,
-    description: listing.description,
+    description: seeded ? stripSeededMarker(rawDescription) : rawDescription,
+    isSeeded: seeded,
     seller: listing.seller ? listing.seller.name : 'Unknown',
     sellerId: listing.seller ? listing.seller._id : null,
     sellerPic: listing.seller?.profilePic || null,

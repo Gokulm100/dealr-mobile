@@ -8,7 +8,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import Icon from '../components/Icon';
-import { COLORS, RADIUS, SHADOW } from '../utils/theme';
+import SeededBadge from './SeededBadge';
+import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 
 export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, isTrending, style, compact }) {
   const isNew = item.createdAt && (new Date() - new Date(item.createdAt)) < 5 * 24 * 60 * 60 * 1000;
@@ -26,16 +27,15 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
     <TouchableOpacity
       style={[styles.card, compact && styles.cardCompact, item.isSold && styles.cardSold, style]}
       onPress={onPress}
-      activeOpacity={item.isSold ? 0.95 : 0.85}
+      activeOpacity={item.isSold ? 0.95 : 0.88}
     >
-      <View>
+      <View style={[styles.media, compact && styles.mediaCompact]}>
         <Image
           source={{ uri: item.images?.[0] }}
-          style={[styles.image, compact && styles.imageCompact, item.isSold && styles.imageSold]}
+          style={[styles.image, item.isSold && styles.imageSold]}
           resizeMode="cover"
         />
 
-        {/* Sold Overlay */}
         {item.isSold && (
           <View style={styles.soldOverlay}>
             <View style={styles.soldBadgeLarge}>
@@ -44,14 +44,12 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
           </View>
         )}
 
-        {/* Category tag */}
         <View style={[styles.tag, compact && styles.tagCompact]}>
           <Text style={[styles.tagText, compact && styles.tagTextCompact]} numberOfLines={1}>
             {item.category}
           </Text>
         </View>
 
-        {/* Trending Symbol */}
         {isTrending && !item.isSold && (
           <View style={styles.trendingSymbol}>
             <Text style={{ fontSize: 14 }}>🔥</Text>
@@ -84,6 +82,7 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
           </Text>
           {!compact && (
             <View style={styles.badgeRow}>
+              {item.isSeeded && <SeededBadge size="sm" />}
               {isNew && !item.isSold && (
                 <View style={styles.inlineNewTag}>
                   <Text style={styles.newTagText}>NEW</Text>
@@ -118,22 +117,20 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
           </View>
         ) : (
           <>
-            <View style={[styles.metaItem, { flex: 1, marginRight: 4 }]}>
-              <Icon name="map-pin" size={12} color={COLORS.textMuted} />
-              <Text style={styles.metaText} numberOfLines={1}>
-                {formatLocation(item.location)}
-              </Text>
-            </View>
-            <View style={styles.divider} />
+            <View style={styles.metaDivider} />
             <View style={styles.meta}>
-              <View style={styles.topRow}>
-                <Text style={styles.postedSmall}>{item.posted}</Text>
+              <View style={[styles.metaItem, { flex: 1, marginRight: 4 }]}>
+                <Icon name="map-pin" size={12} color="#94a3b8" />
+                <Text style={styles.metaText} numberOfLines={1}>
+                  {formatLocation(item.location)}
+                </Text>
               </View>
-              <View style={styles.metaItem}>
-                <Icon name="eye" size={12} color={COLORS.textMuted} />
-                <Text style={styles.metaText}>{item.views} views</Text>
+              <View style={styles.viewsChip}>
+                <Icon name="eye" size={11} color="#94a3b8" />
+                <Text style={styles.viewsText}>{item.views}</Text>
               </View>
             </View>
+            <Text style={styles.postedSmall}>{item.posted}</Text>
           </>
         )}
       </View>
@@ -143,9 +140,11 @@ export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, is
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.cardSolid,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.95)',
     ...SHADOW.small,
     flex: 1,
     margin: 6,
@@ -157,17 +156,17 @@ const styles = StyleSheet.create({
   cardSold: {
     opacity: 0.8,
   },
+  media: {
+    position: 'relative',
+    backgroundColor: '#eef3f9',
+  },
+  mediaCompact: {},
   image: {
     width: '100%',
     height: 130,
-    backgroundColor: COLORS.border,
+    backgroundColor: '#e2e8f0',
   },
-  imageCompact: {
-    height: 72,
-  },
-  imageSold: {
-    // optional: grayscale or blur
-  },
+  imageSold: {},
   soldOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -186,19 +185,19 @@ const styles = StyleSheet.create({
   soldBadgeTextLarge: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 2,
   },
   soldBadgeSmall: {
-    backgroundColor: '#eee',
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 5,
+    backgroundColor: '#f4f7fb',
+    borderRadius: 10,
+    paddingHorizontal: 6,
     paddingVertical: 2,
   },
   soldBadgeTextSmall: {
     fontSize: 9,
-    fontWeight: '800',
-    color: '#666',
+    fontWeight: '700',
+    color: COLORS.textMuted,
   },
   textMuted: {
     color: COLORS.textMuted,
@@ -208,21 +207,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
     borderRadius: RADIUS.full,
     padding: 6,
   },
-  favIcon: { opacity: 0.9 },
-  favIconActive: { opacity: 1 },
   tag: {
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: '#eff6ff',
-    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 10,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 5,
     maxWidth: 140,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
+    ...SHADOW.small,
   },
   tagCompact: {
     top: 6,
@@ -234,32 +234,21 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#333',
-    letterSpacing: 0.3,
+    color: COLORS.primaryDark,
   },
   tagTextCompact: {
     fontSize: 9,
   },
-  newTag: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: COLORS.success,
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    ...SHADOW.small,
-  },
   newTagText: {
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '800',
     color: COLORS.white,
   },
   trendingSymbol: {
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderRadius: RADIUS.full,
     width: 28,
     height: 28,
@@ -276,9 +265,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     flexWrap: 'wrap',
   },
-  topRow: {
-    marginBottom: 2,
-  },
   badgeRow: {
     flexDirection: 'row',
     gap: 4,
@@ -286,15 +272,17 @@ const styles = StyleSheet.create({
   },
   inlineNewTag: {
     backgroundColor: COLORS.success,
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 5,
+    borderRadius: 10,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   body: {
-    padding: 10,
-    paddingTop: 8,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+    gap: 4,
   },
   bodyCompact: {
     padding: 6,
@@ -306,17 +294,18 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     flex: 1,
     lineHeight: 18,
+    letterSpacing: -0.2,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: 4,
-    height: 38,
+    minHeight: 36,
     marginBottom: 2,
   },
   titleRowCompact: {
-    height: 26,
+    minHeight: 26,
     marginBottom: 0,
   },
   titleCompact: {
@@ -332,28 +321,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   postedSmall: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#94a3b8',
+    marginTop: 2,
   },
   price: {
-    fontSize: 25,
-    fontWeight: '900',
-    color: COLORS.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+    letterSpacing: -0.4,
   },
-  divider: {
+  metaDivider: {
     height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 8,
-    opacity: 0.6,
+    backgroundColor: '#eef2f7',
+    marginTop: 6,
+    marginBottom: 8,
   },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   metaItem: {
     flexDirection: 'row',
@@ -361,13 +350,23 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   metaText: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '500',
     color: COLORS.textMuted,
+    flex: 1,
   },
-  viewCountRow: {
+  viewsChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: '#f4f7fb',
+  },
+  viewsText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textMuted,
   },
 });

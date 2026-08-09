@@ -17,7 +17,7 @@ function SplashGradient() {
         <LinearGradient id="splashBg" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%" stopColor="#5ba8ff" />
           <Stop offset="55%" stopColor={COLORS.splashBg} />
-          <Stop offset="100%" stopColor="#2563d9" />
+          <Stop offset="100%" stopColor={COLORS.primaryDeep || '#1a3fbf'} />
         </LinearGradient>
       </Defs>
       <Rect x="0" y="0" width={SCREEN_WIDTH} height={SCREEN_HEIGHT} fill="url(#splashBg)" />
@@ -77,7 +77,7 @@ function SplashDecorations({ arcOpacity, arcScale, waveShift }) {
   );
 }
 
-export default function SplashScreen() {
+export default function SplashScreen({ fontsReady = false }) {
   const arcOpacity = useRef(new Animated.Value(0.55)).current;
   const arcScale = useRef(new Animated.Value(1)).current;
   const waveShift = useRef(new Animated.Value(0)).current;
@@ -155,7 +155,11 @@ export default function SplashScreen() {
             {
               fontSize: WORD_SIZE,
               lineHeight: WORD_SIZE + 6,
-              fontFamily: BRAND.wordmarkFont,
+              // Only apply after Font.loadAsync. Never pair a weight-specific
+              // fontFamily with fontWeight — that hard-crashes Android release.
+              ...(fontsReady
+                ? { fontFamily: BRAND.wordmarkFont, fontWeight: 'normal' }
+                : { fontWeight: '800' }),
             },
           ]}
           accessibilityRole="header"
@@ -187,7 +191,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   wordmark: {
-    fontWeight: '800',
     letterSpacing: -1,
     textAlign: 'center',
   },

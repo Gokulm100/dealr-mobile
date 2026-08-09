@@ -5,6 +5,8 @@ import {
   Alert, Image, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import Icon from '../components/Icon';
+import ScreenHeader from '../components/ScreenHeader';
+import SeededBadge from '../components/SeededBadge';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -148,6 +150,11 @@ export default function MyAdsScreen({ navigation }) {
             </View>
 
             <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+            {item.isSeeded ? (
+              <View style={{ marginTop: 4, marginBottom: 2, alignSelf: 'flex-start' }}>
+                <SeededBadge size="sm" />
+              </View>
+            ) : null}
 
             <View style={styles.priceRow}>
               <Text style={styles.price}>₹{Number(item.price).toLocaleString('en-IN')}</Text>
@@ -223,16 +230,18 @@ export default function MyAdsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Ads</Text>
-        <TouchableOpacity
-          style={styles.postBtn}
-          onPress={() => navigation.navigate('Post')}
-        >
-          <Icon name="plus" size={16} color={COLORS.white} />
-          <Text style={styles.postBtnText}>Post Ad</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="My Ads"
+        right={
+          <TouchableOpacity
+            style={styles.postBtn}
+            onPress={() => navigation.navigate('Post')}
+          >
+            <Icon name="plus" size={16} color={COLORS.white} />
+            <Text style={styles.postBtnText}>Post Ad</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <MarkSoldModal
         visible={!!soldModalAd}
@@ -308,19 +317,7 @@ export default function MyAdsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 54,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    ...SHADOW.medium,
-    zIndex: 10,
-  },
-  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  container: { flex: 1, backgroundColor: COLORS.background },
   postBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -329,6 +326,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   postBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
   list: { padding: 16, paddingBottom: 100 },

@@ -5,8 +5,9 @@ import {
   Image, Alert, ActivityIndicator, ScrollView, RefreshControl,
 } from 'react-native';
 import Icon from '../components/Icon';
+import ScreenHeader from '../components/ScreenHeader';
 import { GoogleSignin, statusCodes, isCancelledResponse } from '@react-native-google-signin/google-signin';
-import { COLORS, RADIUS, SHADOW } from '../utils/theme';
+import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, apiFetch } from '../utils/api';
 import ReviewModal from '../components/ReviewModal';
@@ -114,12 +115,14 @@ export default function ProfileScreen({ navigation, route }) {
   if (!user) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
-        </View>
+        <ScreenHeader title="Profile" />
 
         <ScrollView contentContainerStyle={styles.centeredContent}>
-          <Text style={styles.welcomeTitle}>Welcome to Dealr</Text>
+          <Text style={styles.welcomeTitle}>
+            Welcome to Dea
+            <Text style={{ color: COLORS.brandAccentL }}>l</Text>
+            r
+          </Text>
           <Text style={styles.welcomeSubtitle}>
             Sign in to post ads, chat with sellers, and manage your listings.
           </Text>
@@ -168,9 +171,7 @@ export default function ProfileScreen({ navigation, route }) {
   // ─── Logged IN view ────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+      <ScreenHeader title="Profile" />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -358,16 +359,6 @@ export default function ProfileScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 54,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...SHADOW.small,
-  },
-  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
   // Logged out
   centeredContent: {
@@ -379,6 +370,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: COLORS.text,
+    letterSpacing: -0.5,
     marginBottom: 10,
     textAlign: 'center',
   },
@@ -433,6 +425,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.95)',
     ...SHADOW.medium,
   },
   avatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: COLORS.primary },
@@ -479,6 +473,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.lg,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.95)',
     ...SHADOW.small,
     overflow: 'hidden',
   },

@@ -22,6 +22,8 @@ import AdImageGallery from '../components/AdImageGallery';
 import GenuinityMeter from '../components/GenuinityMeter';
 import SellerTrustLine from '../components/SellerTrustLine';
 import ReviewModal from '../components/ReviewModal';
+import SeededBadge, { SeededNotice } from '../components/SeededBadge';
+import { isSeededDescription, stripSeededMarker } from '../utils/seededListing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SAFETY_TIPS = [
@@ -31,7 +33,14 @@ const SAFETY_TIPS = [
 ];
 
 export default function AdDetailScreen({ route, navigation }) {
-  const { listing } = route.params;
+  const rawListing = route.params?.listing || {};
+  const seeded =
+    rawListing.isSeeded === true || isSeededDescription(rawListing.description);
+  const listing = {
+    ...rawListing,
+    isSeeded: seeded,
+    description: seeded ? stripSeededMarker(rawListing.description) : rawListing.description,
+  };
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const isOwner = user && (user._id === listing.sellerId || user._id === listing.seller?._id);
@@ -363,7 +372,8 @@ export default function AdDetailScreen({ route, navigation }) {
               <Text style={styles.priceLabel}>Price</Text>
               <Text style={styles.price}>₹{Number(listing.price).toLocaleString('en-IN')}</Text>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {listing.isSeeded && <SeededBadge />}
               {isNew && (
                 <View style={[styles.tag, { backgroundColor: COLORS.success + '15' }]}>
                   <View style={[styles.dotSmall, { backgroundColor: COLORS.success }]} />
@@ -399,6 +409,8 @@ export default function AdDetailScreen({ route, navigation }) {
 
           {/* Genuineness Meter */}
           <GenuinityMeter views={listing.views} reports={listing.reports} embedded />
+
+          {listing.isSeeded && <SeededNotice />}
 
           {user && reviewStatus?.canReview && (
             <TouchableOpacity

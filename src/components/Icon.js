@@ -104,6 +104,19 @@ const ShieldSvg = ({ size, color }) => (
   </Svg>
 );
 
+const BeakerSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4.5 3h15M6 3v4.2a2 2 0 00.4 1.2L10 13v6a2 2 0 002 2h0a2 2 0 002-2v-6l3.6-4.6a2 2 0 00.4-1.2V3"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path d="M8.5 14h7" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+);
+
 const EyeOffSvg = ({ size, color }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -506,6 +519,13 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <ShieldSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'beaker') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <BeakerSvg size={size} color={color} />
       </View>
     );
   }
