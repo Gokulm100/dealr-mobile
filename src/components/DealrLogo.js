@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { COLORS, BRAND } from '../utils/theme';
 import DealrMark from './DealrMark';
+import { useFontReady, fontFamily } from '../context/FontReadyContext';
 
 export default function DealrLogo({
   variant = 'light',
@@ -13,6 +14,7 @@ export default function DealrLogo({
   onPress,
   style,
 }) {
+  const fontsReady = useFontReady();
   const sizeMap = {
     sm: { word: 20, line: 24, tagline: 9, tracking: -0.7 },
     md: { word: 24, line: 28, tagline: 10, tracking: -0.8 },
@@ -38,8 +40,8 @@ export default function DealrLogo({
                 fontSize: metrics.word,
                 lineHeight: metrics.line,
                 letterSpacing: metrics.tracking,
-                fontFamily: BRAND.wordmarkFont,
               },
+              fontFamily(fontsReady, BRAND.wordmarkFont),
             ]}
           >
             <Text style={{ color: leadColor }}>Dea</Text>

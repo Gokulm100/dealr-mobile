@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
 import { COLORS, FONTS, SHADOW, SURFACE } from '../utils/theme';
+import { useFontReady, fontFamily } from '../context/FontReadyContext';
 
 /**
  * Premium chrome header matching the web topbar gradient.
@@ -19,6 +20,7 @@ export default function ScreenHeader({
   contentStyle,
 }) {
   const insets = useSafeAreaInsets();
+  const fontsReady = useFontReady();
 
   return (
     <>
@@ -53,8 +55,16 @@ export default function ScreenHeader({
             )}
 
             <View style={styles.titleBlock}>
-              {!!title && <Text style={styles.title} numberOfLines={1}>{title}</Text>}
-              {!!subtitle && <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>}
+              {!!title && (
+                <Text style={[styles.title, fontFamily(fontsReady, FONTS.displayBlack)]} numberOfLines={1}>
+                  {title}
+                </Text>
+              )}
+              {!!subtitle && (
+                <Text style={[styles.subtitle, fontFamily(fontsReady, FONTS.medium)]} numberOfLines={1}>
+                  {subtitle}
+                </Text>
+              )}
             </View>
 
             <View style={styles.rightSlot}>
@@ -94,7 +104,6 @@ const styles = StyleSheet.create({
   sideSlot: { width: 36, height: 36 },
   titleBlock: { flex: 1, minWidth: 0 },
   title: {
-    fontFamily: FONTS.displayBlack,
     fontSize: 22,
     fontWeight: '800',
     color: COLORS.white,
@@ -102,7 +111,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 2,
-    fontFamily: FONTS.medium,
     fontSize: 12,
     color: 'rgba(255,255,255,0.72)',
   },

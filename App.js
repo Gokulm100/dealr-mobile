@@ -18,6 +18,7 @@ import { navigationRef, openFromNotification } from './src/utils/navigation';
 import { getStoredUser, getStoredToken } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
 import SplashScreen from './src/components/SplashScreen';
+import { FontReadyProvider } from './src/context/FontReadyContext';
 
 require('./assets/handshake-mark.png');
 
@@ -148,12 +149,10 @@ export default function App() {
     PlusJakartaSans_800ExtraBold,
   });
   const [splashElapsed, setSplashElapsed] = useState(false);
-  // Proceed even if font download/load fails so release builds don't hang/crash.
-  const fontsReady = fontsLoaded || !!fontError;
 
   useEffect(() => {
     if (fontError) {
-      console.warn('Custom fonts failed to load; falling back to system fonts', fontError);
+      console.warn('Custom fonts failed to load; continuing with system fonts', fontError);
     }
   }, [fontError]);
 
@@ -162,9 +161,24 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (!fontsReady || !splashElapsed) {
+  // Hold splash until fonts load successfully. Custom fontFamily in screen
+  // StyleSheets will crash Android release if we proceed without them.
+  if (!fontsLoaded || !splashElapsed) {
+    // If fonts permanently failed, still leave splash after the min time so the
+    // app is usable with system fonts (Logo/header gate fontFamily separately).
+    if (fontError && splashElapsed) {
+      return (
+        <FontReadyProvider ready={false}>
+          <AppContent />
+        </FontReadyProvider>
+      );
+    }
     return <SplashScreen fontsReady={fontsLoaded} />;
   }
 
-  return <AppContent />;
+  return (
+    <FontReadyProvider ready>
+      <AppContent />
+    </FontReadyProvider>
+  );
 }
