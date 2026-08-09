@@ -88,7 +88,7 @@ export default function ProfileScreen({ navigation, route }) {
       if (String(error.code) === '10' || error.message?.includes('DEVELOPER_ERROR')) {
         Alert.alert(
           'Configuration Error',
-          'Google Sign-In is not set up for this build. In Firebase, add SHA-1 5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25 for package com.dealr.app, then rebuild the app.',
+          'Google Sign-In is not set up for this build. In Firebase → Project settings → Android app (com.dealr.app), add the SHA-1 from Play Console → App integrity → App signing key certificate (and your upload key SHA-1). Wait a few minutes, then clear app data and try again. No new AAB needed.',
         );
         return;
       }

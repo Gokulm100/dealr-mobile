@@ -674,9 +674,17 @@ export default function HomeScreen({ navigation }) {
           return (
             <TouchableOpacity
               key={`quick-${cat.id}`}
-              style={[styles.quickCategoryTile, active && styles.quickCategoryTileActive]}
+              style={[
+                styles.quickCategoryTile,
+                active && styles.quickCategoryTileActive,
+                active && {
+                  shadowColor: theme.icon,
+                  borderColor: `${theme.icon}33`,
+                  backgroundColor: theme.bg,
+                },
+              ]}
               onPress={() => handleQuickCategorySelect(cat)}
-              activeOpacity={0.85}
+              activeOpacity={0.88}
             >
               <CategoryIcon
                 name={cat.name}
@@ -684,6 +692,7 @@ export default function HomeScreen({ navigation }) {
                 active={active}
                 variant="tile"
                 colored
+                style={styles.quickCategoryIconBadge}
               />
               <Text
                 style={[
@@ -956,11 +965,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   quickCategorySection: {
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   quickCategoryTrack: {
     paddingHorizontal: 16,
-    gap: 8,
+    paddingVertical: 6,
+    gap: 10,
     alignItems: 'flex-start',
   },
   quickSubCategoryTrack: {
@@ -991,21 +1001,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   quickCategoryTile: {
-    width: 68,
-    minHeight: 72,
+    width: 70,
+    minHeight: 76,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 7,
     paddingHorizontal: 6,
-    paddingVertical: 10,
-    borderRadius: RADIUS.md,
+    paddingVertical: 11,
+    borderRadius: 14,
     backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: '#e8edf3',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(15, 23, 42, 0.06)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickCategoryTileActive: {
-    backgroundColor: '#eef5ff',
-    borderColor: 'rgba(55, 140, 246, 0.35)',
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 7,
+    transform: [{ translateY: -1 }],
+  },
+  quickCategoryIconBadge: {
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   quickCategoryText: {
     fontSize: 10,
