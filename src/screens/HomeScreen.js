@@ -11,10 +11,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/Icon';
 import DealrLogo from '../components/DealrLogo';
+import SafeLinearGradient from '../components/SafeLinearGradient';
 import AdCard from '../components/AdCard';
 import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
@@ -819,7 +819,7 @@ export default function HomeScreen({ navigation }) {
       <StatusBar backgroundColor={COLORS.primaryDeep} barStyle="light-content" />
 
       {/* Top Header — premium chrome */}
-      <LinearGradient
+      <SafeLinearGradient
         colors={SURFACE.headerGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -834,7 +834,7 @@ export default function HomeScreen({ navigation }) {
             />
           )}
         </View>
-      </LinearGradient>
+      </SafeLinearGradient>
 
       {/* Search + categories — one continuous surface */}
       <View style={styles.stickyShell}>

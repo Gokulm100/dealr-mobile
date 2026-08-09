@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
+import SafeLinearGradient from './SafeLinearGradient';
 import { COLORS, FONTS, SHADOW, SURFACE } from '../utils/theme';
 import { useFontReady, fontFamily } from '../context/FontReadyContext';
 
@@ -25,7 +25,7 @@ export default function ScreenHeader({
   return (
     <>
       <StatusBar backgroundColor={COLORS.primaryDeep} barStyle="light-content" />
-      <LinearGradient
+      <SafeLinearGradient
         colors={SURFACE.headerGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -73,7 +73,7 @@ export default function ScreenHeader({
           </View>
         )}
         {children}
-      </LinearGradient>
+      </SafeLinearGradient>
     </>
   );
 }
