@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AiTextArea from '../components/AiTextArea';
 import { checkAndPromptNotifications } from '../utils/notifications';
+import { GEMINI, SparklesIcon, GradientText, useGradientId } from '../components/geminiBrand';
 
 const KERALA_DISTRICTS = [
   'Thiruvananthapuram', 'Kollam', 'Pathanamthitta', 'Alappuzha', 'Kottayam',
@@ -560,6 +561,79 @@ export default function PostAdScreen({ navigation, route }) {
             </View>
           )}
 
+          {/* Photos + AI vision draft — top of form */}
+          <Text style={styles.label}>Photos</Text>
+          <Text style={styles.hintText}>
+            Add clear photos, then let AI draft the title, category, and description. You still set price and location.
+          </Text>
+          <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages} activeOpacity={0.85}>
+            <Icon name="camera" size={18} color={COLORS.primary} />
+            <Text style={styles.imagePickerText}>
+              {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
+            </Text>
+          </TouchableOpacity>
+
+          {(images.length > 0 || existingImages.length > 0) && (
+            <DraftWithAiButton
+              loading={visionLoading}
+              disabled={visionLoading || !user || images.length === 0}
+              onPress={fillWithAiFromPhotos}
+            />
+          )}
+
+          {aiDraftMeta && (
+            <View style={styles.aiDraftBanner}>
+              <Text style={styles.aiDraftTitle}>AI draft ready — review before posting</Text>
+              <Text style={styles.aiDraftBody}>
+                {aiDraftMeta.applied?.length
+                  ? `Filled: ${aiDraftMeta.applied.join(', ')}.`
+                  : 'No high-confidence fields were filled.'}
+                {' '}Price and location stay manual.
+                {aiDraftMeta.skipped?.length
+                  ? ` Skipped existing: ${aiDraftMeta.skipped.join(', ')}.`
+                  : ''}
+              </Text>
+              {!!Object.keys(aiDraftMeta.confidence || {}).length && (
+                <View style={styles.aiConfRow}>
+                  {Object.entries(aiDraftMeta.confidence).map(([key, value]) => (
+                    <View
+                      key={key}
+                      style={[
+                        styles.aiConfChip,
+                        Number(value) >= 0.6 ? styles.aiConfOk : styles.aiConfLow,
+                      ]}
+                    >
+                      <Text style={styles.aiConfText}>
+                        {key} {Math.round(Number(value) * 100)}%
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {(images.length > 0 || existingImages.length > 0) && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
+              {existingImages.map((uri, idx) => (
+                <View key={`ex-${idx}`} style={styles.imagePreviewWrap}>
+                  <Image source={{ uri }} style={styles.imagePreview} />
+                </View>
+              ))}
+              {images.map((img, idx) => (
+                <View key={`new-${idx}`} style={styles.imagePreviewWrap}>
+                  <Image source={{ uri: img.uri }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    style={styles.removeImg}
+                    onPress={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Icon name="x" size={12} color={COLORS.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
           {/* Title */}
           <Text style={styles.label}>Title *</Text>
           <TextInput
@@ -800,89 +874,6 @@ export default function PostAdScreen({ navigation, route }) {
               }, 300);
             }}
           />
-          <View style={{ height: 10 }} />
-          {/* Images + AI vision draft */}
-          <Text style={styles.label}>Photos</Text>
-          <Text style={styles.hintText}>
-            Add clear photos, then let AI draft the title, category, and description. You still set price and location.
-          </Text>
-          <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages}>
-            <Icon name="camera" size={18} color={COLORS.primary} />
-            <Text style={styles.imagePickerText}>
-              {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
-            </Text>
-          </TouchableOpacity>
-
-          {(images.length > 0 || existingImages.length > 0) && (
-            <TouchableOpacity
-              style={[styles.aiFillBtn, visionLoading && styles.aiFillBtnLoading]}
-              onPress={fillWithAiFromPhotos}
-              disabled={visionLoading || !user || images.length === 0}
-              activeOpacity={0.88}
-            >
-              {visionLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <Icon name="AI" size={16} color={COLORS.white} />
-              )}
-              <Text style={styles.aiFillBtnText}>
-                {visionLoading ? 'Analyzing…' : 'Draft with AI'}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {aiDraftMeta && (
-            <View style={styles.aiDraftBanner}>
-              <Text style={styles.aiDraftTitle}>AI draft ready — review before posting</Text>
-              <Text style={styles.aiDraftBody}>
-                {aiDraftMeta.applied?.length
-                  ? `Filled: ${aiDraftMeta.applied.join(', ')}.`
-                  : 'No high-confidence fields were filled.'}
-                {' '}Price and location stay manual.
-                {aiDraftMeta.skipped?.length
-                  ? ` Skipped existing: ${aiDraftMeta.skipped.join(', ')}.`
-                  : ''}
-              </Text>
-              {!!Object.keys(aiDraftMeta.confidence || {}).length && (
-                <View style={styles.aiConfRow}>
-                  {Object.entries(aiDraftMeta.confidence).map(([key, value]) => (
-                    <View
-                      key={key}
-                      style={[
-                        styles.aiConfChip,
-                        Number(value) >= 0.6 ? styles.aiConfOk : styles.aiConfLow,
-                      ]}
-                    >
-                      <Text style={styles.aiConfText}>
-                        {key} {Math.round(Number(value) * 100)}%
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-
-          {(images.length > 0 || existingImages.length > 0) && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewRow}>
-              {existingImages.map((uri, idx) => (
-                <View key={`ex-${idx}`} style={styles.imagePreviewWrap}>
-                  <Image source={{ uri }} style={styles.imagePreview} />
-                </View>
-              ))}
-              {images.map((img, idx) => (
-                <View key={`new-${idx}`} style={styles.imagePreviewWrap}>
-                  <Image source={{ uri: img.uri }} style={styles.imagePreview} />
-                  <TouchableOpacity
-                    style={styles.removeImg}
-                    onPress={() => setImages(prev => prev.filter((_, i) => i !== idx))}
-                  >
-                    <Icon name="x" size={12} color={COLORS.white} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
           <View style={{ height: 50 }} />
           {/* Submit */}
           <TouchableOpacity
@@ -900,6 +891,41 @@ export default function PostAdScreen({ navigation, route }) {
       </KeyboardAvoidingView>
 
     </View>
+  );
+}
+
+function DraftWithAiButton({ loading, disabled, onPress }) {
+  const iconGradId = useGradientId('draft-ai-icon');
+  const labelGradId = useGradientId('draft-ai-label');
+  const label = loading ? 'Analyzing…' : 'Draft with AI';
+  const labelWidth = loading ? 92 : 102;
+
+  return (
+    <TouchableOpacity
+      style={[styles.aiFillBtn, loading && styles.aiFillBtnLoading, disabled && styles.aiFillBtnDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.88}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={styles.aiFillBtnInner}>
+        {loading ? (
+          <ActivityIndicator size="small" color={GEMINI.purple} />
+        ) : (
+          <SparklesIcon size={15} gradientId={iconGradId} />
+        )}
+        <GradientText
+          text={label}
+          fontSize={13}
+          fontWeight="600"
+          width={labelWidth}
+          height={18}
+          gradientId={labelGradId}
+          align="left"
+        />
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -1083,37 +1109,46 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   aiFillBtn: {
-    marginTop: 10,
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 114, 203, 0.22)',
+    backgroundColor: '#fbf9ff',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    overflow: 'hidden',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  aiFillBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#6d28d9',
-    borderRadius: RADIUS.md,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
   },
   aiFillBtnLoading: {
-    opacity: 0.85,
+    borderColor: 'rgba(155, 114, 203, 0.28)',
   },
-  aiFillBtnText: {
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 14,
+  aiFillBtnDisabled: {
+    opacity: 0.45,
   },
   aiDraftBanner: {
-    marginTop: 12,
-    padding: 14,
+    marginTop: 14,
+    padding: 12,
+    paddingHorizontal: 14,
     borderRadius: RADIUS.md,
-    backgroundColor: '#faf5ff',
+    backgroundColor: '#f7faff',
     borderWidth: 1,
-    borderColor: '#e9d5ff',
+    borderColor: '#d7e6fb',
     gap: 6,
   },
   aiDraftTitle: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#5b21b6',
+    fontWeight: '700',
+    color: COLORS.text,
   },
   aiDraftBody: {
     fontSize: 12,

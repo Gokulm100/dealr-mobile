@@ -230,7 +230,7 @@ export default function CategoryIcon({
         {
           width: isTile ? 34 : 28,
           height: isTile ? 34 : 28,
-          borderRadius: isTile ? 0 : 14,
+          borderRadius: isTile ? 6 : 14,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: badgeBg,

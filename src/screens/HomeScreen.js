@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 6,
     paddingVertical: 11,
-    borderRadius: 0,
+    borderRadius: 8,
     backgroundColor: COLORS.white,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(15, 23, 42, 0.06)',
