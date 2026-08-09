@@ -5,6 +5,7 @@ import {
   StyleSheet, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
 import Icon from '../components/Icon';
+import ScreenHeader from '../components/ScreenHeader';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, API_BASE_URL } from '../utils/api';
@@ -398,9 +399,7 @@ export default function PostAdScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{editingAd ? 'Edit Ad' : 'Post Ad'}</Text>
-      </View>
+      <ScreenHeader title={editingAd ? 'Edit Ad' : 'Post Ad'} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -705,13 +704,6 @@ export default function PostAdScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-  },
-  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
   scroll: { padding: 16 },
   loginWarning: {
     flexDirection: 'row',

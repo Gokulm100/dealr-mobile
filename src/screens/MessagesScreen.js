@@ -5,8 +5,8 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Image, RefreshControl, Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
+import ScreenHeader from '../components/ScreenHeader';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, formatPostedTime } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -17,7 +17,6 @@ const TABS = ['Buying', 'Selling'];
 
 export default function MessagesScreen({ navigation }) {
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const { refresh } = useMessages();
   const [activeTab, setActiveTab] = useState(0); // 0 = Buying, 1 = Selling
   const [buyingChats, setBuyingChats] = useState([]);
@@ -62,9 +61,7 @@ export default function MessagesScreen({ navigation }) {
   if (!user) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
+        <ScreenHeader title="Messages" />
         <View style={styles.center}>
           <Icon name="message-circle" size={48} color={COLORS.border} />
           <Text style={styles.emptyTitle}>Not logged in</Text>
@@ -200,9 +197,7 @@ export default function MessagesScreen({ navigation }) {
 
     return (
       <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
+        <ScreenHeader title="Messages" />
 
         <View style={styles.tabContainer}>
           <View style={styles.tabBar}>
@@ -281,14 +276,6 @@ export default function MessagesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingBottom: 14,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f1f1',
-  },
-  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
 
   tabContainer: {
     paddingHorizontal: 20,

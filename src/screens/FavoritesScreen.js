@@ -5,6 +5,7 @@ import {
   StyleSheet, Image, Alert, RefreshControl,
 } from 'react-native';
 import Icon from '../components/Icon';
+import ScreenHeader from '../components/ScreenHeader';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { apiFetch, mapListing, removeAdFromFavorite, getFavoriteAds } from '../utils/api';
@@ -96,10 +97,10 @@ export default function FavoritesScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Favorites</Text>
-        <Text style={styles.headerCount}>{listings.length} saved</Text>
-      </View>
+      <ScreenHeader
+        title="Favorites"
+        subtitle={`${listings.length} saved`}
+      />
 
       <FlatList
         data={listings}
@@ -127,20 +128,6 @@ export default function FavoritesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 48,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...SHADOW.small,
-  },
-  headerTitle: { color: COLORS.white, fontSize: 28, fontWeight: '800' },
-  headerCount: { color: COLORS.white, fontSize: 14 },
   list: { padding: 14 },
   card: {
     backgroundColor: COLORS.white,
@@ -149,6 +136,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.95)',
     ...SHADOW.small,
   },
   img: { width: 90, height: 90, backgroundColor: COLORS.border },
