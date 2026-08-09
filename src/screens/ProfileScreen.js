@@ -118,7 +118,11 @@ export default function ProfileScreen({ navigation, route }) {
         <ScreenHeader title="Profile" />
 
         <ScrollView contentContainerStyle={styles.centeredContent}>
-          <Text style={styles.welcomeTitle}>Welcome to Dealr</Text>
+          <Text style={styles.welcomeTitle}>
+            Welcome to Dea
+            <Text style={{ color: COLORS.brandAccentL }}>l</Text>
+            r
+          </Text>
           <Text style={styles.welcomeSubtitle}>
             Sign in to post ads, chat with sellers, and manage your listings.
           </Text>
