@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import Icon from '../components/Icon';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../utils/theme';
+import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 
 export default function AdCard({ item, onPress, isFavorite, onToggleFavorite, isTrending, style, compact }) {
   const isNew = item.createdAt && (new Date() - new Date(item.createdAt)) < 5 * 24 * 60 * 60 * 1000;
@@ -182,9 +182,8 @@ const styles = StyleSheet.create({
   },
   soldBadgeTextLarge: {
     color: COLORS.white,
-    fontFamily: FONTS.extrabold,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 2,
   },
   soldBadgeSmall: {
@@ -195,8 +194,7 @@ const styles = StyleSheet.create({
   },
   soldBadgeTextSmall: {
     fontSize: 9,
-    fontFamily: FONTS.bold,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.textMuted,
   },
   textMuted: {
@@ -233,7 +231,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 11,
-    fontFamily: FONTS.bold,
     fontWeight: '700',
     color: COLORS.primaryDark,
   },
@@ -242,8 +239,7 @@ const styles = StyleSheet.create({
   },
   newTagText: {
     fontSize: 10,
-    fontFamily: FONTS.extrabold,
-    fontWeight: '900',
+    fontWeight: '800',
     color: COLORS.white,
   },
   trendingSymbol: {
@@ -292,7 +288,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontFamily: FONTS.bold,
     fontWeight: '700',
     color: COLORS.text,
     flex: 1,
@@ -320,20 +315,17 @@ const styles = StyleSheet.create({
   },
   metaTextCompact: {
     fontSize: 9,
-    fontFamily: FONTS.medium,
     color: COLORS.textMuted,
     flex: 1,
   },
   postedSmall: {
     fontSize: 11,
-    fontFamily: FONTS.medium,
     fontWeight: '500',
     color: '#94a3b8',
     marginTop: 2,
   },
   price: {
     fontSize: 18,
-    fontFamily: FONTS.displayBlack,
     fontWeight: '800',
     color: COLORS.primaryDark,
     letterSpacing: -0.4,
@@ -357,7 +349,6 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    fontFamily: FONTS.medium,
     fontWeight: '500',
     color: COLORS.textMuted,
     flex: 1,
@@ -373,7 +364,6 @@ const styles = StyleSheet.create({
   },
   viewsText: {
     fontSize: 11,
-    fontFamily: FONTS.semibold,
     fontWeight: '600',
     color: COLORS.textMuted,
   },

@@ -19,6 +19,7 @@ import { getStoredUser, getStoredToken } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
 import SplashScreen from './src/components/SplashScreen';
 import { FontReadyProvider } from './src/context/FontReadyContext';
+import AppErrorBoundary from './src/components/AppErrorBoundary';
 
 require('./assets/handshake-mark.png');
 
@@ -129,14 +130,18 @@ function AppContent() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <MessagesProvider>
-          <AppNavigator />
-        </MessagesProvider>
-      </AuthProvider>
+      <AppErrorBoundary>
+        <AuthProvider>
+          <MessagesProvider>
+            <AppNavigator />
+          </MessagesProvider>
+        </AuthProvider>
+      </AppErrorBoundary>
     </SafeAreaProvider>
   );
 }
+
+const FONT_WAIT_MAX_MS = 4000;
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -149,6 +154,7 @@ export default function App() {
     PlusJakartaSans_800ExtraBold,
   });
   const [splashElapsed, setSplashElapsed] = useState(false);
+  const [fontWaitTimedOut, setFontWaitTimedOut] = useState(false);
 
   useEffect(() => {
     if (fontError) {
@@ -161,23 +167,21 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Hold splash until fonts load successfully. Custom fontFamily in screen
-  // StyleSheets will crash Android release if we proceed without them.
-  if (!fontsLoaded || !splashElapsed) {
-    // If fonts permanently failed, still leave splash after the min time so the
-    // app is usable with system fonts (Logo/header gate fontFamily separately).
-    if (fontError && splashElapsed) {
-      return (
-        <FontReadyProvider ready={false}>
-          <AppContent />
-        </FontReadyProvider>
-      );
-    }
-    return <SplashScreen fontsReady={fontsLoaded} />;
+  useEffect(() => {
+    // Never block launch forever if expo-font hangs without resolving.
+    const timer = setTimeout(() => setFontWaitTimedOut(true), FONT_WAIT_MAX_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const fontsReady = !!fontsLoaded && !fontError;
+  const canLeaveSplash = splashElapsed && (fontsReady || !!fontError || fontWaitTimedOut);
+
+  if (!canLeaveSplash) {
+    return <SplashScreen fontsReady={fontsReady} />;
   }
 
   return (
-    <FontReadyProvider ready>
+    <FontReadyProvider ready={fontsReady}>
       <AppContent />
     </FontReadyProvider>
   );

@@ -7,7 +7,7 @@ import {
 import Icon from '../components/Icon';
 import ScreenHeader from '../components/ScreenHeader';
 import { GoogleSignin, statusCodes, isCancelledResponse } from '@react-native-google-signin/google-signin';
-import { COLORS, FONTS, RADIUS, SHADOW } from '../utils/theme';
+import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, apiFetch } from '../utils/api';
 import ReviewModal from '../components/ReviewModal';
@@ -367,7 +367,6 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   welcomeTitle: {
-    fontFamily: FONTS.displayBlack,
     fontSize: 24,
     fontWeight: '800',
     color: COLORS.text,

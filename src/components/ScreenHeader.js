@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   titleBlock: { flex: 1, minWidth: 0 },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    // fontWeight omitted — displayBlack already encodes weight; pairing crashes Android.
     color: COLORS.white,
     letterSpacing: -0.5,
   },

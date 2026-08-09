@@ -14,7 +14,12 @@ export function useFontReady() {
   return useContext(FontReadyContext);
 }
 
-/** Apply a custom fontFamily only when fonts have successfully loaded. */
+/**
+ * Apply a custom fontFamily only when fonts have successfully loaded.
+ * Always clears fontWeight — pairing a weight-specific family (e.g. Sora_800ExtraBold)
+ * with fontWeight crashes Android release builds (native Typeface create).
+ */
 export function fontFamily(ready, family) {
-  return ready && family ? { fontFamily: family } : null;
+  if (!ready || !family) return null;
+  return { fontFamily: family, fontWeight: 'normal' };
 }

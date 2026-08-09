@@ -155,9 +155,11 @@ export default function SplashScreen({ fontsReady = false }) {
             {
               fontSize: WORD_SIZE,
               lineHeight: WORD_SIZE + 6,
-              // Only apply after Font.loadAsync — using an unloaded custom
-              // fontFamily can crash the release build on Android.
-              ...(fontsReady ? { fontFamily: BRAND.wordmarkFont } : null),
+              // Only apply after Font.loadAsync. Never pair a weight-specific
+              // fontFamily with fontWeight — that hard-crashes Android release.
+              ...(fontsReady
+                ? { fontFamily: BRAND.wordmarkFont, fontWeight: 'normal' }
+                : { fontWeight: '800' }),
             },
           ]}
           accessibilityRole="header"
@@ -189,7 +191,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   wordmark: {
-    fontWeight: '800',
     letterSpacing: -1,
     textAlign: 'center',
   },

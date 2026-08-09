@@ -19,7 +19,7 @@ import AdCard from '../components/AdCard';
 import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
-import { COLORS, FONTS, RADIUS, SHADOW, SURFACE } from '../utils/theme';
+import {COLORS, RADIUS, SHADOW, SURFACE} from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
 const LIMIT = 8;
@@ -1019,13 +1019,11 @@ const styles = StyleSheet.create({
   },
   quickSubPillText: {
     fontSize: 11,
-    fontFamily: FONTS.semibold,
     fontWeight: '600',
     color: COLORS.textMuted,
   },
   quickSubPillTextActive: {
     color: COLORS.white,
-    fontFamily: FONTS.bold,
     fontWeight: '700',
   },
   quickCategoryTile: {
@@ -1088,15 +1086,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    fontFamily: FONTS.medium,
-    fontWeight: '500',
     color: COLORS.text,
     height: '100%',
   },
   locationInput: {
     flex: 1,
     fontSize: 13,
-    fontFamily: FONTS.medium,
     color: COLORS.text,
     height: '100%',
   },
@@ -1445,7 +1440,6 @@ const styles = StyleSheet.create({
   },
   recentTitle: {
     fontSize: 15,
-    fontFamily: FONTS.displayBlack,
     fontWeight: '800',
     color: COLORS.text,
     letterSpacing: -0.4,
@@ -1477,7 +1471,6 @@ const styles = StyleSheet.create({
   },
   recentPrice: {
     fontSize: 12,
-    fontFamily: FONTS.displayBlack,
     fontWeight: '800',
     color: COLORS.primaryDark,
     letterSpacing: -0.2,
@@ -1497,7 +1490,6 @@ const styles = StyleSheet.create({
   },
   recommendationTitle: {
     fontSize: 17,
-    fontFamily: FONTS.displayBlack,
     fontWeight: '800',
     color: COLORS.text,
     letterSpacing: -0.5,

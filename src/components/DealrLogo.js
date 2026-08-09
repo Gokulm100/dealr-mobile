@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wordmark: {
-    fontWeight: '800',
+    // Weight comes from Sora_800ExtraBold via fontFamily(); do not set fontWeight.
   },
   tagline: {
     fontWeight: '600',
