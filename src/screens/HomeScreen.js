@@ -8,7 +8,7 @@ import {
 import Icon from '../components/Icon';
 import AdCard from '../components/AdCard';
 import CategoryFilter from '../components/CategoryFilter';
-import { apiFetch, mapListing, API_BASE_URL } from '../utils/api';
+import { apiFetch, mapListing } from '../utils/api';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 
