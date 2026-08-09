@@ -1,7 +1,14 @@
 // App.js
 import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useFonts, Sora_800ExtraBold } from '@expo-google-fonts/sora';
+import { useFonts, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { AuthProvider } from './src/context/AuthContext';
@@ -118,7 +125,15 @@ function AppContent() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ Sora_800ExtraBold });
+  const [fontsLoaded] = useFonts({
+    Sora_700Bold,
+    Sora_800ExtraBold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
   const [splashElapsed, setSplashElapsed] = useState(false);
 
   useEffect(() => {

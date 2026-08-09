@@ -14,10 +14,10 @@ export default function DealrLogo({
   style,
 }) {
   const sizeMap = {
-    sm: { word: 20, line: 24, tagline: 9, tracking: -0.6 },
-    md: { word: 24, line: 28, tagline: 10, tracking: -0.7 },
-    lg: { word: 28, line: 32, tagline: 10, tracking: -0.7 },
-    title: { word: 36, line: 40, tagline: 11, tracking: -0.9 },
+    sm: { word: 20, line: 24, tagline: 9, tracking: -0.7 },
+    md: { word: 24, line: 28, tagline: 10, tracking: -0.8 },
+    lg: { word: 28, line: 32, tagline: 10, tracking: -0.9 },
+    title: { word: 34, line: 38, tagline: 11, tracking: -1.1 },
   };
   const metrics = sizeMap[size] || sizeMap.md;
   const markSize = size === 'lg' || size === 'title' ? 46 : size === 'sm' ? 30 : 38;

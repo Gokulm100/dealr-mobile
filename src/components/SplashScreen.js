@@ -17,7 +17,7 @@ function SplashGradient() {
         <LinearGradient id="splashBg" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%" stopColor="#5ba8ff" />
           <Stop offset="55%" stopColor={COLORS.splashBg} />
-          <Stop offset="100%" stopColor="#2563d9" />
+          <Stop offset="100%" stopColor={COLORS.primaryDeep || '#1a3fbf'} />
         </LinearGradient>
       </Defs>
       <Rect x="0" y="0" width={SCREEN_WIDTH} height={SCREEN_HEIGHT} fill="url(#splashBg)" />
