@@ -16,7 +16,7 @@ import Icon from '../components/Icon';
 import DealrLogo from '../components/DealrLogo';
 import SafeLinearGradient from '../components/SafeLinearGradient';
 import AdCard from '../components/AdCard';
-import CategoryIcon from '../components/CategoryIcon';
+import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
 import {COLORS, RADIUS, SHADOW, SURFACE} from '../utils/theme';
@@ -664,6 +664,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderQuickCategoryFilter = () => (
     <View style={styles.quickCategorySection}>
+      <Text style={styles.browseCategoriesLabel}>Browse Categories</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -671,28 +672,30 @@ export default function HomeScreen({ navigation }) {
       >
         {categories.map((cat) => {
           const active = selectedCategory === cat.name;
+          const theme = getCategoryTheme(cat.name);
           return (
             <TouchableOpacity
               key={`quick-${cat.id}`}
               style={[
                 styles.quickCategoryTile,
                 active && styles.quickCategoryTileActive,
+                active && { borderColor: theme.icon },
               ]}
               onPress={() => handleQuickCategorySelect(cat)}
               activeOpacity={0.88}
             >
               <CategoryIcon
                 name={cat.name}
-                size={18}
+                size={22}
                 active={active}
                 variant="tile"
-                colored
                 style={styles.quickCategoryIconBadge}
               />
               <Text
                 style={[
                   styles.quickCategoryText,
                   active && styles.quickCategoryTextActive,
+                  active && { color: theme.icon },
                 ]}
                 numberOfLines={2}
               >
@@ -738,17 +741,22 @@ export default function HomeScreen({ navigation }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tagsScroll}
         >
-          {activeFilters.map((f) => (
-            <TouchableOpacity
-              key={f.type}
-              style={styles.filterTag}
-              onPress={() => clearFilter(f.type)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.filterTagText} numberOfLines={1}>{f.label}</Text>
-              <Icon name="x" size={10} color={COLORS.primary} style={{ marginLeft: 6 }} />
-            </TouchableOpacity>
-          ))}
+          {activeFilters.map((f) => {
+            const theme = f.type === 'category' || f.type === 'subCategory'
+              ? getCategoryTheme(selectedCategory)
+              : { icon: COLORS.primary, bg: COLORS.primarySoft };
+            return (
+              <TouchableOpacity
+                key={f.type}
+                style={[styles.filterTag, { backgroundColor: theme.bg, borderColor: `${theme.icon}33` }]}
+                onPress={() => clearFilter(f.type)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterTagText, { color: theme.icon }]} numberOfLines={1}>{f.label}</Text>
+                <Icon name="x" size={10} color={theme.icon} style={{ marginLeft: 6 }} />
+              </TouchableOpacity>
+            );
+          })}
           <TouchableOpacity
             onPress={() => {
               setSearchQuery(''); setSearchInput('');
@@ -980,84 +988,98 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   quickCategorySection: {
-    paddingBottom: 12,
+    paddingBottom: 14,
+  },
+  browseCategoriesLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    letterSpacing: -0.2,
   },
   quickCategoryTrack: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    gap: 10,
+    paddingVertical: 4,
+    paddingBottom: 10,
+    gap: 12,
     alignItems: 'flex-start',
   },
   quickSubCategoryTrack: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
     gap: 8,
     alignItems: 'center',
   },
   quickSubPill: {
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingVertical: 9,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOW.small,
   },
   quickSubPillActive: {
     backgroundColor: COLORS.primary,
-    borderColor: 'transparent',
+    borderColor: COLORS.primary,
     shadowColor: '#1e4fd6',
     shadowOpacity: 0.22,
     shadowRadius: 10,
     elevation: 4,
   },
   quickSubPillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textMuted,
+    color: COLORS.text,
   },
   quickSubPillTextActive: {
     color: COLORS.white,
     fontWeight: '700',
   },
   quickCategoryTile: {
-    width: 78,
-    minHeight: 82,
+    width: 92,
+    minHeight: 96,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 12,
-    borderRadius: RADIUS.lg,
-    backgroundColor: COLORS.cardSolid,
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.95)',
-    ...SHADOW.small,
+    gap: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 14,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 14,
+    elevation: 5,
   },
   quickCategoryTileActive: {
-    backgroundColor: COLORS.primarySoft,
-    borderColor: COLORS.primary,
-    ...SHADOW.medium,
+    backgroundColor: COLORS.white,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 7,
     transform: [{ translateY: -1 }],
   },
   quickCategoryIconBadge: {
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   quickCategoryText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textMuted,
-    letterSpacing: -0.1,
+    color: COLORS.text,
+    letterSpacing: -0.15,
     textAlign: 'center',
-    lineHeight: 13,
+    lineHeight: 14,
   },
   quickCategoryTextActive: {
     fontWeight: '700',
-    color: COLORS.primary,
   },
   searchBox: {
     flex: 1,
@@ -1217,7 +1239,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#eff6ff',
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.full,
     borderWidth: 1,
     borderColor: 'rgba(55, 140, 246, 0.15)',
   },

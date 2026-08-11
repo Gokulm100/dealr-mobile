@@ -170,16 +170,16 @@ const NAME_TO_ICON = {
 };
 
 const CATEGORY_THEMES = {
-  all: { icon: '#378cf6', bg: '#eef5ff' },
-  electronics: { icon: '#4f46e5', bg: '#eef2ff' },
-  furniture: { icon: '#d97706', bg: '#fff7ed' },
-  vehicles: { icon: '#0284c7', bg: '#e0f2fe' },
-  'real-estate': { icon: '#059669', bg: '#ecfdf5' },
-  fashion: { icon: '#db2777', bg: '#fdf2f8' },
-  books: { icon: '#7c3aed', bg: '#f5f3ff' },
-  sports: { icon: '#16a34a', bg: '#f0fdf4' },
-  services: { icon: '#475569', bg: '#f1f5f9' },
-  other: { icon: '#378cf6', bg: '#eef5ff' },
+  all: { icon: '#378cf6', bg: '#eef5ff', badge: '#60a5fa' },
+  electronics: { icon: '#4f46e5', bg: '#eef2ff', badge: '#818cf8' },
+  furniture: { icon: '#d97706', bg: '#fff7ed', badge: '#fbbf24' },
+  vehicles: { icon: '#0284c7', bg: '#e0f2fe', badge: '#38bdf8' },
+  'real-estate': { icon: '#059669', bg: '#ecfdf5', badge: '#34d399' },
+  fashion: { icon: '#db2777', bg: '#fdf2f8', badge: '#f472b6' },
+  books: { icon: '#7c3aed', bg: '#f5f3ff', badge: '#a78bfa' },
+  sports: { icon: '#16a34a', bg: '#f0fdf4', badge: '#4ade80' },
+  services: { icon: '#475569', bg: '#f1f5f9', badge: '#94a3b8' },
+  other: { icon: '#378cf6', bg: '#eef5ff', badge: '#60a5fa' },
 };
 
 function resolveIconKey(name) {
@@ -216,21 +216,39 @@ export default function CategoryIcon({
   const Icon = ICONS[iconKey] || ICONS.other;
   const isTile = variant === 'tile';
   const theme = getCategoryTheme(name);
-  const useColor = colored || (isTile && color == null);
+
+  // Browse tiles: soft tinted badge + white glyph
+  if (isTile) {
+    return (
+      <View
+        style={[
+          {
+            width: 44,
+            height: 44,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.badge || theme.icon,
+          },
+          style,
+        ]}
+      >
+        <Icon size={size} color={COLORS.white} />
+      </View>
+    );
+  }
+
+  const useColor = colored || color == null;
   const iconColor = useColor ? theme.icon : (color || '#64748b');
-  const badgeBg = useColor
-    ? (active && isTile ? COLORS.white : theme.bg)
-    : active
-      ? COLORS.white
-      : '#f4f7fb';
+  const badgeBg = active ? COLORS.white : (useColor ? theme.bg : '#f4f7fb');
 
   return (
     <View
       style={[
         {
-          width: isTile ? 34 : 28,
-          height: isTile ? 34 : 28,
-          borderRadius: isTile ? 6 : 14,
+          width: 28,
+          height: 28,
+          borderRadius: 14,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: badgeBg,
