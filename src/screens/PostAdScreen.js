@@ -541,9 +541,66 @@ export default function PostAdScreen({ navigation, route }) {
 
   const charCount = form.description.length;
 
+  const hasFormContent = !!(
+    form.title.trim()
+    || form.price.trim()
+    || form.description.trim()
+    || selectedCategory
+    || selectedSubCategory
+    || selectedLocation
+    || locationSearch.trim()
+    || images.length
+    || existingImages.length
+    || aiDraftMeta
+    || newLocation
+  );
+
+  const clearForm = () => {
+    setForm({ title: '', price: '', description: '' });
+    setSelectedCategory('');
+    setSelectedSubCategory('');
+    setLocationSearch('');
+    setSelectedLocation(null);
+    setShowLocationDropdown(false);
+    setNewLocation(null);
+    setDistrictDropdownOpen(false);
+    setDistrictSearch('');
+    slideAnim.setValue(0);
+    setImages([]);
+    setExistingImages([]);
+    setAiDraftMeta(null);
+  };
+
+  const confirmClearForm = () => {
+    if (!hasFormContent) return;
+    Alert.alert(
+      'Clear form?',
+      'This will remove all photos and fields you’ve filled in.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: clearForm },
+      ],
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <ScreenHeader title={editingAd ? 'Edit Ad' : 'Post Ad'} />
+      <ScreenHeader
+        title={editingAd ? 'Edit Ad' : 'Post Ad'}
+        right={
+          <TouchableOpacity
+            onPress={confirmClearForm}
+            disabled={!hasFormContent}
+            style={[styles.clearHeaderBtn, !hasFormContent && styles.clearHeaderBtnDisabled]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Clear form"
+          >
+            <Icon name="refresh" size={14} color={COLORS.white} />
+            <Text style={styles.clearHeaderText}>Clear</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -566,20 +623,24 @@ export default function PostAdScreen({ navigation, route }) {
           <Text style={styles.hintText}>
             Add clear photos, then let AI draft the title, category, and description. You still set price and location.
           </Text>
-          <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImages} activeOpacity={0.85}>
-            <Icon name="camera" size={18} color={COLORS.primary} />
-            <Text style={styles.imagePickerText}>
-              {images.length > 0 ? `${images.length} image(s) selected` : 'Add Photos'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.photoActionsRow}>
+            <TouchableOpacity
+              style={[styles.imagePickerBtn, styles.imagePickerBtnFlex]}
+              onPress={pickImages}
+              activeOpacity={0.85}
+            >
+              <Icon name="camera" size={18} color={COLORS.primary} />
+              <Text style={styles.imagePickerText} numberOfLines={1}>
+                {images.length > 0 ? `${images.length} photo${images.length === 1 ? '' : 's'}` : 'Add Photos'}
+              </Text>
+            </TouchableOpacity>
 
-          {(images.length > 0 || existingImages.length > 0) && (
             <DraftWithAiButton
               loading={visionLoading}
               disabled={visionLoading || !user || images.length === 0}
               onPress={fillWithAiFromPhotos}
             />
-          )}
+          </View>
 
           {aiDraftMeta && (
             <View style={styles.aiDraftBanner}>
@@ -1089,18 +1150,45 @@ const styles = StyleSheet.create({
     ...SHADOW.small,
   },
   locTickBtnDisabled: { opacity: 0.3 },
+  clearHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  },
+  clearHeaderBtnDisabled: { opacity: 0.35 },
+  clearHeaderText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  photoActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   imagePickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.md,
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
     borderStyle: 'dashed',
   },
-  imagePickerText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+  imagePickerBtnFlex: {
+    flex: 1,
+    minWidth: 0,
+  },
+  imagePickerText: { color: COLORS.primary, fontWeight: '600', fontSize: 14, flexShrink: 1 },
   hintText: {
     fontSize: 12,
     color: COLORS.textMuted,
@@ -1109,14 +1197,13 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   aiFillBtn: {
-    alignSelf: 'flex-start',
-    marginTop: 12,
+    flexShrink: 0,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(155, 114, 203, 0.22)',
     backgroundColor: '#fbf9ff',
-    paddingVertical: 9,
-    paddingHorizontal: 16,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     overflow: 'hidden',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 1 },
