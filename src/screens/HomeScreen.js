@@ -677,22 +677,36 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               key={`quick-${cat.id}`}
               style={[
-                styles.quickCategoryTileShadow,
-                active && styles.quickCategoryTileShadowActive,
+                styles.quickCategoryTileOuter,
+                active && styles.quickCategoryTileOuterActive,
                 active && { shadowColor: theme.icon },
               ]}
               onPress={() => handleQuickCategorySelect(cat)}
-              activeOpacity={0.9}
+              activeOpacity={0.88}
             >
+              {/* Depth slab — reads as extruded thickness under the face */}
+              <View
+                style={[
+                  styles.quickCategoryTileSlab,
+                  active && { backgroundColor: theme.badge || theme.icon },
+                ]}
+                pointerEvents="none"
+              />
               <View
                 style={[
                   styles.quickCategoryTileFace,
                   active && styles.quickCategoryTileFaceActive,
-                  active && { borderColor: theme.icon },
+                  active && {
+                    borderColor: theme.icon,
+                    borderBottomColor: 'rgba(15, 23, 42, 0.18)',
+                  },
                 ]}
               >
-                {/* Top highlight edge for 3D bevel */}
-                <View style={styles.quickCategoryTileHighlight} pointerEvents="none" />
+                {/* Soft top sheen */}
+                <View style={styles.quickCategoryTileSheen} pointerEvents="none" />
+                {/* Hard bevel rim (top-left light / bottom-right shade) */}
+                <View style={styles.quickCategoryTileBevelTop} pointerEvents="none" />
+                <View style={styles.quickCategoryTileBevelBottom} pointerEvents="none" />
                 <CategoryIcon
                   name={cat.name}
                   size={22}
@@ -1009,40 +1023,43 @@ const styles = StyleSheet.create({
   },
   quickCategoryTrack: {
     paddingHorizontal: 16,
-    paddingVertical: 4,
-    paddingBottom: 10,
-    gap: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
+    gap: 14,
     alignItems: 'flex-start',
   },
   quickSubCategoryTrack: {
     paddingHorizontal: 16,
-    paddingTop: 4,
-    gap: 8,
+    paddingTop: 6,
+    gap: 10,
     alignItems: 'center',
   },
   quickSubPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    borderBottomColor: 'rgba(15, 23, 42, 0.10)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'rgba(255,255,255,1)',
+    borderBottomColor: 'rgba(15, 23, 42, 0.14)',
+    borderRightColor: 'rgba(15, 23, 42, 0.08)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.10,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 6,
   },
   quickSubPillActive: {
     backgroundColor: COLORS.primary,
-    borderColor: 'rgba(255,255,255,0.35)',
-    borderBottomColor: 'rgba(15, 23, 42, 0.2)',
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderTopColor: 'rgba(255,255,255,0.55)',
+    borderBottomColor: 'rgba(15, 23, 42, 0.28)',
     shadowColor: '#1e4fd6',
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 7,
-    transform: [{ translateY: -1 }],
+    shadowOpacity: 0.42,
+    shadowRadius: 16,
+    elevation: 10,
+    transform: [{ translateY: -2 }],
   },
   quickSubPillText: {
     fontSize: 12,
@@ -1053,26 +1070,37 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '700',
   },
-  quickCategoryTileShadow: {
-    width: 96,
-    borderRadius: 24,
+  quickCategoryTileOuter: {
+    width: 98,
+    borderRadius: 26,
     backgroundColor: 'transparent',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  quickCategoryTileShadowActive: {
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.22,
     shadowRadius: 22,
     elevation: 12,
-    transform: [{ translateY: -2 }, { scale: 1.03 }],
+    marginBottom: 2,
+  },
+  quickCategoryTileOuterActive: {
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.34,
+    shadowRadius: 28,
+    elevation: 16,
+    transform: [{ translateY: -4 }, { scale: 1.045 }],
+  },
+  quickCategoryTileSlab: {
+    position: 'absolute',
+    left: 2,
+    right: 2,
+    top: 8,
+    bottom: -5,
+    borderRadius: 24,
+    backgroundColor: '#c5cedb',
+    opacity: 0.95,
   },
   quickCategoryTileFace: {
-    width: 96,
-    minHeight: 102,
+    width: 98,
+    minHeight: 108,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
@@ -1080,26 +1108,51 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 14,
     borderRadius: 24,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#fbfcfe',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.95)',
-    borderBottomColor: 'rgba(15, 23, 42, 0.08)',
-    borderRightColor: 'rgba(15, 23, 42, 0.06)',
+    borderColor: 'rgba(255,255,255,1)',
+    borderTopColor: 'rgba(255,255,255,1)',
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(15, 23, 42, 0.14)',
+    borderRightColor: 'rgba(15, 23, 42, 0.10)',
     overflow: 'hidden',
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.9,
+    shadowRadius: 1,
+    elevation: 2,
   },
   quickCategoryTileFaceActive: {
     backgroundColor: '#ffffff',
-    borderBottomColor: 'rgba(15, 23, 42, 0.12)',
+    borderWidth: 2,
   },
-  quickCategoryTileHighlight: {
+  quickCategoryTileSheen: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 28,
+    height: 42,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.78)',
+  },
+  quickCategoryTileBevelTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  quickCategoryTileBevelBottom: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: 0,
+    height: 3,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.06)',
   },
   quickCategoryText: {
     fontSize: 12,
