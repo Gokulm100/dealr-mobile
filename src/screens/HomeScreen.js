@@ -16,7 +16,7 @@ import Icon from '../components/Icon';
 import DealrLogo from '../components/DealrLogo';
 import SafeLinearGradient from '../components/SafeLinearGradient';
 import AdCard from '../components/AdCard';
-import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
+import CategoryIcon from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
 import {COLORS, RADIUS, SHADOW, SURFACE} from '../utils/theme';
@@ -671,25 +671,19 @@ export default function HomeScreen({ navigation }) {
       >
         {categories.map((cat) => {
           const active = selectedCategory === cat.name;
-          const theme = getCategoryTheme(cat.name);
           return (
             <TouchableOpacity
               key={`quick-${cat.id}`}
               style={[
                 styles.quickCategoryTile,
                 active && styles.quickCategoryTileActive,
-                active && {
-                  shadowColor: theme.icon,
-                  borderColor: `${theme.icon}33`,
-                  backgroundColor: theme.bg,
-                },
               ]}
               onPress={() => handleQuickCategorySelect(cat)}
               activeOpacity={0.88}
             >
               <CategoryIcon
                 name={cat.name}
-                size={16}
+                size={18}
                 active={active}
                 variant="tile"
                 colored
@@ -698,7 +692,7 @@ export default function HomeScreen({ navigation }) {
               <Text
                 style={[
                   styles.quickCategoryText,
-                  active && [styles.quickCategoryTextActive, { color: theme.icon }],
+                  active && styles.quickCategoryTextActive,
                 ]}
                 numberOfLines={2}
               >
@@ -1027,29 +1021,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   quickCategoryTile: {
-    width: 70,
-    minHeight: 76,
+    width: 78,
+    minHeight: 82,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
+    gap: 8,
     paddingHorizontal: 6,
-    paddingVertical: 11,
-    borderRadius: 8,
-    backgroundColor: COLORS.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(15, 23, 42, 0.06)',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingVertical: 12,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.cardSolid,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.95)',
+    ...SHADOW.small,
   },
   quickCategoryTileActive: {
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 7,
+    backgroundColor: COLORS.primarySoft,
+    borderColor: COLORS.primary,
+    ...SHADOW.medium,
     transform: [{ translateY: -1 }],
   },
   quickCategoryIconBadge: {
@@ -1060,15 +1048,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   quickCategoryText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: COLORS.textMuted,
     letterSpacing: -0.1,
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 13,
   },
   quickCategoryTextActive: {
     fontWeight: '700',
+    color: COLORS.primary,
   },
   searchBox: {
     flex: 1,
