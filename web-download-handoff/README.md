@@ -1,9 +1,9 @@
-# Dealr 1.0.3 release (full premium UI + category tiles)
+# Dealr 1.0.4 — soft browse-categories UI
 
-Built from `cursor/post-ad-ai-clear-5ce9` + category tile polish.
+Full premium base + soft elevated category cards (colored icon badges, tinted active borders).
 
-- Repo: `distribution/dealr-1.0.3.apk`
-- Artifact: `/opt/cursor/artifacts/Dealr-1.0.3-full-release.apk`
-- GitHub: https://github.com/Gokulm100/dealr-mobile/raw/cursor/category-filter-aesthetic-1867/distribution/dealr-1.0.3.apk
-- Mirror: https://tmpfiles.org/dl/w4w1Dg6uPtQV/dealr-1.0.3-full-release.apk
-- `com.dealr.app` · 1.0.3 · versionCode 3 · **debug-signed**
+- `distribution/dealr-1.0.4.apk`
+- Artifact: `/opt/cursor/artifacts/Dealr-1.0.4-soft-categories-release.apk`
+- GitHub: https://github.com/Gokulm100/dealr-mobile/raw/cursor/category-filter-aesthetic-1867/distribution/dealr-1.0.4.apk
+- Mirror: https://tmpfiles.org/dl/wKwuDlKQG9jU/dealr-1.0.4-soft-categories-release.apk
+- `com.dealr.app` · 1.0.4 · versionCode 4 · debug-signed
