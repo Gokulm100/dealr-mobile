@@ -217,23 +217,57 @@ export default function CategoryIcon({
   const isTile = variant === 'tile';
   const theme = getCategoryTheme(name);
 
-  // Browse tiles: soft tinted badge + white glyph
+  // Browse tiles: raised 3D badge (colored face + highlight + depth shadow)
   if (isTile) {
+    const badgeColor = theme.badge || theme.icon;
     return (
       <View
         style={[
           {
-            width: 44,
-            height: 44,
-            borderRadius: 14,
+            width: 48,
+            height: 48,
+            borderRadius: 16,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: theme.badge || theme.icon,
+            backgroundColor: 'transparent',
+            shadowColor: badgeColor,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.35,
+            shadowRadius: 10,
+            elevation: 6,
+            zIndex: 1,
           },
           style,
         ]}
       >
-        <Icon size={size} color={COLORS.white} />
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: badgeColor,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.45)',
+            borderBottomColor: 'rgba(15,23,42,0.18)',
+            borderRightColor: 'rgba(15,23,42,0.12)',
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 18,
+              backgroundColor: 'rgba(255,255,255,0.28)',
+            }}
+          />
+          <Icon size={size} color={COLORS.white} />
+        </View>
       </View>
     );
   }

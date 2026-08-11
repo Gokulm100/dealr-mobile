@@ -677,30 +677,39 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity
               key={`quick-${cat.id}`}
               style={[
-                styles.quickCategoryTile,
-                active && styles.quickCategoryTileActive,
-                active && { borderColor: theme.icon },
+                styles.quickCategoryTileShadow,
+                active && styles.quickCategoryTileShadowActive,
+                active && { shadowColor: theme.icon },
               ]}
               onPress={() => handleQuickCategorySelect(cat)}
-              activeOpacity={0.88}
+              activeOpacity={0.9}
             >
-              <CategoryIcon
-                name={cat.name}
-                size={22}
-                active={active}
-                variant="tile"
-                style={styles.quickCategoryIconBadge}
-              />
-              <Text
+              <View
                 style={[
-                  styles.quickCategoryText,
-                  active && styles.quickCategoryTextActive,
-                  active && { color: theme.icon },
+                  styles.quickCategoryTileFace,
+                  active && styles.quickCategoryTileFaceActive,
+                  active && { borderColor: theme.icon },
                 ]}
-                numberOfLines={2}
               >
-                {cat.name}
-              </Text>
+                {/* Top highlight edge for 3D bevel */}
+                <View style={styles.quickCategoryTileHighlight} pointerEvents="none" />
+                <CategoryIcon
+                  name={cat.name}
+                  size={22}
+                  active={active}
+                  variant="tile"
+                />
+                <Text
+                  style={[
+                    styles.quickCategoryText,
+                    active && styles.quickCategoryTextActive,
+                    active && { color: theme.icon },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {cat.name}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -1017,16 +1026,23 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOW.small,
+    borderColor: 'rgba(255,255,255,0.9)',
+    borderBottomColor: 'rgba(15, 23, 42, 0.10)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 10,
+    elevation: 4,
   },
   quickSubPillActive: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderBottomColor: 'rgba(15, 23, 42, 0.2)',
     shadowColor: '#1e4fd6',
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 7,
+    transform: [{ translateY: -1 }],
   },
   quickSubPillText: {
     fontSize: 12,
@@ -1037,49 +1053,65 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '700',
   },
-  quickCategoryTile: {
-    width: 92,
-    minHeight: 96,
+  quickCategoryTileShadow: {
+    width: 96,
+    borderRadius: 24,
+    backgroundColor: 'transparent',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  quickCategoryTileShadowActive: {
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.28,
+    shadowRadius: 22,
+    elevation: 12,
+    transform: [{ translateY: -2 }, { scale: 1.03 }],
+  },
+  quickCategoryTileFace: {
+    width: 96,
+    minHeight: 102,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 8,
-    paddingVertical: 14,
-    borderRadius: 22,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderRadius: 24,
     backgroundColor: COLORS.white,
     borderWidth: 1.5,
-    borderColor: 'transparent',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.10,
-    shadowRadius: 14,
-    elevation: 5,
+    borderColor: 'rgba(255,255,255,0.95)',
+    borderBottomColor: 'rgba(15, 23, 42, 0.08)',
+    borderRightColor: 'rgba(15, 23, 42, 0.06)',
+    overflow: 'hidden',
   },
-  quickCategoryTileActive: {
-    backgroundColor: COLORS.white,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    elevation: 7,
-    transform: [{ translateY: -1 }],
+  quickCategoryTileFaceActive: {
+    backgroundColor: '#ffffff',
+    borderBottomColor: 'rgba(15, 23, 42, 0.12)',
   },
-  quickCategoryIconBadge: {
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
+  quickCategoryTileHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.72)',
   },
   quickCategoryText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
     letterSpacing: -0.15,
     textAlign: 'center',
     lineHeight: 14,
+    zIndex: 1,
   },
   quickCategoryTextActive: {
-    fontWeight: '700',
+    fontWeight: '800',
   },
   searchBox: {
     flex: 1,
