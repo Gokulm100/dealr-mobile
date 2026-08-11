@@ -575,7 +575,7 @@ export default function PostAdScreen({ navigation, route }) {
     if (!hasFormContent) return;
     Alert.alert(
       'Clear form?',
-      'This will remove all photos and fields you’ve filled in.',
+      'This will remove all photos and fields you have filled in.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Clear', style: 'destructive', onPress: clearForm },
