@@ -1,0 +1,587 @@
+diff --git a/public/app.html b/public/app.html
+new file mode 100644
+index 0000000..c670953
+--- /dev/null
++++ b/public/app.html
+@@ -0,0 +1,236 @@
++<!DOCTYPE html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <title>Get the Dealr app – Android</title>
++    <meta
++      name="description"
++      content="Download the Dealr Android app. Buy and sell locally in Kerala. Google Play coming soon."
++    />
++    <link rel="icon" href="/favicon.ico" sizes="any" />
++    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
++    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
++    <meta name="theme-color" content="#378cf6" />
++    <link rel="preconnect" href="https://fonts.googleapis.com" />
++    <link
++      href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
++      rel="stylesheet"
++    />
++    <style>
++      :root {
++        --primary: #378cf6;
++        --primary-dark: #1e4fd6;
++        --text: #0f172a;
++        --muted: #64748b;
++        --bg: #f8fafc;
++        --card: #ffffff;
++        --border: #e2e8f0;
++        --info-bg: #eff6ff;
++        --info-border: #bfdbfe;
++        --info-text: #1e3a8a;
++        --warn-bg: #fffbeb;
++        --warn-border: #fde68a;
++        --warn-text: #92400e;
++      }
++      * { box-sizing: border-box; }
++      body {
++        margin: 0;
++        font-family: Inter, system-ui, sans-serif;
++        color: var(--text);
++        background:
++          radial-gradient(ellipse 80% 50% at 10% -10%, rgba(55, 140, 246, 0.18), transparent 55%),
++          radial-gradient(ellipse 60% 40% at 100% 0%, rgba(14, 165, 233, 0.12), transparent 50%),
++          var(--bg);
++        line-height: 1.65;
++      }
++      .wrap {
++        max-width: 720px;
++        margin: 0 auto;
++        padding: 32px 20px 64px;
++      }
++      .brand {
++        font-family: Sora, Inter, sans-serif;
++        font-weight: 800;
++        font-size: 28px;
++        color: var(--primary);
++        letter-spacing: -0.03em;
++        text-decoration: none;
++        display: inline-flex;
++        align-items: center;
++        gap: 10px;
++      }
++      .brand img {
++        width: 36px;
++        height: 36px;
++        border-radius: 10px;
++      }
++      .brand span { color: var(--text); }
++      h1 {
++        font-family: Sora, Inter, sans-serif;
++        font-size: 30px;
++        font-weight: 800;
++        letter-spacing: -0.03em;
++        margin: 22px 0 8px;
++        line-height: 1.2;
++      }
++      .lead {
++        color: var(--muted);
++        font-size: 16px;
++        margin: 0 0 22px;
++        max-width: 34em;
++      }
++      .banner {
++        display: flex;
++        gap: 12px;
++        align-items: flex-start;
++        background: var(--info-bg);
++        border: 1px solid var(--info-border);
++        color: var(--info-text);
++        border-radius: 12px;
++        padding: 14px 16px;
++        font-size: 14px;
++        margin-bottom: 20px;
++      }
++      .actions {
++        display: flex;
++        flex-wrap: wrap;
++        gap: 12px;
++        margin-bottom: 22px;
++      }
++      .btn {
++        display: inline-flex;
++        align-items: center;
++        justify-content: center;
++        gap: 8px;
++        border-radius: 12px;
++        padding: 14px 20px;
++        font-size: 15px;
++        font-weight: 800;
++        font-family: Sora, Inter, sans-serif;
++        text-decoration: none;
++        border: 1px solid transparent;
++        cursor: pointer;
++      }
++      .btn-primary {
++        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
++        color: #fff;
++        box-shadow: 0 10px 24px rgba(30, 79, 214, 0.22);
++      }
++      .btn-primary:hover { filter: brightness(1.05); }
++      .btn-secondary {
++        background: #fff;
++        color: var(--text);
++        border-color: var(--border);
++      }
++      .btn-secondary:hover { background: #f8fafc; }
++      .card {
++        background: var(--card);
++        border: 1px solid var(--border);
++        border-radius: 14px;
++        padding: 22px 24px;
++        margin-bottom: 16px;
++      }
++      h2 {
++        font-family: Sora, Inter, sans-serif;
++        font-size: 17px;
++        font-weight: 700;
++        margin: 0 0 10px;
++      }
++      ol, ul {
++        margin: 8px 0 0;
++        padding-left: 20px;
++      }
++      li { margin-bottom: 8px; }
++      .muted { color: var(--muted); font-size: 14px; }
++      .warn {
++        background: var(--warn-bg);
++        border: 1px solid var(--warn-border);
++        color: var(--warn-text);
++        border-radius: 12px;
++        padding: 14px 16px;
++        font-size: 14px;
++        margin-bottom: 16px;
++      }
++      a { color: var(--primary); }
++      .footer {
++        margin-top: 28px;
++        font-size: 13px;
++        color: var(--muted);
++      }
++      .play-soon {
++        display: inline-flex;
++        align-items: center;
++        gap: 8px;
++        margin-top: 4px;
++        padding: 8px 12px;
++        border-radius: 999px;
++        background: #f1f5f9;
++        color: var(--muted);
++        font-size: 13px;
++        font-weight: 600;
++      }
++    </style>
++  </head>
++  <body>
++    <div class="wrap">
++      <a class="brand" href="/">
++        <img src="/app-mark.png" alt="" width="36" height="36" />
++        Dealr
++      </a>
++      <h1>Get the Dealr Android app</h1>
++      <p class="lead">
++        Install Dealr on your phone to post ads, chat with buyers and sellers, and get AI-powered listing help — built for local deals in Kerala.
++      </p>
++
++      <div class="banner">
++        <div>
++          <strong>Google Play approval is pending.</strong>
++          Meanwhile you can download the official Android APK from Dealr below. We will switch this page to Play Store as soon as it goes live.
++        </div>
++      </div>
++
++      <div class="actions">
++        <a class="btn btn-primary" id="download-apk" href="/downloads/dealr.apk" download="dealr.apk">
++          Download for Android
++        </a>
++        <a class="btn btn-secondary" href="/">Open Dealr on the web</a>
++      </div>
++      <div class="play-soon" aria-label="Google Play status">Google Play — coming soon</div>
++
++      <div class="card" style="margin-top: 22px">
++        <h2>How to install</h2>
++        <ol>
++          <li>Tap <b>Download for Android</b> and open the APK when it finishes.</li>
++          <li>If Android asks, allow installs from your browser (Chrome / Files).</li>
++          <li>Open Dealr and sign in with Google.</li>
++        </ol>
++        <p class="muted" style="margin: 14px 0 0">
++          Package: <code>com.dealr.app</code> · Version 1.0.1 · Direct from dealrapp.in
++        </p>
++      </div>
++
++      <div class="warn">
++        Only download Dealr from <b>dealrapp.in</b> or Google Play (when available). Avoid random APK sites.
++        When Play goes live, uninstall this build first if Android blocks the update, then install from Play.
++      </div>
++
++      <div class="card">
++        <h2>Need help?</h2>
++        <p class="muted" style="margin: 0">
++          Email
++          <a href="mailto:support@dealrapp.in">support@dealrapp.in</a>
++          if the install fails or you see a security warning you are unsure about.
++        </p>
++      </div>
++
++      <p class="footer">
++        <a href="/">Back to Dealr</a>
++        ·
++        <a href="/privacy">Privacy</a>
++        ·
++        <a href="/delete-account">Delete account</a>
++      </p>
++    </div>
++  </body>
++</html>
+diff --git a/src/App.js b/src/App.js
+index cc6f1dd..b18c018 100644
+--- a/src/App.js
++++ b/src/App.js
+@@ -4,6 +4,7 @@ import Topbar from './components/Topbar';
+ import Sidebar from './components/Sidebar';
+ import MobileNav from './components/MobileNav';
+ import BetaBanner from './components/BetaBanner';
++import AppDownloadBanner from './components/AppDownloadBanner';
+ import { ToastContainer, ModalDialog } from './components/UI';
+ import HomePage from './pages/HomePage';
+ import AdDetailPage from './pages/AdDetailPage';
+@@ -51,6 +52,7 @@ function AppShell() {
+           <PageRouter />
+         </main>
+       </div>
++      <AppDownloadBanner />
+       <MobileNav />
+       <ToastContainer />
+       <ModalDialog />
+diff --git a/src/components/AppDownloadBanner.js b/src/components/AppDownloadBanner.js
+new file mode 100644
+index 0000000..cd888d0
+--- /dev/null
++++ b/src/components/AppDownloadBanner.js
+@@ -0,0 +1,91 @@
++import React, { useEffect, useRef, useState } from 'react';
++import { Smartphone, X } from 'lucide-react';
++import { useApp } from '../context/AppContext';
++import { APP_DOWNLOAD_PATH } from '../content/siteInfo';
++
++const DISMISS_KEY = 'dealr_app_banner_dismissed';
++
++export default function AppDownloadBanner() {
++  const { currentPage } = useApp();
++  const bannerRef = useRef(null);
++  const [dismissed, setDismissed] = useState(() => {
++    try {
++      return sessionStorage.getItem(DISMISS_KEY) === '1';
++    } catch {
++      return false;
++    }
++  });
++
++  const visible = currentPage === 'home' && !dismissed;
++
++  useEffect(() => {
++    const root = document.documentElement;
++    if (!visible) {
++      root.style.setProperty('--app-banner-h', '0px');
++      root.classList.remove('has-app-banner');
++      return undefined;
++    }
++
++    root.classList.add('has-app-banner');
++    const el = bannerRef.current;
++    if (!el) return undefined;
++
++    const syncHeight = () => {
++      root.style.setProperty('--app-banner-h', `${el.offsetHeight}px`);
++    };
++    syncHeight();
++
++    const ro = typeof ResizeObserver !== 'undefined'
++      ? new ResizeObserver(syncHeight)
++      : null;
++    if (ro) ro.observe(el);
++    window.addEventListener('resize', syncHeight);
++
++    return () => {
++      if (ro) ro.disconnect();
++      window.removeEventListener('resize', syncHeight);
++      root.style.setProperty('--app-banner-h', '0px');
++      root.classList.remove('has-app-banner');
++    };
++  }, [visible]);
++
++  const dismiss = () => {
++    try {
++      sessionStorage.setItem(DISMISS_KEY, '1');
++    } catch {
++      /* ignore */
++    }
++    setDismissed(true);
++  };
++
++  if (!visible) return null;
++
++  return (
++    <div
++      ref={bannerRef}
++      className="app-download-banner"
++      role="region"
++      aria-label="Download the Dealr Android app"
++    >
++      <div className="app-download-banner-inner">
++        <Smartphone size={16} strokeWidth={2.25} className="app-download-banner-icon" aria-hidden />
++        <p className="app-download-banner-text">
++          <strong>Get the Android app</strong>
++          {' '}
++          — faster posting &amp; chat. Play Store coming soon.
++        </p>
++        <a className="app-download-banner-cta" href={APP_DOWNLOAD_PATH}>
++          Download
++        </a>
++        <button
++          type="button"
++          className="app-download-banner-close"
++          onClick={dismiss}
++          aria-label="Dismiss app download banner"
++        >
++          <X size={14} strokeWidth={2.5} aria-hidden />
++        </button>
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/Sidebar.js b/src/components/Sidebar.js
+index 17de369..beafcf6 100644
+--- a/src/components/Sidebar.js
++++ b/src/components/Sidebar.js
+@@ -1,6 +1,7 @@
+ import React from 'react';
+-import { Home, MessageCircle, PlusCircle, Volume2, User, Lock, Shield, Info, Mail } from 'lucide-react';
++import { Home, MessageCircle, PlusCircle, Volume2, User, Lock, Shield, Info, Mail, Smartphone } from 'lucide-react';
+ import { useApp } from '../context/AppContext';
++import { APP_DOWNLOAD_PATH } from '../content/siteInfo';
+ 
+ const navItems = [
+   { id: 'home', label: 'Home', Icon: Home },
+@@ -45,6 +46,9 @@ export default function Sidebar() {
+         )}
+       </div>
+       <div className="sidebar-footer">
++        <a className="nav-item" href={APP_DOWNLOAD_PATH}>
++          <Smartphone size={18} /> Get the app
++        </a>
+         <button
+           className={`nav-item${currentPage === 'about' ? ' active' : ''}`}
+           onClick={() => navigate('about')}
+diff --git a/src/components/Topbar.js b/src/components/Topbar.js
+index 2c03e90..824918e 100644
+--- a/src/components/Topbar.js
++++ b/src/components/Topbar.js
+@@ -1,6 +1,7 @@
+ import React from 'react';
+-import { PlusCircle } from 'lucide-react';
++import { PlusCircle, Smartphone } from 'lucide-react';
+ import { useApp } from '../context/AppContext';
++import { APP_DOWNLOAD_PATH } from '../content/siteInfo';
+ import DealrLogo from './DealrLogo';
+ import SearchBar from './SearchBar';
+ 
+@@ -20,6 +21,9 @@ export default function Topbar() {
+       <SearchBar />
+ 
+       <div className="topbar-right">
++        <a className="topbar-btn topbar-btn-app" href={APP_DOWNLOAD_PATH}>
++          <Smartphone size={16} /> Get the app
++        </a>
+         <button type="button" className="topbar-btn" onClick={() => navigate('post')}>
+           <PlusCircle size={16} /> Post Ad
+         </button>
+diff --git a/src/content/siteInfo.js b/src/content/siteInfo.js
+index 711821c..b1e688e 100644
+--- a/src/content/siteInfo.js
++++ b/src/content/siteInfo.js
+@@ -1,6 +1,20 @@
+ export const SUPPORT_EMAIL = 'support@dealrapp.in';
+ export const TAGLINE = 'Deal with the Right App!';
+ 
++/** Static download landing page (not an in-app SPA route). */
++export const APP_DOWNLOAD_PATH = '/app';
++
++/**
++ * Direct APK URL hosted on dealrapp.in.
++ * Override with REACT_APP_ANDROID_APK_URL when swapping hosts (e.g. Play Store later).
++ */
++export const ANDROID_APK_URL =
++  process.env.REACT_APP_ANDROID_APK_URL || '/downloads/dealr.apk';
++
++/** Shown until Play listing is live — then point CTAs at the Play URL instead. */
++export const PLAY_STORE_STATUS = 'coming_soon';
++export const PLAY_STORE_URL = process.env.REACT_APP_PLAY_STORE_URL || '';
++
+ export const ABOUT_INTRO =
+   'Dealr is a local marketplace built to help people buy and sell safely, quickly, and with confidence — right in their neighbourhood.';
+ 
+diff --git a/src/styles.css b/src/styles.css
+index 0f61d0f..4c5d6d8 100644
+--- a/src/styles.css
++++ b/src/styles.css
+@@ -60,6 +60,7 @@
+   --sidebar-w: 248px;
+   --header-h: 68px;
+   --beta-banner-h: 0px;
++  --app-banner-h: 0px;
+   --font-body: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+   --font-display: 'Sora', 'Plus Jakarta Sans', sans-serif;
+   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+@@ -328,6 +329,12 @@ button, input, textarea, select {
+   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+ }
+ .topbar-btn.primary:hover { background: #f8fafc; }
++.topbar-btn-app {
++  text-decoration: none;
++  background: rgba(255, 255, 255, 0.18);
++  border-color: rgba(255, 255, 255, 0.42);
++}
++.topbar-btn-app:hover { background: rgba(255, 255, 255, 0.28); }
+ 
+ /* ── BETA BANNER ── */
+ .beta-banner {
+@@ -399,6 +406,76 @@ button, input, textarea, select {
+   .beta-banner-cta { margin-left: 26px; }
+ }
+ 
++/* ── APP DOWNLOAD BANNER (mobile) ── */
++.app-download-banner {
++  display: none;
++}
++@media (max-width: 768px) {
++  .app-download-banner {
++    display: block;
++    position: fixed;
++    left: 0;
++    right: 0;
++    bottom: 64px;
++    z-index: 99;
++    background: linear-gradient(90deg, #12233f 0%, #1d4ed8 100%);
++    color: #fff;
++    border-top: 1px solid rgba(255, 255, 255, 0.12);
++    box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.14);
++  }
++  .app-download-banner-inner {
++    display: flex;
++    align-items: center;
++    gap: 8px;
++    padding: 10px 12px;
++  }
++  .app-download-banner-icon {
++    flex-shrink: 0;
++    color: #93c5fd;
++  }
++  .app-download-banner-text {
++    margin: 0;
++    flex: 1;
++    min-width: 0;
++    font-size: 12px;
++    line-height: 1.35;
++    color: rgba(255, 255, 255, 0.92);
++  }
++  .app-download-banner-text strong {
++    color: #fff;
++    font-weight: 800;
++  }
++  .app-download-banner-cta {
++    flex-shrink: 0;
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    border-radius: 999px;
++    padding: 7px 12px;
++    background: #fff;
++    color: #1d4ed8;
++    font-size: 12px;
++    font-weight: 800;
++    text-decoration: none;
++  }
++  .app-download-banner-close {
++    flex-shrink: 0;
++    width: 28px;
++    height: 28px;
++    border: none;
++    border-radius: 999px;
++    background: rgba(255, 255, 255, 0.12);
++    color: #fff;
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    cursor: pointer;
++  }
++  .has-app-banner .main {
++    padding-bottom: calc(74px + var(--app-banner-h, 0px));
++  }
++}
++
+ /* ── LAYOUT ── */
+ .app-body {
+   display: flex;
+@@ -5295,8 +5372,11 @@ button, input, textarea, select {
+     margin-left: auto;
+     gap: 8px;
+   }
+-  .topbar-right > .topbar-btn:not(.primary) { display: none; }
+-  .topbar-btn.primary { padding: 7px 12px; font-size: 12px; }
++  .topbar-right > .topbar-btn:not(.primary):not(.topbar-btn-app) { display: none; }
++  .topbar-btn.primary,
++  .topbar-btn-app { padding: 7px 12px; font-size: 12px; }
++  .topbar-btn-app span,
++  .topbar-btn-app { max-width: 118px; }
+   .topbar-avatar { width: 34px; height: 34px; }
+ 
+   .filter-panel-header {
+@@ -5425,3 +5505,5 @@ button, input, textarea, select {
+   .messages-tabs { margin-bottom: 12px; }
+   .chat-detail-layout { height: calc(100vh - var(--header-h) - 88px); }
+ }
++
++a.nav-item { text-decoration: none; color: inherit; font-family: inherit; box-sizing: border-box; }
+diff --git a/vercel.json b/vercel.json
+index 0813a76..9c038eb 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -4,9 +4,30 @@
+     { "source": "/privacy/", "destination": "/privacy.html" },
+     { "source": "/delete-account", "destination": "/delete-account.html" },
+     { "source": "/delete-account/", "destination": "/delete-account.html" },
++    { "source": "/app", "destination": "/app.html" },
++    { "source": "/app/", "destination": "/app.html" },
+     { "source": "/manifest.json", "destination": "/manifest.json" },
+     { "source": "/service-worker.js", "destination": "/service-worker.js" },
+     { "source": "/favicon.ico", "destination": "/favicon.ico" },
+     { "source": "/(.*)", "destination": "/" }
++  ],
++  "headers": [
++    {
++      "source": "/downloads/(.*)\\.apk",
++      "headers": [
++        {
++          "key": "Content-Type",
++          "value": "application/vnd.android.package-archive"
++        },
++        {
++          "key": "Content-Disposition",
++          "value": "attachment; filename=\"dealr.apk\""
++        },
++        {
++          "key": "Cache-Control",
++          "value": "public, max-age=3600"
++        }
++      ]
++    }
+   ]
+ }
