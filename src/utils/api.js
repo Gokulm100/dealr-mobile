@@ -4,7 +4,7 @@ import { isSeededDescription, stripSeededMarker } from './seededListing';
 
 // ⚠️ CHANGE THIS to your backend URL
 export const API_BASE_URL = 'https://e4u-backend.onrender.com';
-export const WEB_URL = 'https://your-website.com'; // TODO: Update this to your frontend URL
+export const WEB_URL = 'https://dealrapp.in';
 
 /**
  * Fetch all favorite ads for the current user
