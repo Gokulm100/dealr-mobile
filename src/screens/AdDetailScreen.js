@@ -13,7 +13,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
-import { apiFetch, API_BASE_URL, WEB_URL, incrementAdViews, addAdToFavorite, removeAdFromFavorite, getReportReasons, reportAd } from '../utils/api';
+import { apiFetch, incrementAdViews, addAdToFavorite, removeAdFromFavorite, getReportReasons, reportAd } from '../utils/api';
+import { listingShareContent } from '../utils/shareListing';
 import AiSummary from '../components/AiSummary';
 import { useAuth } from '../context/AuthContext';
 import AiAnalytics from '../components/AiAnalytics';
@@ -143,12 +144,10 @@ export default function AdDetailScreen({ route, navigation }) {
   };
 
   const handleShare = async () => {
+    const adId = listing.id || listing._id;
+    if (!adId) return;
     try {
-      const shareUrl = `${WEB_URL}/ads/${listing.id || listing._id}`;
-      await Share.share({
-        message: `Check out this ${listing.title} on Dealr for ₹${listing.price}!\n\nView more details here: ${shareUrl}`,
-        url: shareUrl,
-      });
+      await Share.share(listingShareContent(listing));
     } catch (error) {
       console.error('Error sharing:', error);
     }
