@@ -17,6 +17,7 @@ import DealrLogo from '../components/DealrLogo';
 import SafeLinearGradient from '../components/SafeLinearGradient';
 import AdCard from '../components/AdCard';
 import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
+import FeatureBannerCarousel from '../components/FeatureBannerCarousel';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
 import {COLORS, RADIUS, SHADOW, SURFACE} from '../utils/theme';
@@ -385,10 +386,37 @@ export default function HomeScreen({ navigation }) {
           opacity: quickFilterAnim,
           maxHeight: quickFilterAnim.interpolate({
             inputRange: [0, 1],
-            outputRange: [0, 160],
+            outputRange: [0, showFilters ? 160 : 340],
           }),
         }}
       >
+        {!showFilters && (
+          <FeatureBannerCarousel
+            onNavigate={(tab) => {
+              if ((tab === 'Post' || tab === 'Chat') && user?.isBlocked) {
+                Alert.alert(
+                  'Account Blocked',
+                  tab === 'Post'
+                    ? 'You have been blocked due to repeated suspicious activity. Please wait for another 30 days to post any new ads.'
+                    : 'You have been blocked due to repeated suspicious activity. Please wait for another 30 days to access messages.',
+                  [{ text: 'OK' }]
+                );
+                return;
+              }
+              const parent = navigation.getParent();
+              const nav = parent || navigation;
+              if (tab === 'MyAds') {
+                nav.navigate('MyAds', { screen: 'MyAdsList' });
+                return;
+              }
+              if (tab === 'Chat') {
+                nav.navigate('Chat', { screen: 'MessagesList' });
+                return;
+              }
+              nav.navigate(tab, tab === 'Post' ? { ad: undefined } : undefined);
+            }}
+          />
+        )}
         {renderQuickCategoryFilter()}
       </Animated.View>
 

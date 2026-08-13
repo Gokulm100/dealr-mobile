@@ -1,25 +1,33 @@
-# Dealr web app download handoff
+# Publish Dealr 1.0.9 on dealrapp.in Get Android App
 
-This agent could not push to `Gokulm100/dealr-web` (403). Apply these changes there, then deploy Vercel.
+The Cloud Agent cannot push to `Gokulm100/dealr-web` (403). Apply this on that repo, then Vercel will serve the new APK.
 
 ## Apply
 
 ```bash
 cd dealr-web
-git checkout -b cursor/web-app-download-5ce9
-git apply /path/to/dealr-web-changes.diff
-# OR cherry-pick files from this folder + copy the signed APK:
-mkdir -p public/downloads
-cp ../dealr-mobile/distribution/dealr-1.0.1.apk public/downloads/dealr.apk
-git add -A && git commit -m "Add self-hosted Android app download page and CTAs"
-git push -u origin HEAD
+git checkout main && git pull
+curl -L -o public/downloads/dealr.apk \
+  "https://github.com/Gokulm100/dealr-mobile/raw/cursor/home-feature-carousel-5b33/distribution/dealr-1.0.9.apk"
+git apply /path/to/dealr-mobile/web-download-handoff/app-1.0.9.patch
+# or copy public/app.html from this folder over dealr-web/public/app.html
+git add public/downloads/dealr.apk public/app.html
+git commit -m "Ship Dealr 1.0.9 Android APK on Get the app page"
+git push
+```
+
+Local copy of the APK (same file):
+
+```bash
+cp /path/to/dealr-mobile/distribution/dealr-1.0.9.apk public/downloads/dealr.apk
 ```
 
 After deploy:
 - https://dealrapp.in/app
 - https://dealrapp.in/downloads/dealr.apk
 
-## Signing keystore
+The Get the Android app banner already links to `/app`, which downloads `/downloads/dealr.apk`.
 
-Download from the cloud agent artifacts: `signing/dealr-upload.keystore` + `README-SIGNING.txt`.
-Store privately. If Play already uses a different upload key (EAS), re-sign future public APKs with that key.
+## Install note
+
+1.0.9 is debug-signed. The current site APK (1.0.1) is upload-signed, so Android will refuse an in-place update. The download page tells people to uninstall 1.0.1 first.

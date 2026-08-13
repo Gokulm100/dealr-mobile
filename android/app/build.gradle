@@ -100,8 +100,8 @@ android {
         applicationId 'com.dealr.app'
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 9
+        versionName "1.0.9"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
