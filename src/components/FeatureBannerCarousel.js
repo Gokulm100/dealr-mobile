@@ -17,7 +17,7 @@ const SLIDES = [
   {
     id: 'ai-post',
     image: require('../../assets/banners/banner-ai-post.jpg'),
-    kicker: 'Gemini AI',
+    kicker: 'Dealr AI',
     title: 'Post an ad in seconds',
     subtitle: 'Snap photos — AI writes the title and description.',
     cta: 'Post an ad',
