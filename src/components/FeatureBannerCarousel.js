@@ -173,6 +173,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   card: {
+    width: '100%',
     height: FEATURE_BANNER_HEIGHT,
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
