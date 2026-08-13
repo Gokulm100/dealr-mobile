@@ -2,14 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
+  ImageBackground,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
 } from 'react-native';
 import Icon from './Icon';
-import SafeLinearGradient from './SafeLinearGradient';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
 
 export const FEATURE_BANNER_HEIGHT = 148;
@@ -124,19 +123,14 @@ export default function FeatureBannerCarousel({ onNavigate }) {
             accessibilityRole="button"
             accessibilityLabel={`${slide.title}. ${slide.subtitle}`}
           >
-            <View style={styles.card}>
-              <Image
-                source={slide.image}
-                style={styles.image}
-                resizeMode="cover"
-              />
-              <SafeLinearGradient
-                colors={['rgba(12, 24, 56, 0.55)', 'rgba(12, 24, 56, 0.18)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.scrim}
-                pointerEvents="none"
-              />
+            <ImageBackground
+              source={slide.image}
+              style={styles.card}
+              imageStyle={styles.cardImage}
+              resizeMode="cover"
+              fadeDuration={0}
+            >
+              <View style={styles.scrim} pointerEvents="none" />
               <View style={styles.copy}>
                 <Text style={styles.kicker}>{slide.kicker}</Text>
                 <Text style={styles.title} numberOfLines={2}>{slide.title}</Text>
@@ -148,7 +142,7 @@ export default function FeatureBannerCarousel({ onNavigate }) {
                   </View>
                 ) : null}
               </View>
-            </View>
+            </ImageBackground>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -180,11 +174,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryDark,
     ...SHADOW.medium,
   },
-  image: {
-    ...StyleSheet.absoluteFillObject,
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: RADIUS.lg,
   },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '52%',
+    backgroundColor: 'rgba(12, 24, 56, 0.28)',
   },
   copy: {
     flex: 1,
