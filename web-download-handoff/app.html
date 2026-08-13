@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Get the Dealr app – Android</title>
     <meta
       name="description"
@@ -34,6 +34,12 @@
         --warn-text: #92400e;
       }
       * { box-sizing: border-box; }
+      html, body {
+        overflow-x: hidden;
+        max-width: 100%;
+        -webkit-text-size-adjust: 100%;
+        touch-action: pan-y;
+      }
       body {
         margin: 0;
         font-family: Inter, system-ui, sans-serif;
@@ -206,12 +212,13 @@
           <li>Open Dealr and sign in with Google.</li>
         </ol>
         <p class="muted" style="margin: 14px 0 0">
-          Package: <code>com.dealr.app</code> · Version 1.0.1 · Direct from dealrapp.in
+          Package: <code>com.dealr.app</code> · Version 1.0.9 · Direct from dealrapp.in
         </p>
       </div>
 
       <div class="warn">
         Only download Dealr from <b>dealrapp.in</b> or Google Play (when available). Avoid random APK sites.
+        If you already have an older Dealr APK (1.0.1 from this site), uninstall it first, then install 1.0.9 — Android will block the update otherwise.
         When Play goes live, uninstall this build first if Android blocks the update, then install from Play.
       </div>
 
