@@ -172,6 +172,32 @@ export async function clearFcmTokenOnBackend() {
   });
 }
 
+/** Mark the user active so re-engagement jobs do not fire while they browse. */
+export async function pingUserActivity(token) {
+  const authToken = token || await getStoredToken();
+  if (!authToken) return;
+  try {
+    return await apiFetch('/api/users/ping', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+  } catch (error) {
+    console.warn('Activity ping failed');
+  }
+}
+
+/** Public ad fetch used when a re-engagement push deep-links to screen=ad. */
+export async function getAdById(adId) {
+  if (!adId) return null;
+  try {
+    const ad = await apiFetch(`/api/ads/${adId}`);
+    if (!ad || !ad._id) return null;
+    return mapListing(ad);
+  } catch {
+    return null;
+  }
+}
+
 // Consent APIs
 export async function getLatestConsentVersion() {
   return apiFetch('/api/users/getLatestConsentVersion');

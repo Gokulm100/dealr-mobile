@@ -1,5 +1,6 @@
 // App.js
 import React, { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import {
@@ -15,8 +16,9 @@ import { AuthProvider } from './src/context/AuthContext';
 import { MessagesProvider } from './src/context/MessagesContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { navigationRef, openFromNotification } from './src/utils/navigation';
-import { getStoredUser, getStoredToken } from './src/utils/api';
+import { getStoredUser, getStoredToken, pingUserActivity } from './src/utils/api';
 import { registerPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
+import { bindActivityPing } from './src/utils/activityPing';
 import SplashScreen from './src/components/SplashScreen';
 import { FontReadyProvider } from './src/context/FontReadyContext';
 import AppErrorBoundary from './src/components/AppErrorBoundary';
@@ -29,6 +31,7 @@ function AppContent() {
   useEffect(() => {
     let unsubscribeOnMessage = () => {};
     let unsubscribeNotifee = () => {};
+    let unsubscribeActivityPing = () => {};
 
     const setupNotifications = async () => {
       try {
@@ -63,13 +66,13 @@ function AppContent() {
             return;
           }
 
-          if (navigationRef.isReady()) {
+          if (remoteMessage.data?.type === 'CHAT' && navigationRef.isReady()) {
             const route = navigationRef.getCurrentRoute();
             if (route?.name === 'ChatDetail' || route?.name === 'Chat') {
               const activeAdId = route.params?.chat?.adId || route.params?.chat?.ad?._id || route.params?.chat?._id;
               const incomingAdId = remoteMessage.data?.adId || remoteMessage.data?.ad_id;
 
-              if (activeAdId?.toString() === incomingAdId?.toString()) {
+              if (activeAdId && incomingAdId && activeAdId.toString() === incomingAdId.toString()) {
                 return;
               }
             }
@@ -122,9 +125,20 @@ function AppContent() {
 
     setupNotifications();
 
+    try {
+      unsubscribeActivityPing = bindActivityPing({
+        AppState,
+        getToken: getStoredToken,
+        ping: pingUserActivity,
+      });
+    } catch (error) {
+      console.warn('Failed to bind activity ping', error);
+    }
+
     return () => {
       unsubscribeOnMessage();
       unsubscribeNotifee();
+      unsubscribeActivityPing();
     };
   }, []);
 
