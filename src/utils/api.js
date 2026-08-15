@@ -4,7 +4,7 @@ import { isSeededDescription, stripSeededMarker } from './seededListing';
 
 // ⚠️ CHANGE THIS to your backend URL
 export const API_BASE_URL = 'https://e4u-backend.onrender.com';
-export const WEB_URL = 'https://your-website.com'; // TODO: Update this to your frontend URL
+export const WEB_URL = 'https://dealrapp.in';
 
 /**
  * Fetch all favorite ads for the current user
@@ -170,6 +170,32 @@ export async function clearFcmTokenOnBackend() {
     method: 'POST',
     body: JSON.stringify({ fcmToken: null }),
   });
+}
+
+/** Mark the user active so re-engagement jobs do not fire while they browse. */
+export async function pingUserActivity(token) {
+  const authToken = token || await getStoredToken();
+  if (!authToken) return;
+  try {
+    return await apiFetch('/api/users/ping', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+  } catch (error) {
+    console.warn('Activity ping failed');
+  }
+}
+
+/** Public ad fetch used when a re-engagement push deep-links to screen=ad. */
+export async function getAdById(adId) {
+  if (!adId) return null;
+  try {
+    const ad = await apiFetch(`/api/ads/${adId}`);
+    if (!ad || !ad._id) return null;
+    return mapListing(ad);
+  } catch {
+    return null;
+  }
 }
 
 // Consent APIs

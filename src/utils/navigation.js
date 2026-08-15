@@ -1,4 +1,6 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
+import { getAdById } from './api';
+import { resolveNotificationDestination } from './notificationRoutes';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -6,6 +8,23 @@ export function navigate(name, params) {
   if (navigationRef.isReady()) {
     navigationRef.navigate(name, params);
   }
+}
+
+function navigateWhenReady(name, params) {
+  let attempts = 0;
+  const tryNavigate = () => {
+    try {
+      if (navigationRef.isReady()) {
+        navigationRef.navigate(name, params);
+      } else if (attempts < 20) {
+        attempts += 1;
+        setTimeout(tryNavigate, 250);
+      }
+    } catch (error) {
+      console.warn('Failed to navigate from notification', error);
+    }
+  };
+  tryNavigate();
 }
 
 // Opens the conversation referenced by a chat push notification's data payload.
@@ -66,5 +85,18 @@ export function openFromNotification(data) {
   }
   if (data.type === 'CHAT') {
     openChatFromNotification(data);
+    return;
+  }
+  openMappedNotification(data);
+}
+
+async function openMappedNotification(data) {
+  try {
+    const dest = await resolveNotificationDestination(data, { fetchAd: getAdById });
+    if (!dest?.name) return;
+    navigateWhenReady(dest.name, dest.params);
+  } catch (error) {
+    console.warn('Failed to open notification destination', error);
+    navigateWhenReady('MainTabs', { screen: 'Home', params: { screen: 'AllAds' } });
   }
 }

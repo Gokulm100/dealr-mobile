@@ -15,10 +15,11 @@ import SkeletonCard from '../components/SkeletonCard';
 
 const TABS = ['Buying', 'Selling'];
 
-export default function MessagesScreen({ navigation }) {
+export default function MessagesScreen({ navigation, route }) {
   const { user } = useAuth();
   const { refresh } = useMessages();
-  const [activeTab, setActiveTab] = useState(0); // 0 = Buying, 1 = Selling
+  const requestedTab = route?.params?.tab;
+  const [activeTab, setActiveTab] = useState(requestedTab === 'Selling' ? 1 : 0); // 0 = Buying, 1 = Selling
   const [buyingChats, setBuyingChats] = useState([]);
   const [sellingChats, setSellingChats] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,11 @@ export default function MessagesScreen({ navigation }) {
   }, [user, refresh]);
 
   useEffect(() => { fetchChats(); }, [fetchChats]);
+
+  useEffect(() => {
+    if (requestedTab === 'Selling') setActiveTab(1);
+    if (requestedTab === 'Buying') setActiveTab(0);
+  }, [requestedTab]);
 
   useFocusEffect(
     useCallback(() => {
