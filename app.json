@@ -2,11 +2,11 @@
   "expo": {
     "name": "Dealr",
     "slug": "dealr",
-    "version": "1.0.1",
+    "version": "1.0.10",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.dealr.app",
-      "versionCode": 2,
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#378cf6"
