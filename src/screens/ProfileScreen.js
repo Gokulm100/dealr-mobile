@@ -10,6 +10,7 @@ import { GoogleSignin, statusCodes, isCancelledResponse } from '@react-native-go
 import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, apiFetch } from '../utils/api';
+import { RELEASE_SIGNING } from '../utils/signingInfo';
 import ReviewModal from '../components/ReviewModal';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -89,7 +90,7 @@ export default function ProfileScreen({ navigation, route }) {
       if (String(error.code) === '10' || error.message?.includes('DEVELOPER_ERROR')) {
         Alert.alert(
           'Configuration Error',
-          'Google Sign-In is not set up for this build. In Firebase → Project settings → Android app (com.dealr.app), add the SHA-1 from Play Console → App integrity → App signing key certificate (and your upload key SHA-1). Wait a few minutes, then clear app data and try again. No new AAB needed.',
+          `Google Sign-In needs this APK's SHA-1 in Firebase project dealr-app-494db (not e4you).\n\nFirebase → Project settings → Your apps → Android (com.dealr.app) → Add fingerprint:\n\n${RELEASE_SIGNING.sha1}\n\nKeep any existing Play signing fingerprints. Wait 5–10 minutes, uninstall Dealr, reinstall this APK, then try again.`,
         );
         return;
       }
