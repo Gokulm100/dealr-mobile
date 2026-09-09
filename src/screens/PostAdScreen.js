@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AiTextArea from '../components/AiTextArea';
 import { checkAndPromptNotifications } from '../utils/notifications';
 import { GEMINI, SparklesIcon, GradientText, useGradientId } from '../components/geminiBrand';
+import { trackPostAd, trackListingCreationStarted } from '../utils/analytics';
 
 const KERALA_DISTRICTS = [
   'Thiruvananthapuram', 'Kollam', 'Pathanamthitta', 'Alappuzha', 'Kottayam',
@@ -53,6 +54,12 @@ export default function PostAdScreen({ navigation, route }) {
     price: '',
     description: '',
   });
+
+  // EXP-1: seller-supply funnel entry (only for new listings, not edits).
+  useEffect(() => {
+    if (!route.params?.ad) trackListingCreationStarted();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (route.params?.ad) {
@@ -508,6 +515,11 @@ export default function PostAdScreen({ navigation, route }) {
       });
 
       if (res.ok) {
+        const created = await res.clone().json().catch(() => ({}));
+        trackPostAd(
+          { id: created?._id || created?.ad?._id, title: form.title },
+          { edited: !!editingAd },
+        );
         // Refresh locations so a newly entered one is available next time.
         loadLocations();
         Alert.alert('Success', editingAd ? 'Your ad has been updated!' : 'Your ad has been posted!', [

@@ -1,4 +1,5 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
+import { trackNotificationOpened } from './analytics';
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -60,6 +61,7 @@ export function openReviewFromNotification(data) {
 
 export function openFromNotification(data) {
   if (!data) return;
+  trackNotificationOpened(data);
   if (data.type === 'REVIEW_PROMPT') {
     openReviewFromNotification(data);
     return;

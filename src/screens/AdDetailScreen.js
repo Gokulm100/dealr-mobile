@@ -13,7 +13,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 import Icon from '../components/Icon';
 import { COLORS, RADIUS, SHADOW } from '../utils/theme';
-import { apiFetch, API_BASE_URL, WEB_URL, incrementAdViews, addAdToFavorite, removeAdFromFavorite, getReportReasons, reportAd } from '../utils/api';
+import { apiFetch, API_BASE_URL, WEB_URL, incrementAdViews, addAdToFavorite, removeAdFromFavorite, getReportReasons, reportAd, mapListing } from '../utils/api';
+import { trackAdView, trackShareListing, trackFavoriteAdded, trackContactSeller } from '../utils/analytics';
 import AiSummary from '../components/AiSummary';
 import { useAuth } from '../context/AuthContext';
 import AiAnalytics from '../components/AiAnalytics';
@@ -33,7 +34,12 @@ const SAFETY_TIPS = [
 ];
 
 export default function AdDetailScreen({ route, navigation }) {
-  const rawListing = route.params?.listing || {};
+  // Normally opened with a full `listing` object. Deep links (dealrapp.in/ad/:id
+  // or dealr://ad/:id) arrive with only an id, so fetch the listing in that case.
+  const paramListing = route.params?.listing || null;
+  const deepLinkId = route.params?.id || route.params?.adId || null;
+  const [fetchedListing, setFetchedListing] = useState(null);
+  const rawListing = paramListing || fetchedListing || {};
   const seeded =
     rawListing.isSeeded === true || isSeededDescription(rawListing.description);
   const listing = {
@@ -62,16 +68,32 @@ export default function AdDetailScreen({ route, navigation }) {
   const [reviewStatus, setReviewStatus] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
 
+  // Deep link opened with only an id: fetch the full listing.
   useEffect(() => {
+    if (paramListing || !deepLinkId || fetchedListing) return;
+    let cancelled = false;
+    apiFetch(`/api/ads/${deepLinkId}`)
+      .then((data) => {
+        if (!cancelled && data) setFetchedListing(mapListing(data));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [paramListing, deepLinkId, fetchedListing]);
+
+  const adKey = listing.id || listing._id;
+  useEffect(() => {
+    if (!adKey) return;
     if (!isOwner) {
       addToRecentlyViewed(listing);
     }
     incrementViews();
     checkFavoriteStatus();
+    trackAdView(listing);
     if (isOwner) {
       fetchPriceInsights();
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adKey]);
 
   useEffect(() => {
     if (!user || !(listing.id || listing._id)) return;
@@ -128,6 +150,7 @@ export default function AdDetailScreen({ route, navigation }) {
       if (newStatus) {
         if (!favs.includes(adId)) favs.push(adId);
         await addAdToFavorite(adId);
+        trackFavoriteAdded(listing);
       } else {
         favs = favs.filter(id => id !== adId);
         await removeAdFromFavorite(adId);
@@ -144,7 +167,9 @@ export default function AdDetailScreen({ route, navigation }) {
 
   const handleShare = async () => {
     try {
-      const shareUrl = `${WEB_URL}/ads/${listing.id || listing._id}`;
+      // Web serves /ad/:id with Open Graph tags and hands off to the app.
+      const shareUrl = `${WEB_URL}/ad/${listing.id || listing._id}`;
+      trackShareListing(listing);
       await Share.share({
         message: `Check out this ${listing.title} on Dealr for ₹${listing.price}!\n\nView more details here: ${shareUrl}`,
         url: shareUrl,
@@ -223,6 +248,7 @@ export default function AdDetailScreen({ route, navigation }) {
       Alert.alert('This is your ad', 'You cannot chat with yourself.');
       return;
     }
+    trackContactSeller(listing);
     navigation.navigate('Chat', {
       screen: 'ChatDetail',
       params: {
@@ -285,6 +311,15 @@ export default function AdDetailScreen({ route, navigation }) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedOffer(expandedOffer === type ? null : type);
   };
+
+  // Deep link opened with just an id and the listing hasn't loaded yet.
+  if (!adKey && deepLinkId) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

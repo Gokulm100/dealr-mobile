@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL, mapListing, isAdOwnedByUser } from '../utils/api';
 import { registerPushToken, unregisterPushToken } from '../utils/pushNotifications';
 import { initSocket, disconnectSocket } from '../utils/socket';
+import { trackLogin, setAnalyticsUser } from '../utils/analytics';
 
 const AuthContext = createContext(null);
 
@@ -21,6 +22,7 @@ export function AuthProvider({ children }) {
         setUser(storedUser);
         setToken(storedToken);
         setHasConsented(storedUser.hasConsented || false);
+        setAnalyticsUser(storedUser);
         registerPushToken();
         initSocket(storedUser._id, storedToken);
       }
@@ -75,6 +77,7 @@ export function AuthProvider({ children }) {
       setToken(data.token);
       setUser(normalizedUser);
       setHasConsented(userHasConsented);
+      trackLogin(normalizedUser);
       await registerPushToken();
       initSocket(normalizedUser._id, data.token);
       return data;
@@ -86,6 +89,7 @@ export function AuthProvider({ children }) {
     await unregisterPushToken();
     disconnectSocket();
     await clearAuth();
+    setAnalyticsUser(null);
     setUser(null);
     setToken(null);
     setHasConsented(false);

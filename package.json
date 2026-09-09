@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client",
+    "test": "node src/utils/analyticsCore.test.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",

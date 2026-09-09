@@ -6,6 +6,7 @@ import {
 import Icon from './Icon';
 import { COLORS, SHADOW } from '../utils/theme';
 import { apiFetch } from '../utils/api';
+import { trackMarkSold } from '../utils/analytics';
 
 export default function MarkSoldModal({ visible, ad, onClose, onSold }) {
   const [buyers, setBuyers] = useState([]);
@@ -47,6 +48,7 @@ export default function MarkSoldModal({ visible, ad, onClose, onSold }) {
           amount: soldAmount.trim(),
         }),
       });
+      trackMarkSold({ id: ad.id, title: ad.title });
       onSold({
         adId: ad.id,
         adTitle: ad.title,
