@@ -1,7 +1,8 @@
 // src/context/AuthContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getStoredUser, getStoredToken, saveAuth, clearAuth, API_BASE_URL, mapListing, isAdOwnedByUser } from '../utils/api';
+import { fetchPendingReportCount } from '../utils/adminApi';
 import { registerPushToken, unregisterPushToken } from '../utils/pushNotifications';
 import { initSocket, disconnectSocket } from '../utils/socket';
 import { trackLogin, setAnalyticsUser } from '../utils/analytics';
@@ -13,6 +14,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [hasConsented, setHasConsented] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [adminPendingCount, setAdminPendingCount] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -93,10 +95,39 @@ export function AuthProvider({ children }) {
     setUser(null);
     setToken(null);
     setHasConsented(false);
+    setAdminPendingCount(0);
   };
 
+  const fetchAdminPendingCount = useCallback(async () => {
+    if (!user?.isAdmin) {
+      setAdminPendingCount(0);
+      return 0;
+    }
+    try {
+      const count = await fetchPendingReportCount();
+      setAdminPendingCount(count);
+      return count;
+    } catch {
+      setAdminPendingCount(0);
+      return 0;
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.isAdmin) {
+      setAdminPendingCount(0);
+      return undefined;
+    }
+    fetchAdminPendingCount();
+    const interval = setInterval(fetchAdminPendingCount, 60000);
+    return () => clearInterval(interval);
+  }, [user, fetchAdminPendingCount]);
+
   return (
-    <AuthContext.Provider value={{ user, token, hasConsented, setHasConsented, loading, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{
+      user, token, hasConsented, setHasConsented, loading, loginWithGoogle, logout,
+      adminPendingCount, fetchAdminPendingCount,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -17,6 +17,7 @@ import AboutScreen from '../screens/AboutScreen';
 import ContactScreen from '../screens/ContactScreen';
 import ConsentScreen from '../screens/ConsentScreen';
 import SellerProfileScreen from '../screens/SellerProfileScreen';
+import AdminScreen from '../screens/AdminScreen';
 import { COLORS } from '../utils/theme';
 import { useMessages } from '../context/MessagesContext';
 import { useAuth } from '../context/AuthContext';
@@ -83,6 +84,7 @@ function ProfileStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} />
+      <Stack.Screen name="Admin" component={AdminScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
       <Stack.Screen name="Contact" component={ContactScreen} />
     </Stack.Navigator>

@@ -10,6 +10,7 @@ import { GoogleSignin, statusCodes, isCancelledResponse } from '@react-native-go
 import {COLORS, RADIUS, SHADOW} from '../utils/theme';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, apiFetch } from '../utils/api';
+import { RELEASE_SIGNING } from '../utils/signingInfo';
 import ReviewModal from '../components/ReviewModal';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -22,7 +23,7 @@ GoogleSignin.configure({
 });
 
 export default function ProfileScreen({ navigation, route }) {
-  const { user, loginWithGoogle, logout } = useAuth();
+  const { user, loginWithGoogle, logout, adminPendingCount } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,7 +90,7 @@ export default function ProfileScreen({ navigation, route }) {
       if (String(error.code) === '10' || error.message?.includes('DEVELOPER_ERROR')) {
         Alert.alert(
           'Configuration Error',
-          'Google Sign-In is not set up for this build. In Firebase → Project settings → Android app (com.dealr.app), add the SHA-1 from Play Console → App integrity → App signing key certificate (and your upload key SHA-1). Wait a few minutes, then clear app data and try again. No new AAB needed.',
+          `Google Sign-In needs this APK's SHA-1 in Firebase project dealr-app-494db (not e4you).\n\nFirebase → Project settings → Your apps → Android (com.dealr.app) → Add fingerprint:\n\n${RELEASE_SIGNING.sha1}\n\nKeep any existing Play signing fingerprints. Wait 5–10 minutes, uninstall Dealr, reinstall this APK, then try again.`,
         );
         return;
       }
@@ -189,6 +190,12 @@ export default function ProfileScreen({ navigation, route }) {
               <Icon name="check-circle" size={12} color={COLORS.success} />
               <Text style={styles.verifiedText}>Verified with Google</Text>
             </View>
+            {user.isAdmin && (
+              <View style={styles.adminBadge}>
+                <Icon name="shield" size={12} color={COLORS.primary} />
+                <Text style={styles.adminBadgeText}>Admin</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -220,6 +227,27 @@ export default function ProfileScreen({ navigation, route }) {
         <Text style={styles.sectionLabel}>Quick Actions</Text>
 
         <View style={styles.actionsCard}>
+          {user.isAdmin && (
+            <>
+              <TouchableOpacity
+                style={styles.actionRow}
+                onPress={() => navigation.navigate('Admin')}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#eff6ff' }]}>
+                  <Icon name="shield" size={18} color={COLORS.primary} />
+                </View>
+                <Text style={styles.actionText}>Admin panel</Text>
+                {adminPendingCount > 0 && (
+                  <View style={styles.adminCountBadge}>
+                    <Text style={styles.adminCountText}>{adminPendingCount}</Text>
+                  </View>
+                )}
+                <Icon name="chevron-right" size={16} color={COLORS.border} />
+              </TouchableOpacity>
+              <View style={styles.divider} />
+            </>
+          )}
+
           <TouchableOpacity
             style={styles.actionRow}
             onPress={() => navigation.navigate('MyAds')}
@@ -435,6 +463,29 @@ const styles = StyleSheet.create({
   userEmail: { fontSize: 13, color: COLORS.textMuted, marginBottom: 6 },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   verifiedText: { fontSize: 12, color: COLORS.success, fontWeight: '600' },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.primarySoft,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  adminBadgeText: { fontSize: 11, color: COLORS.primary, fontWeight: '800' },
+  adminCountBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: COLORS.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  adminCountText: { fontSize: 11, fontWeight: '800', color: COLORS.white },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',

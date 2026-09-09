@@ -38,6 +38,10 @@ const ICONS = {
   'trending-up':   '📈',
   'award':         '🏆',
   'dolar-sign':    '💲',
+  'users':         '👥',
+  'globe':         '🌐',
+  'layout-grid':   '▦',
+  'list':          '☰',
 };
 
 const XSvg = ({ size, color }) => (
@@ -507,6 +511,33 @@ const StarSvg = ({ size, color }) => (
   </Svg>
 );
 
+const UsersSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="2" />
+    <Path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const GlobeSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
+    <Path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const LayoutGridSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M3 3h7v7H3V3zM14 3h7v7h-7V3zM14 14h7v7h-7v-7zM3 14h7v7H3v-7z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const ListSvg = ({ size, color }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
 export default function Icon({ name, size = 16, color = '#000', style }) {
   if (name === 'share-2' || name === 'share') {
     return (
@@ -519,6 +550,34 @@ export default function Icon({ name, size = 16, color = '#000', style }) {
     return (
       <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
         <ShieldSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'users') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <UsersSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'globe') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <GlobeSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'layout-grid') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <LayoutGridSvg size={size} color={color} />
+      </View>
+    );
+  }
+  if (name === 'list') {
+    return (
+      <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <ListSvg size={size} color={color} />
       </View>
     );
   }
