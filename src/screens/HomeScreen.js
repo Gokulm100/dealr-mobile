@@ -16,6 +16,7 @@ import Icon from '../components/Icon';
 import DealrLogo from '../components/DealrLogo';
 import SafeLinearGradient from '../components/SafeLinearGradient';
 import AdCard from '../components/AdCard';
+import { trackSearch, trackSearchResultClick } from '../utils/analytics';
 import CategoryIcon, { getCategoryTheme } from '../components/CategoryIcon';
 import SkeletonCard from '../components/SkeletonCard';
 import { apiFetch, mapListing, API_BASE_URL, addAdToFavorite, removeAdFromFavorite, isAdOwnedByUser } from '../utils/api';
@@ -288,6 +289,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleSearch = () => {
+    trackSearch(searchInput.trim());
     // Updates active search states from UI input states
     setSearchQuery(searchInput.trim());
     setLocationQuery(locationInput.trim());
@@ -858,7 +860,10 @@ export default function HomeScreen({ navigation }) {
                 item={item}
                 isFavorite={favorites.includes(item.id)}
                 onToggleFavorite={toggleFavorite}
-                onPress={() => navigation.navigate('AdDetail', { listing: item, isTrending: trending })}
+                onPress={() => {
+                  if (searchQuery && searchQuery.trim()) trackSearchResultClick(item);
+                  navigation.navigate('AdDetail', { listing: item, isTrending: trending });
+                }}
                 isTrending={trending}
               />
             </View>

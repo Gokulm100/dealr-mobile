@@ -6,6 +6,7 @@ import {
 import Icon from './Icon';
 import { COLORS, SHADOW } from '../utils/theme';
 import { apiFetch } from '../utils/api';
+import { trackReviewSubmitted } from '../utils/analytics';
 
 const TAGS = [
   'Responsive',
@@ -58,6 +59,7 @@ export default function ReviewModal({ visible, onClose, adId, revieweeName, revi
           text: text.trim(),
         }),
       });
+      trackReviewSubmitted(adId);
       reset();
       onSubmitted?.();
       onClose();

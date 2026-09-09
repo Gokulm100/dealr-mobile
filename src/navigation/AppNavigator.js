@@ -28,6 +28,25 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const RootStack = createNativeStackNavigator();
 
+// G-03: deep / universal links. Opens dealrapp.in/ad/:id and dealr://ad/:id
+// straight to the listing (AdDetailScreen fetches by id when no listing object
+// is passed). Full Android App Link auto-verification also needs an
+// assetlinks.json hosted at https://dealrapp.in/.well-known/ (web/hosting step).
+const linking = {
+  prefixes: ['dealr://', 'https://dealrapp.in', 'https://www.dealrapp.in'],
+  config: {
+    screens: {
+      AdDetail: 'ad/:id',
+      SellerProfile: 'seller/:id',
+      MainTabs: {
+        screens: {
+          Home: { screens: { AllAds: 'home' } },
+        },
+      },
+    },
+  },
+};
+
 // Stack for Home tab (Home → Ad Detail)
 function HomeStack() {
   return (
@@ -233,7 +252,7 @@ export default function AppNavigator() {
   const navKey = user ? (hasConsented ? 'app-consented' : 'app-needs-consent') : 'guest';
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <RootStack.Navigator
         key={navKey}
         screenOptions={{ headerShown: false }}

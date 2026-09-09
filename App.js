@@ -20,6 +20,7 @@ import { registerPushToken, requestNotificationPermission } from './src/utils/pu
 import SplashScreen from './src/components/SplashScreen';
 import { FontReadyProvider } from './src/context/FontReadyContext';
 import AppErrorBoundary from './src/components/AppErrorBoundary';
+import { initAnalytics } from './src/utils/analytics';
 
 require('./assets/handshake-mark.png');
 
@@ -27,6 +28,9 @@ const SPLASH_MIN_MS = 2500;
 
 function AppContent() {
   useEffect(() => {
+    // EXP-1: start the analytics client (anonymous visit + session).
+    initAnalytics();
+
     let unsubscribeOnMessage = () => {};
     let unsubscribeNotifee = () => {};
 
